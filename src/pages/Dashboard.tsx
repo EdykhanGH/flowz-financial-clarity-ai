@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +18,12 @@ import {
   MessageCircle,
   Download,
   Share,
-  RefreshCw
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { AIAssistant } from '@/components/AIAssistant';
+import DataUpload from '@/components/DataUpload';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -255,6 +256,12 @@ const Dashboard = () => {
             </Card>
           </div>
         );
+      case 'data':
+        return (
+          <div className="p-6 bg-gray-900 min-h-full">
+            <DataUpload />
+          </div>
+        );
       case 'assistant':
         return <AIAssistant />;
       default:
@@ -299,6 +306,19 @@ const Dashboard = () => {
                 >
                   <BarChart3 className="mr-3 h-5 w-5" />
                   Overview
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab('data')}
+                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
+                    activeTab === 'data'
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <Database className="mr-3 h-5 w-5" />
+                  Data
                 </button>
               </li>
               <li>

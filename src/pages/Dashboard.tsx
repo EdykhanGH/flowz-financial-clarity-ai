@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart,
@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bar, BarChart as ReBarChart, ResponsiveContainer, XAxis, YAxis, LineChart as ReLineChart, Line, PieChart as RePieChart, Cell } from 'recharts';
+import { Bar, BarChart as ReBarChart, ResponsiveContainer, XAxis, YAxis, LineChart as ReLineChart, Line, PieChart as RePieChart, Cell, Pie } from 'recharts';
 import BusinessOnboarding from '@/components/BusinessOnboarding';
 import DataUpload from '@/components/DataUpload';
 
@@ -77,11 +77,20 @@ const contributionData = [
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
+    // Check localStorage for onboarding completion
+    const completed = localStorage.getItem('onboardingCompleted');
+    return completed === 'true';
+  });
+
+  const handleOnboardingComplete = () => {
+    setHasCompletedOnboarding(true);
+    localStorage.setItem('onboardingCompleted', 'true');
+  };
 
   // Show onboarding if not completed
   if (!hasCompletedOnboarding) {
-    return <BusinessOnboarding onComplete={() => setHasCompletedOnboarding(true)} />;
+    return <BusinessOnboarding onComplete={handleOnboardingComplete} />;
   }
 
   const renderContent = () => {
@@ -177,7 +186,7 @@ const Dashboard = () => {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
                     <RePieChart>
-                      <PieChart
+                      <Pie
                         data={pieData}
                         dataKey="value"
                         cx="50%"
@@ -187,7 +196,7 @@ const Dashboard = () => {
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
-                      </PieChart>
+                      </Pie>
                     </RePieChart>
                   </ResponsiveContainer>
                 </CardContent>

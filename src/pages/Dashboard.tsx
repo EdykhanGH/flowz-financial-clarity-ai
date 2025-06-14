@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,378 +10,651 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
+  Home,
+  Database,
   BarChart3, 
-  FileText, 
   TrendingUp, 
-  Settings, 
-  DollarSign, 
-  Users, 
-  MessageCircle,
+  Calculator, 
+  Bot,
+  Bell,
+  Settings,
+  User,
+  Upload,
+  FileText,
   Download,
+  Plus,
+  Filter,
   Share,
-  RefreshCw,
-  Database
+  Menu,
+  X,
+  AlertTriangle,
+  Target,
+  Lightbulb
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { AIAssistant } from '@/components/AIAssistant';
 import DataUpload from '@/components/DataUpload';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [sliderValue, setSliderValue] = useState(50);
-  const [selectValue, setSelectValue] = useState('option1');
-  const [inputValue, setInputValue] = useState('');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedScenario, setSelectedScenario] = useState('');
+  const [revenueChange, setRevenueChange] = useState([0]);
+  const [costChange, setCostChange] = useState([0]);
 
-  const data = [
-    { name: 'Jan', uv: 4000, pv: 2400, amt: 2400 },
-    { name: 'Feb', uv: 3000, pv: 1398, amt: 2210 },
-    { name: 'Mar', uv: 2000, pv: 9800, amt: 2290 },
-    { name: 'Apr', uv: 2780, pv: 3908, amt: 2000 },
-    { name: 'May', uv: 1890, pv: 4800, amt: 2181 },
-    { name: 'Jun', uv: 2390, pv: 3800, amt: 2500 },
-    { name: 'Jul', uv: 3490, pv: 4300, amt: 2100 },
+  // Mock data
+  const kpiData = {
+    totalRevenue: { value: '₹45,32,000', change: '+12.5%', trend: 'up' },
+    totalCosts: { value: '₹28,15,000', change: '-5.2%', trend: 'down' },
+    profitMargin: { value: '38.2%', change: '+2.8%', trend: 'up' },
+    breakEven: { value: '15 days', change: '-3 days', trend: 'up' }
+  };
+
+  const recentActivity = [
+    { type: 'upload', description: 'Monthly expenses uploaded', time: '2 hours ago', status: 'completed' },
+    { type: 'analysis', description: 'Q3 cost analysis generated', time: '1 day ago', status: 'completed' },
+    { type: 'insight', description: 'Break-even point improved', time: '2 days ago', status: 'new' }
   ];
 
-  const barChartData = [
-    { name: 'A', value: 50 },
-    { name: 'B', value: 30 },
-    { name: 'C', value: 20 },
-    { name: 'D', value: 70 },
+  const mockTransactions = [
+    { id: 1, date: '2024-06-10', description: 'Office Supplies', category: 'Administrative', amount: -25000, type: 'expense' },
+    { id: 2, date: '2024-06-09', description: 'Client Payment', category: 'Revenue', amount: 450000, type: 'income' },
+    { id: 3, date: '2024-06-08', description: 'Software License', category: 'IT', amount: -120000, type: 'expense' },
+    { id: 4, date: '2024-06-07', description: 'Marketing Campaign', category: 'Marketing', amount: -75000, type: 'expense' },
+    { id: 5, date: '2024-06-06', description: 'Product Sales', category: 'Revenue', amount: 320000, type: 'income' }
   ];
 
-  const pieChartData = [
-    { name: 'Group A', value: 400 },
-    { name: 'Group B', value: 300 },
-    { name: 'Group C', value: 300 },
-    { name: 'Group D', value: 200 },
+  const chartData = [
+    { month: 'Jan', revenue: 400000, costs: 250000, profit: 150000 },
+    { month: 'Feb', revenue: 380000, costs: 240000, profit: 140000 },
+    { month: 'Mar', revenue: 420000, costs: 260000, profit: 160000 },
+    { month: 'Apr', revenue: 450000, costs: 270000, profit: 180000 },
+    { month: 'May', revenue: 480000, costs: 285000, profit: 195000 },
+    { month: 'Jun', revenue: 510000, costs: 300000, profit: 210000 }
   ];
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const costBreakdown = [
+    { name: 'Direct Costs', value: 45, color: '#FF6B35' },
+    { name: 'Indirect Costs', value: 30, color: '#F7931E' },
+    { name: 'Fixed Costs', value: 25, color: '#FFD23F' }
+  ];
+
+  const sidebarItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'data', label: 'Data', icon: Database },
+    { id: 'analysis', label: 'Analysis', icon: BarChart3 },
+    { id: 'scenarios', label: 'What-If Scenarios', icon: TrendingUp },
+    { id: 'budgets', label: 'Budgets', icon: Calculator },
+    { id: 'assistant', label: 'AI Assistant', icon: Bot }
+  ];
+
+  const renderDashboardOverview = () => (
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-900">Welcome back to Flowz!</h2>
+        <p className="text-gray-600 mt-2">Your comprehensive cost management dashboard</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {Object.entries(kpiData).map(([key, data]) => (
+          <Card key={key} className="border-l-4 border-l-orange-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{data.value}</p>
+                </div>
+                <Badge variant={data.trend === 'up' ? 'default' : 'secondary'}>
+                  {data.change}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-4">
+          <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setActiveTab('data')}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Financial Data
+          </Button>
+          <Button variant="outline" onClick={() => setActiveTab('analysis')}>
+            <FileText className="w-4 h-4 mr-2" />
+            Generate Analysis Report
+          </Button>
+          <Button variant="outline" onClick={() => setActiveTab('assistant')}>
+            <Bot className="w-4 h-4 mr-2" />
+            Chat with AI Assistant
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-2 h-2 rounded-full ${activity.status === 'new' ? 'bg-orange-500' : 'bg-green-500'}`} />
+                  <div>
+                    <p className="font-medium">{activity.description}</p>
+                    <p className="text-sm text-gray-500">{activity.time}</p>
+                  </div>
+                </div>
+                <Badge variant={activity.status === 'new' ? 'default' : 'secondary'}>
+                  {activity.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Charts Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue vs Costs Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Area type="monotone" dataKey="revenue" stackId="1" stroke="#FF6B35" fill="#FF6B35" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="costs" stackId="1" stroke="#F7931E" fill="#F7931E" fillOpacity={0.6} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={costBreakdown}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}%`}
+                >
+                  {costBreakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  const renderAnalysis = () => (
+    <div className="space-y-6">
+      {/* Analysis Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Financial Analytics</h2>
+        <div className="flex space-x-3">
+          <Button variant="outline">
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+          </Button>
+          <Button className="bg-orange-500 hover:bg-orange-600">
+            <Download className="w-4 h-4 mr-2" />
+            Export Reports
+          </Button>
+        </div>
+      </div>
+
+      {/* Analysis Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost Behavior Analysis</CardTitle>
+            <CardDescription>Track how costs change with business activity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="costs" stroke="#FF6B35" strokeWidth={2} />
+                <Line type="monotone" dataKey="revenue" stroke="#F7931E" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Break-even Analysis</CardTitle>
+            <CardDescription>Monitor your break-even point trends</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-orange-500 mb-2">15</div>
+              <div className="text-lg text-gray-600">Days to Break-even</div>
+              <div className="text-sm text-green-600 mt-2">↓ 3 days improvement</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>ABC Costing Analysis</CardTitle>
+            <CardDescription>Activity-based cost distribution</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={costBreakdown}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label
+                >
+                  {costBreakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Variance Analysis</CardTitle>
+            <CardDescription>Budget vs actual performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="#FF6B35" />
+                <Bar dataKey="costs" fill="#F7931E" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Insights Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Lightbulb className="w-5 h-5 mr-2 text-orange-500" />
+            AI-Generated Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-blue-900">Your variable costs increased 12% this month</p>
+                <p className="text-sm text-blue-700">Consider reviewing supplier contracts and operational efficiency</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+              <Target className="w-5 h-5 text-green-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-green-900">Break-even point improved by 3 days</p>
+                <p className="text-sm text-green-700">Your cost optimization efforts are showing positive results</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-orange-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-orange-900">Product Line A shows highest profitability</p>
+                <p className="text-sm text-orange-700">Consider allocating more resources to this segment</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderScenarios = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">What-If Scenario Planning</h2>
+        <Button className="bg-orange-500 hover:bg-orange-600">
+          <Plus className="w-4 h-4 mr-2" />
+          Create New Scenario
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Scenario Builder</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Scenario Template</Label>
+              <Select value={selectedScenario} onValueChange={setSelectedScenario}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a scenario template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="price-increase">Price Increase Impact</SelectItem>
+                  <SelectItem value="cost-reduction">Cost Reduction Analysis</SelectItem>
+                  <SelectItem value="volume-change">Volume Change Assessment</SelectItem>
+                  <SelectItem value="new-product">New Product Launch</SelectItem>
+                  <SelectItem value="market-expansion">Market Expansion</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Revenue Change (%)</Label>
+              <Slider
+                value={revenueChange}
+                onValueChange={setRevenueChange}
+                max={50}
+                min={-50}
+                step={1}
+                className="mt-2"
+              />
+              <p className="text-sm text-gray-500 mt-1">Current: {revenueChange[0]}%</p>
+            </div>
+
+            <div>
+              <Label>Cost Change (%)</Label>
+              <Slider
+                value={costChange}
+                onValueChange={setCostChange}
+                max={50}
+                min={-50}
+                step={1}
+                className="mt-2"
+              />
+              <p className="text-sm text-gray-500 mt-1">Current: {costChange[0]}%</p>
+            </div>
+
+            <Button className="w-full bg-orange-500 hover:bg-orange-600">
+              Run Scenario Analysis
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Scenario Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">New Break-even</p>
+                  <p className="text-xl font-bold">12 days</p>
+                  <p className="text-sm text-green-600">-3 days</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Profit Impact</p>
+                  <p className="text-xl font-bold">+₹2.5L</p>
+                  <p className="text-sm text-green-600">+15.2%</p>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">AI Recommendation</h4>
+                <p className="text-sm text-blue-700">
+                  This scenario shows promising results. The 5% revenue increase with current cost structure 
+                  would significantly improve your break-even timeline and overall profitability.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Saved Scenarios */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Saved Scenarios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {['Q4 Price Optimization', 'Cost Reduction Plan', 'Market Expansion'].map((scenario, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium">{scenario}</p>
+                  <p className="text-sm text-gray-500">Last modified 2 days ago</p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm">View</Button>
+                  <Button variant="outline" size="sm">
+                    <Share className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderBudgets = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Budget Management</h2>
+        <Button className="bg-orange-500 hover:bg-orange-600">
+          <Plus className="w-4 h-4 mr-2" />
+          Create New Budget
+        </Button>
+      </div>
+
+      {/* Budget Status Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Budget Utilization</p>
+                <p className="text-2xl font-bold">78%</p>
+              </div>
+              <Progress value={78} className="w-16" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Variance</p>
+                <p className="text-2xl font-bold text-green-600">-₹50K</p>
+              </div>
+              <Badge variant="secondary">Under Budget</Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Remaining</p>
+                <p className="text-2xl font-bold">₹2.2L</p>
+              </div>
+              <Badge>22% Left</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Budget Templates */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget Templates</CardTitle>
+          <CardDescription>Choose a template to get started quickly</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {['Operating Budget', 'Capital Budget', 'Cash Flow Budget', 'Project Budget'].map((template) => (
+              <Card key={template} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4 text-center">
+                  <Calculator className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+                  <p className="font-medium">{template}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Budget vs Actual */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget vs Actual Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="revenue" fill="#FF6B35" name="Actual Revenue" />
+              <Bar dataKey="costs" fill="#F7931E" name="Actual Costs" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return (
-          <div className="p-6">
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Total Revenue</CardTitle>
-                  <CardDescription>Monthly revenue overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-semibold">$45,321</div>
-                  <Progress value={75} className="mt-2" />
-                  <div className="text-sm text-gray-500 mt-1">75% of target</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expenses</CardTitle>
-                  <CardDescription>Monthly expenses breakdown</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-semibold">$22,150</div>
-                  <Progress value={45} className="mt-2" />
-                  <div className="text-sm text-gray-500 mt-1">45% of budget</div>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2 lg:col-span-1">
-                <CardHeader>
-                  <CardTitle>Website Visits</CardTitle>
-                  <CardDescription>Last 7 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="pv" stroke="#8884d8" activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>New Users</CardTitle>
-                  <CardDescription>Last 30 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-2 text-blue-500" />
-                    <div className="text-xl font-semibold">325</div>
-                  </div>
-                  <div className="text-sm text-green-500">+12% from last month</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sales Performance</CardTitle>
-                  <CardDescription>Compared to target</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={barChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Customer Demographics</CardTitle>
-                  <CardDescription>Based on region</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
-                        {
-                          pieChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))
-                        }
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-      case 'reports':
-        return (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold">Reports</h2>
-              <div className="space-x-2">
-                <Button variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-                <Button>
-                  <Share className="w-4 h-4 mr-2" />
-                  Share
-                </Button>
-              </div>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Report</CardTitle>
-                <CardDescription>Detailed financial overview</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>This is a sample financial report. You can customize the content here.</p>
-                <ul className="list-disc list-inside mt-4">
-                  <li>Revenue: $120,000</li>
-                  <li>Expenses: $80,000</li>
-                  <li>Profit: $40,000</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        );
-      case 'what-if':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">What-If Analysis</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Scenario Planning</CardTitle>
-                <CardDescription>Explore different scenarios and their impact</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="scenario">Select Scenario</Label>
-                  <Select value={selectValue} onValueChange={setSelectValue}>
-                    <SelectTrigger id="scenario">
-                      <SelectValue placeholder="Select a scenario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="option1">Optimistic</SelectItem>
-                      <SelectItem value="option2">Pessimistic</SelectItem>
-                      <SelectItem value="option3">Realistic</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="growth">Growth Rate (%)</Label>
-                  <Slider
-                    id="growth"
-                    defaultValue={[sliderValue]}
-                    max={100}
-                    step={1}
-                    onValueChange={(value) => setSliderValue(value[0])}
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Current value: {sliderValue}%</p>
-                </div>
-                <div>
-                  <Label htmlFor="input">Enter Custom Value</Label>
-                  <Input type="number" id="input" placeholder="Enter a value" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
-                </div>
-                <Button>Run Analysis</Button>
-              </CardContent>
-            </Card>
-          </div>
-        );
-      case 'budgets':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">Budget Management</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Create and Manage Budgets</CardTitle>
-                <CardDescription>Track your income and expenses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>This section allows you to create and manage your budgets.</p>
-                <Button className="mt-4">Create New Budget</Button>
-              </CardContent>
-            </Card>
-          </div>
-        );
+      case 'dashboard':
+        return renderDashboardOverview();
       case 'data':
         return (
-          <div className="p-6 bg-gray-900 min-h-full">
+          <div className="bg-gray-900 min-h-full p-6 rounded-lg">
             <DataUpload />
           </div>
         );
+      case 'analysis':
+        return renderAnalysis();
+      case 'scenarios':
+        return renderScenarios();
+      case 'budgets':
+        return renderBudgets();
       case 'assistant':
         return <AIAssistant />;
       default:
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold">Welcome to the Dashboard</h2>
-            <p>Select a tab to view its content.</p>
-          </div>
-        );
+        return renderDashboardOverview();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-md h-16 flex items-center justify-between px-6">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh Data
-          </Button>
-          <Button variant="outline">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
-        </div>
-      </header>
-      
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* Navigation Sidebar */}
-        <div className="w-64 bg-white shadow-sm border-r border-gray-200">
-          <nav className="p-4">
-            <ul className="space-y-2">
-              <li>
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'overview'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <BarChart3 className="mr-3 h-5 w-5" />
-                  Overview
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('data')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'data'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <Database className="mr-3 h-5 w-5" />
-                  Data
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('reports')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'reports'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <FileText className="mr-3 h-5 w-5" />
-                  Reports
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('what-if')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'what-if'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <TrendingUp className="mr-3 h-5 w-5" />
-                  What-If Analysis
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('budgets')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'budgets'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <DollarSign className="mr-3 h-5 w-5" />
-                  Budgets
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('assistant')}
-                  className={`w-full flex items-center px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'assistant'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <MessageCircle className="mr-3 h-5 w-5" />
-                  AI Assistant
-                </button>
-              </li>
-            </ul>
-          </nav>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className={`bg-black text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'} ${sidebarOpen ? '' : 'lg:w-64'}`}>
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <h1 className={`text-xl font-bold text-orange-500 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
+              Flowz
+            </h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white hover:bg-gray-800 lg:hidden"
+            >
+              {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
+        <nav className="mt-8">
+          {sidebarItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center px-4 py-3 text-left text-sm transition-colors ${
+                activeTab === item.id
+                  ? 'bg-orange-500 text-white border-r-4 border-orange-300'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              <span className={sidebarOpen ? 'block' : 'hidden lg:block'}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Header */}
+        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="mr-4 lg:hidden"
+            >
+              <Menu className="w-4 h-4" />
+            </Button>
+            <h2 className="text-xl font-semibold capitalize">{activeTab}</h2>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm">
+              <Bell className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <User className="w-4 h-4" />
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto p-6">
           {renderContent()}
-        </div>
+        </main>
       </div>
     </div>
   );

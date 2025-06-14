@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,37 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   BarChart3, 
   FileText, 
   TrendingUp, 
   Settings, 
-  AlertTriangle, 
   DollarSign, 
   Users, 
-  Calendar,
   MessageCircle,
-  Send,
-  Bot,
-  Plus,
-  Save,
   Download,
   Share,
-  Clock,
-  Target,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Lock,
-  Eye,
-  Edit3,
-  Filter,
-  Search,
   RefreshCw
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -77,105 +60,107 @@ const Dashboard = () => {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Total Revenue</CardTitle>
-                <CardDescription>Monthly revenue overview</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold">$45,321</div>
-                <Progress value={75} className="mt-2" />
-                <div className="text-sm text-gray-500 mt-1">75% of target</div>
-              </CardContent>
-            </Card>
+          <div className="p-6">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Total Revenue</CardTitle>
+                  <CardDescription>Monthly revenue overview</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">$45,321</div>
+                  <Progress value={75} className="mt-2" />
+                  <div className="text-sm text-gray-500 mt-1">75% of target</div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Expenses</CardTitle>
-                <CardDescription>Monthly expenses breakdown</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold">$22,150</div>
-                <Progress value={45} className="mt-2" />
-                <div className="text-sm text-gray-500 mt-1">45% of budget</div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expenses</CardTitle>
+                  <CardDescription>Monthly expenses breakdown</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">$22,150</div>
+                  <Progress value={45} className="mt-2" />
+                  <div className="text-sm text-gray-500 mt-1">45% of budget</div>
+                </CardContent>
+              </Card>
 
-            <Card className="md:col-span-2 lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Website Visits</CardTitle>
-                <CardDescription>Last 7 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="pv" stroke="#8884d8" activeDot={{ r: 8 }} />
-                    <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              <Card className="md:col-span-2 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Website Visits</CardTitle>
+                  <CardDescription>Last 7 days</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="pv" stroke="#8884d8" activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>New Users</CardTitle>
-                <CardDescription>Last 30 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-2 text-blue-500" />
-                  <div className="text-xl font-semibold">325</div>
-                </div>
-                <div className="text-sm text-green-500">+12% from last month</div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Users</CardTitle>
+                  <CardDescription>Last 30 days</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center">
+                    <Users className="w-4 h-4 mr-2 text-blue-500" />
+                    <div className="text-xl font-semibold">325</div>
+                  </div>
+                  <div className="text-sm text-green-500">+12% from last month</div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Performance</CardTitle>
-                <CardDescription>Compared to target</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={barChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="value" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sales Performance</CardTitle>
+                  <CardDescription>Compared to target</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={barChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="value" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Demographics</CardTitle>
-                <CardDescription>Based on region</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
-                      {
-                        pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))
-                      }
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Demographics</CardTitle>
+                  <CardDescription>Based on region</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
+                        {
+                          pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))
+                        }
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         );
       case 'reports':

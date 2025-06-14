@@ -14,6 +14,15 @@ import {
   Calculator,
   Bot,
   TrendingUp,
+  Calendar,
+  Filter,
+  Download,
+  Share,
+  Clock,
+  FileText,
+  AlertTriangle,
+  Target,
+  Activity,
 } from 'lucide-react';
 import {
   Card,
@@ -23,7 +32,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bar, BarChart as ReBarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bar, BarChart as ReBarChart, ResponsiveContainer, XAxis, YAxis, LineChart as ReLineChart, Line, PieChart as RePieChart, Cell } from 'recharts';
 import BusinessOnboarding from '@/components/BusinessOnboarding';
 import DataUpload from '@/components/DataUpload';
 
@@ -34,6 +44,35 @@ const data = [
   { name: 'Apr', total: Math.floor(Math.random() * 5000) + 1000 },
   { name: 'May', total: Math.floor(Math.random() * 5000) + 1000 },
   { name: 'Jun', total: Math.floor(Math.random() * 5000) + 1000 },
+];
+
+const lineData = [
+  { month: 'Jan', fixed: 2000, variable: 1500 },
+  { month: 'Feb', fixed: 2000, variable: 1800 },
+  { month: 'Mar', fixed: 2000, variable: 2100 },
+  { month: 'Apr', fixed: 2000, variable: 1900 },
+  { month: 'May', fixed: 2000, variable: 2300 },
+  { month: 'Jun', fixed: 2000, variable: 2500 },
+];
+
+const pieData = [
+  { name: 'Product A', value: 35, color: '#FF6B35' },
+  { name: 'Product B', value: 25, color: '#F7931E' },
+  { name: 'Product C', value: 20, color: '#FFD23F' },
+  { name: 'Product D', value: 20, color: '#06FFA5' },
+];
+
+const varianceData = [
+  { category: 'Labor', budget: 5000, actual: 5200 },
+  { category: 'Materials', budget: 3000, actual: 2800 },
+  { category: 'Overhead', budget: 2000, actual: 2300 },
+  { category: 'Marketing', budget: 1500, actual: 1400 },
+];
+
+const contributionData = [
+  { product: 'Product A', revenue: 10000, variable: 6000, contribution: 4000 },
+  { product: 'Product B', revenue: 8000, variable: 5500, contribution: 2500 },
+  { product: 'Product C', revenue: 6000, variable: 4200, contribution: 1800 },
 ];
 
 const Dashboard = () => {
@@ -52,29 +91,262 @@ const Dashboard = () => {
       case 'analysis':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Financial Analysis</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Analytics Overview Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-white">Financial Analysis</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select>
+                  <SelectTrigger className="w-[180px]">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Date Range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last-30">Last 30 Days</SelectItem>
+                    <SelectItem value="last-90">Last 90 Days</SelectItem>
+                    <SelectItem value="last-year">Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select>
+                  <SelectTrigger className="w-[150px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="labor">Labor</SelectItem>
+                    <SelectItem value="materials">Materials</SelectItem>
+                    <SelectItem value="overhead">Overhead</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Reports
+                </Button>
+              </div>
+            </div>
+
+            {/* Analysis Cards Grid */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Row 1 */}
               <Card className="bg-[#2D2D2D] border-gray-700">
                 <CardHeader>
-                  <CardTitle className="text-white">Cost Behavior Analysis</CardTitle>
+                  <CardTitle className="text-white flex items-center">
+                    <LineChart className="h-5 w-5 mr-2 text-[#FF6B35]" />
+                    Cost Behavior Analysis
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-48 flex items-center justify-center text-gray-400">
-                    Chart placeholder - Analysis coming soon
+                  <ResponsiveContainer width="100%" height={200}>
+                    <ReLineChart data={lineData}>
+                      <XAxis dataKey="month" stroke="#888888" fontSize={12} />
+                      <YAxis stroke="#888888" fontSize={12} />
+                      <Line type="monotone" dataKey="fixed" stroke="#06FFA5" strokeWidth={2} />
+                      <Line type="monotone" dataKey="variable" stroke="#FF6B35" strokeWidth={2} />
+                    </ReLineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                    Break-even Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center h-[200px]">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-[#06FFA5] mb-2">18 Days</div>
+                      <div className="text-gray-400">Break-even Point</div>
+                      <div className="text-sm text-gray-500 mt-2">3 days improvement</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Row 2 */}
               <Card className="bg-[#2D2D2D] border-gray-700">
                 <CardHeader>
-                  <CardTitle className="text-white">Break-even Analysis</CardTitle>
+                  <CardTitle className="text-white flex items-center">
+                    <PieChart className="h-5 w-5 mr-2 text-[#F7931E]" />
+                    ABC Costing Analysis
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-48 flex items-center justify-center text-gray-400">
-                    Chart placeholder - Analysis coming soon
+                  <ResponsiveContainer width="100%" height={200}>
+                    <RePieChart>
+                      <PieChart
+                        data={pieData}
+                        dataKey="value"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={60}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </PieChart>
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <BarChart className="h-5 w-5 mr-2 text-[#FFD23F]" />
+                    Variance Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <ReBarChart data={varianceData}>
+                      <XAxis dataKey="category" stroke="#888888" fontSize={12} />
+                      <YAxis stroke="#888888" fontSize={12} />
+                      <Bar dataKey="budget" fill="#06FFA5" />
+                      <Bar dataKey="actual" fill="#FF6B35" />
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Row 3 */}
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                    Contribution Margin Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <ReBarChart data={contributionData} layout="horizontal">
+                      <XAxis type="number" stroke="#888888" fontSize={12} />
+                      <YAxis dataKey="product" type="category" stroke="#888888" fontSize={12} />
+                      <Bar dataKey="contribution" fill="#06FFA5" />
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Target className="h-5 w-5 mr-2 text-[#F7931E]" />
+                    Benchmarking Comparison
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Industry Average</span>
+                      <span className="text-white">85%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Your Performance</span>
+                      <span className="text-[#06FFA5]">92%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Top Quartile</span>
+                      <span className="text-white">95%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2 mt-4">
+                      <div className="bg-[#06FFA5] h-2 rounded-full" style={{ width: '92%' }}></div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Detailed Insights Section */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Bot className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                  AI-Generated Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#FF6B35] mb-2">Cost Analysis</div>
+                    <div className="text-white">Your variable costs increased 12% this month</div>
+                  </div>
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#06FFA5] mb-2">Break-even Point</div>
+                    <div className="text-white">Break-even point improved by 3 days</div>
+                  </div>
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#F7931E] mb-2">Profitability</div>
+                    <div className="text-white">Product Line A shows highest profitability</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Alert Notifications */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-[#FFD23F]" />
+                  Alert Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-red-900/20 border border-red-700 rounded-lg">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
+                      <span className="text-white">Target costing variance: 15% over budget</span>
+                    </div>
+                    <span className="text-red-400 text-sm">High</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-4 w-4 text-yellow-400 mr-2" />
+                      <span className="text-white">Budget deviation in Marketing: 8% under</span>
+                    </div>
+                    <span className="text-yellow-400 text-sm">Medium</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-green-900/20 border border-green-700 rounded-lg">
+                    <div className="flex items-center">
+                      <Target className="h-4 w-4 text-green-400 mr-2" />
+                      <span className="text-white">Performance above industry benchmark</span>
+                    </div>
+                    <span className="text-green-400 text-sm">Good</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Analysis Actions */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Analysis Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Full Report
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Share className="h-4 w-4 mr-2" />
+                    Share Analysis
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Schedule Report
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
       case 'scenarios':

@@ -24,6 +24,20 @@ import {
   Activity,
   Send,
   MessageSquare,
+  Plus,
+  Edit3,
+  CheckCircle,
+  XCircle,
+  DollarSign,
+  TrendingDown,
+  Zap,
+  Lock,
+  Unlock,
+  UserCheck,
+  BarChart3,
+  PlusCircle,
+  Eye,
+  History,
 } from 'lucide-react';
 import {
   Card,
@@ -77,6 +91,23 @@ const contributionData = [
   { product: 'Product C', revenue: 6000, variable: 4200, contribution: 1800 },
 ];
 
+const budgetData = [
+  { category: 'Marketing', budgeted: 15000, actual: 12500, variance: -2500 },
+  { category: 'Operations', budgeted: 25000, actual: 27000, variance: 2000 },
+  { category: 'Sales', budgeted: 20000, actual: 18500, variance: -1500 },
+  { category: 'IT', budgeted: 12000, actual: 11200, variance: -800 },
+  { category: 'HR', budgeted: 8000, actual: 8500, variance: 500 },
+];
+
+const budgetPerformanceData = [
+  { month: 'Jan', budget: 50000, actual: 47500 },
+  { month: 'Feb', budget: 52000, actual: 49800 },
+  { month: 'Mar', budget: 48000, actual: 51200 },
+  { month: 'Apr', budget: 55000, actual: 53100 },
+  { month: 'May', budget: 51000, actual: 48900 },
+  { month: 'Jun', budget: 53000, actual: 55300 },
+];
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
@@ -94,6 +125,9 @@ const Dashboard = () => {
   ]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [budgetWizardStep, setBudgetWizardStep] = useState(1);
+  const [selectedBudgetType, setSelectedBudgetType] = useState('');
+  const [budgetTimePeriod, setBudgetTimePeriod] = useState('');
 
   const handleOnboardingComplete = () => {
     setHasCompletedOnboarding(true);
@@ -889,16 +923,550 @@ const Dashboard = () => {
       case 'budgets':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Budget Management</h2>
+            {/* Budget Dashboard Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-white">Budget Management</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select>
+                  <SelectTrigger className="w-[150px]">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="current-month">Current Month</SelectItem>
+                    <SelectItem value="current-quarter">Current Quarter</SelectItem>
+                    <SelectItem value="current-year">Current Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create New Budget
+                </Button>
+              </div>
+            </div>
+
+            {/* Budget Status Overview */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">Total Budget</CardTitle>
+                  <DollarSign className="h-4 w-4 text-[#06FFA5]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">$2,450,000</div>
+                  <p className="text-xs text-gray-500">Annual allocation</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">Spent to Date</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-[#F7931E]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">$1,247,500</div>
+                  <p className="text-xs text-gray-500">51% of total budget</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">Remaining</CardTitle>
+                  <Target className="h-4 w-4 text-[#06FFA5]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">$1,202,500</div>
+                  <p className="text-xs text-gray-500">49% remaining</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">Variance</CardTitle>
+                  <TrendingDown className="h-4 w-4 text-[#FFD23F]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">-$23,400</div>
+                  <p className="text-xs text-gray-500">2.1% under budget</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Budget vs Actual Comparison */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <BarChart3 className="h-5 w-5 mr-2 text-[#FF6B35]" />
+                    Budget vs Actual by Category
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <ReBarChart data={budgetData}>
+                      <XAxis dataKey="category" stroke="#888888" fontSize={12} />
+                      <YAxis stroke="#888888" fontSize={12} />
+                      <Bar dataKey="budgeted" fill="#06FFA5" name="Budgeted" />
+                      <Bar dataKey="actual" fill="#FF6B35" name="Actual" />
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <LineChart className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                    Budget Performance Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <ReLineChart data={budgetPerformanceData}>
+                      <XAxis dataKey="month" stroke="#888888" fontSize={12} />
+                      <YAxis stroke="#888888" fontSize={12} />
+                      <Line type="monotone" dataKey="budget" stroke="#06FFA5" strokeWidth={2} />
+                      <Line type="monotone" dataKey="actual" stroke="#FF6B35" strokeWidth={2} />
+                    </ReLineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Variance Alerts Section */}
             <Card className="bg-[#2D2D2D] border-gray-700">
               <CardHeader>
-                <CardTitle className="text-white">Budget Overview</CardTitle>
+                <CardTitle className="text-white flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-[#FFD23F]" />
+                  Variance Alerts & Budget Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-red-900/20 border border-red-700 rounded-lg">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
+                      <span className="text-white">Operations budget exceeded by 8%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-400 text-sm">$2,000 over</span>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-4 w-4 text-yellow-400 mr-2" />
+                      <span className="text-white">Marketing spending 83% of monthly allocation</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 text-sm">$2,500 remaining</span>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-green-900/20 border border-green-700 rounded-lg">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
+                      <span className="text-white">Sales department under budget by $1,500</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400 text-sm">Good performance</span>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Budget Templates Section */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Budget Creation Templates</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage and track your budgets
+                  Choose from pre-built budget templates based on your business needs
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="bg-primary hover:bg-secondary">Create New Budget</Button>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card className="bg-[#1A1A1A] border-gray-600 cursor-pointer hover:border-[#FF6B35] transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-3">
+                        <Calculator className="h-6 w-6 text-[#06FFA5] mr-2" />
+                        <h3 className="text-white font-semibold">Operating Budget</h3>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-3">Day-to-day operational expenses and revenue projections</p>
+                      <Button className="w-full bg-[#FF6B35] hover:bg-[#e55a2b] text-sm">
+                        Create Budget
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#1A1A1A] border-gray-600 cursor-pointer hover:border-[#FF6B35] transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-3">
+                        <TrendingUp className="h-6 w-6 text-[#F7931E] mr-2" />
+                        <h3 className="text-white font-semibold">Capital Budget</h3>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-3">Long-term investments and capital expenditures</p>
+                      <Button className="w-full bg-[#FF6B35] hover:bg-[#e55a2b] text-sm">
+                        Create Budget
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#1A1A1A] border-gray-600 cursor-pointer hover:border-[#FF6B35] transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-3">
+                        <Activity className="h-6 w-6 text-[#FFD23F] mr-2" />
+                        <h3 className="text-white font-semibold">Cash Flow Budget</h3>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-3">Cash inflows and outflows management</p>
+                      <Button className="w-full bg-[#FF6B35] hover:bg-[#e55a2b] text-sm">
+                        Create Budget
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#1A1A1A] border-gray-600 cursor-pointer hover:border-[#FF6B35] transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-3">
+                        <Target className="h-6 w-6 text-[#06FFA5] mr-2" />
+                        <h3 className="text-white font-semibold">Project Budget</h3>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-3">Specific project cost allocation and tracking</p>
+                      <Button className="w-full bg-[#FF6B35] hover:bg-[#e55a2b] text-sm">
+                        Create Budget
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Budget Setup Wizard (shown when creating budget) */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Settings className="h-5 w-5 mr-2 text-[#FF6B35]" />
+                  Budget Setup Wizard - Step {budgetWizardStep} of 4
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Set up your budget in 4 simple steps
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress Indicator */}
+                <div className="flex items-center justify-between">
+                  {[1, 2, 3, 4].map((step) => (
+                    <div key={step} className="flex items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        step <= budgetWizardStep ? 'bg-[#FF6B35] text-white' : 'bg-gray-600 text-gray-400'
+                      }`}>
+                        {step}
+                      </div>
+                      {step < 4 && (
+                        <div className={`w-16 h-1 ${
+                          step < budgetWizardStep ? 'bg-[#FF6B35]' : 'bg-gray-600'
+                        }`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Step Content */}
+                {budgetWizardStep === 1 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Step 1: Budget Type & Time Period</h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-400">Budget Type</label>
+                        <Select value={selectedBudgetType} onValueChange={setSelectedBudgetType}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select budget type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="operating">Operating Budget</SelectItem>
+                            <SelectItem value="capital">Capital Budget</SelectItem>
+                            <SelectItem value="cashflow">Cash Flow Budget</SelectItem>
+                            <SelectItem value="project">Project Budget</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-400">Time Period</label>
+                        <Select value={budgetTimePeriod} onValueChange={setBudgetTimePeriod}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select time period" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="annually">Annually</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {budgetWizardStep === 2 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Step 2: Revenue Projections by Category</h3>
+                    <div className="space-y-3">
+                      {['Product Sales', 'Service Revenue', 'Consulting', 'Other Revenue'].map((category) => (
+                        <div key={category} className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                          <span className="text-white">{category}</span>
+                          <input 
+                            type="number" 
+                            placeholder="Amount"
+                            className="w-32 px-3 py-1 bg-[#2D2D2D] border border-gray-600 rounded text-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {budgetWizardStep === 3 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Step 3: Expense Allocations by Department</h3>
+                    <div className="space-y-3">
+                      {['Marketing', 'Sales', 'Operations', 'IT', 'HR', 'Finance'].map((dept) => (
+                        <div key={dept} className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                          <span className="text-white">{dept}</span>
+                          <input 
+                            type="number" 
+                            placeholder="Budget allocation"
+                            className="w-32 px-3 py-1 bg-[#2D2D2D] border border-gray-600 rounded text-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {budgetWizardStep === 4 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Step 4: Review & Approval Workflow</h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                        <h4 className="text-white font-medium mb-2">Budget Summary</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Total Revenue:</span>
+                            <span className="text-white">$2,450,000</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Total Expenses:</span>
+                            <span className="text-white">$1,890,000</span>
+                          </div>
+                          <div className="flex justify-between font-medium">
+                            <span className="text-gray-400">Net Profit:</span>
+                            <span className="text-[#06FFA5]">$560,000</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-400">Approval Workflow</label>
+                        <Select>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select approvers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="manager">Department Manager</SelectItem>
+                            <SelectItem value="finance">Finance Director</SelectItem>
+                            <SelectItem value="cfo">CFO</SelectItem>
+                            <SelectItem value="ceo">CEO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    className="text-white border-gray-600"
+                    onClick={() => setBudgetWizardStep(Math.max(1, budgetWizardStep - 1))}
+                    disabled={budgetWizardStep === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button 
+                    className="bg-[#FF6B35] hover:bg-[#e55a2b]"
+                    onClick={() => setBudgetWizardStep(Math.min(4, budgetWizardStep + 1))}
+                  >
+                    {budgetWizardStep === 4 ? 'Create Budget' : 'Next'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Budget Monitoring & Controls */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                    Real-time Budget Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Monthly Progress</span>
+                      <span className="text-white">67%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="bg-[#06FFA5] h-2 rounded-full" style={{ width: '67%' }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-400">Department Spending</div>
+                    {budgetData.slice(0, 3).map((dept) => (
+                      <div key={dept.category} className="flex justify-between items-center">
+                        <span className="text-white text-sm">{dept.category}</span>
+                        <span className={`text-sm ${dept.variance < 0 ? 'text-[#06FFA5]' : 'text-[#FF6B35]'}`}>
+                          {((dept.actual / dept.budgeted) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Lock className="h-5 w-5 mr-2 text-[#FFD23F]" />
+                    Budget Controls & Permissions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                      <div className="flex items-center">
+                        <UserCheck className="h-4 w-4 text-[#06FFA5] mr-2" />
+                        <span className="text-white">Budget Approval</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                      <div className="flex items-center">
+                        <Lock className="h-4 w-4 text-[#FFD23F] mr-2" />
+                        <span className="text-white">Budget Locked</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Unlock className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                      <div className="flex items-center">
+                        <History className="h-4 w-4 text-[#F7931E] mr-2" />
+                        <span className="text-white">Revision History</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-400">Alert Thresholds</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white text-sm">Warning at</span>
+                        <span className="text-[#FFD23F]">80%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white text-sm">Critical at</span>
+                        <span className="text-[#FF6B35]">95%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* AI Insights Panel */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Bot className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                  AI-Powered Budget Insights & Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#06FFA5] mb-2">Budget Recommendation</div>
+                    <div className="text-white text-sm">Increase marketing budget by 15% for Q4 to capitalize on seasonal trends</div>
+                    <div className="text-xs text-gray-400 mt-2">Confidence: 87%</div>
+                  </div>
+                  
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#F7931E] mb-2">Spending Pattern</div>
+                    <div className="text-white text-sm">Operations spending peaks mid-month. Consider spreading costs more evenly</div>
+                    <div className="text-xs text-gray-400 mt-2">Savings: $3,200/month</div>
+                  </div>
+                  
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#FFD23F] mb-2">Seasonal Adjustment</div>
+                    <div className="text-white text-sm">Historical data suggests 20% increase in sales during holiday season</div>
+                    <div className="text-xs text-gray-400 mt-2">Based on 3-year trend</div>
+                  </div>
+                  
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#06FFA5] mb-2">Industry Benchmark</div>
+                    <div className="text-white text-sm">Your IT spending is 12% below industry average. Consider technology investments</div>
+                    <div className="text-xs text-gray-400 mt-2">Industry avg: 8.5%</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Budget Actions */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Budget Management Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Budget Report
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Budget Data
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Share className="h-4 w-4 mr-2" />
+                    Share with Team
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Schedule Review
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Zap className="h-4 w-4 mr-2" />
+                    Set Alerts
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

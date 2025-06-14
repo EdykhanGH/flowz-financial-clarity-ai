@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
@@ -113,9 +112,9 @@ const Signup = () => {
             />
           </div>
           <div>
-            <Label htmlFor="confirm-password" className="dark:text-gray-300">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="dark:text-gray-300">Confirm Password</Label>
             <Input 
-              id="confirm-password" 
+              id="confirmPassword" 
               type="password" 
               placeholder="••••••••" 
               required 

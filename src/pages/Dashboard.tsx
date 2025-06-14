@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,9 @@ import {
   X,
   AlertTriangle,
   Target,
-  Lightbulb
+  Lightbulb,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { AIAssistant } from '@/components/AIAssistant';
@@ -51,9 +52,27 @@ const Dashboard = () => {
   };
 
   const recentActivity = [
-    { type: 'upload', description: 'Monthly expenses uploaded', time: '2 hours ago', status: 'completed' },
-    { type: 'analysis', description: 'Q3 cost analysis generated', time: '1 day ago', status: 'completed' },
-    { type: 'insight', description: 'Break-even point improved', time: '2 days ago', status: 'new' }
+    { 
+      type: 'upload', 
+      description: 'Monthly expenses uploaded', 
+      time: '2 hours ago', 
+      status: 'completed',
+      icon: Upload 
+    },
+    { 
+      type: 'analysis', 
+      description: 'Q3 cost analysis generated', 
+      time: '1 day ago', 
+      status: 'completed',
+      icon: BarChart3 
+    },
+    { 
+      type: 'insight', 
+      description: 'Break-even point improved', 
+      time: '2 days ago', 
+      status: 'new',
+      icon: Target 
+    }
   ];
 
   const mockTransactions = [
@@ -91,47 +110,109 @@ const Dashboard = () => {
   const renderDashboardOverview = () => (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900">Welcome back to Flowz!</h2>
-        <p className="text-gray-600 mt-2">Your comprehensive cost management dashboard</p>
+      <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-6 border-l-4 border-l-orange-500">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back to Flowz!</h2>
+        <p className="text-gray-700">Your comprehensive cost management dashboard for TechCorp Solutions</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Object.entries(kpiData).map(([key, data]) => (
-          <Card key={key} className="border-l-4 border-l-orange-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">{data.value}</p>
-                </div>
-                <Badge variant={data.trend === 'up' ? 'default' : 'secondary'}>
-                  {data.change}
+        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">{kpiData.totalRevenue.value}</p>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                  <ChevronUp className="w-3 h-3 mr-1" />
+                  {kpiData.totalRevenue.change}
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Costs</p>
+                <p className="text-2xl font-bold text-gray-900">{kpiData.totalCosts.value}</p>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-200">
+                  <ChevronDown className="w-3 h-3 mr-1" />
+                  {kpiData.totalCosts.change}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Profit Margin</p>
+                <p className="text-2xl font-bold text-gray-900">{kpiData.profitMargin.value}</p>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                  <ChevronUp className="w-3 h-3 mr-1" />
+                  {kpiData.profitMargin.change}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Break-even Point</p>
+                <p className="text-2xl font-bold text-gray-900">{kpiData.breakEven.value}</p>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                  <ChevronUp className="w-3 h-3 mr-1" />
+                  {kpiData.breakEven.change}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Get started with key tasks for your business</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
-          <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setActiveTab('data')}>
+          <Button 
+            className="bg-orange-500 hover:bg-orange-600 text-white" 
+            onClick={() => setActiveTab('data')}
+          >
             <Upload className="w-4 h-4 mr-2" />
             Upload Financial Data
           </Button>
-          <Button variant="outline" onClick={() => setActiveTab('analysis')}>
+          <Button 
+            variant="outline" 
+            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            onClick={() => setActiveTab('analysis')}
+          >
             <FileText className="w-4 h-4 mr-2" />
             Generate Analysis Report
           </Button>
-          <Button variant="outline" onClick={() => setActiveTab('assistant')}>
+          <Button 
+            variant="outline" 
+            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            onClick={() => setActiveTab('assistant')}
+          >
             <Bot className="w-4 h-4 mr-2" />
             Chat with AI Assistant
           </Button>
@@ -142,19 +223,25 @@ const Dashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest updates and insights for your business</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${activity.status === 'new' ? 'bg-orange-500' : 'bg-green-500'}`} />
+              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center space-x-4">
+                  <div className="p-2 bg-orange-100 rounded-full">
+                    <activity.icon className="w-4 h-4 text-orange-600" />
+                  </div>
                   <div>
-                    <p className="font-medium">{activity.description}</p>
+                    <p className="font-medium text-gray-900">{activity.description}</p>
                     <p className="text-sm text-gray-500">{activity.time}</p>
                   </div>
                 </div>
-                <Badge variant={activity.status === 'new' ? 'default' : 'secondary'}>
+                <Badge 
+                  variant={activity.status === 'new' ? 'default' : 'secondary'}
+                  className={activity.status === 'new' ? 'bg-orange-500 text-white' : ''}
+                >
                   {activity.status}
                 </Badge>
               </div>
@@ -168,6 +255,7 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Revenue vs Costs Trend</CardTitle>
+            <CardDescription>Monthly performance overview</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -186,6 +274,7 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Cost Breakdown</CardTitle>
+            <CardDescription>Distribution of cost categories</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -587,24 +676,24 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className={`bg-black text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'} ${sidebarOpen ? '' : 'lg:w-64'}`}>
-        <div className="p-4">
+      <div className={`bg-[#1A1A1A] text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+        <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold text-orange-500 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
+            <h1 className={`text-xl font-bold text-orange-500 ${sidebarOpen ? 'block' : 'hidden'}`}>
               Flowz
             </h1>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-white hover:bg-gray-800 lg:hidden"
+              className="text-white hover:bg-gray-700"
             >
               {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </Button>
           </div>
         </div>
 
-        <nav className="mt-8">
+        <nav className="mt-4">
           {sidebarItems.map((item) => (
             <button
               key={item.id}
@@ -612,11 +701,11 @@ const Dashboard = () => {
               className={`w-full flex items-center px-4 py-3 text-left text-sm transition-colors ${
                 activeTab === item.id
                   ? 'bg-orange-500 text-white border-r-4 border-orange-300'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
               }`}
             >
-              <item.icon className="w-5 h-5 mr-3" />
-              <span className={sidebarOpen ? 'block' : 'hidden lg:block'}>{item.label}</span>
+              <item.icon className="w-5 h-5 mr-3 text-white" />
+              <span className={sidebarOpen ? 'block' : 'hidden'}>{item.label}</span>
             </button>
           ))}
         </nav>
@@ -631,28 +720,30 @@ const Dashboard = () => {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="mr-4 lg:hidden"
+              className="mr-4 md:hidden"
             >
               <Menu className="w-4 h-4" />
             </Button>
-            <h2 className="text-xl font-semibold capitalize">{activeTab}</h2>
+            <h2 className="text-xl font-semibold capitalize text-gray-900">
+              {activeTab === 'scenarios' ? 'What-If Scenarios' : activeTab}
+            </h2>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
+          <div className="flex items-center space-x-3">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
               <Bell className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
               <Settings className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
               <User className="w-4 h-4" />
             </Button>
           </div>
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-white">
           {renderContent()}
         </main>
       </div>

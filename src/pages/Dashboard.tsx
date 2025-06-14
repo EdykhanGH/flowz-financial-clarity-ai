@@ -361,16 +361,317 @@ const Dashboard = () => {
       case 'scenarios':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">What-If Scenarios</h2>
+            {/* Scenario Builder Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-white">What-If Scenarios</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Scenario Templates" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="price-increase">Price Increase Impact</SelectItem>
+                    <SelectItem value="cost-reduction">Cost Reduction Analysis</SelectItem>
+                    <SelectItem value="volume-change">Volume Change Assessment</SelectItem>
+                    <SelectItem value="new-product">New Product Launch</SelectItem>
+                    <SelectItem value="market-expansion">Market Expansion</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                  Create New Scenario
+                </Button>
+              </div>
+            </div>
+
+            {/* Scenario Input Form */}
             <Card className="bg-[#2D2D2D] border-gray-700">
               <CardHeader>
-                <CardTitle className="text-white">Scenario Planning</CardTitle>
+                <CardTitle className="text-white">Scenario Builder</CardTitle>
                 <CardDescription className="text-gray-400">
                   Create and analyze different business scenarios
                 </CardDescription>
               </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-400">Scenario Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter scenario name..."
+                      className="w-full px-3 py-2 bg-[#1A1A1A] border border-gray-600 rounded-md text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-400">Base Period</label>
+                    <Select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select base period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="current-month">Current Month</SelectItem>
+                        <SelectItem value="last-quarter">Last Quarter</SelectItem>
+                        <SelectItem value="last-year">Last Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Variable Adjustment Sliders */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Variable Adjustments</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-medium text-gray-400">Revenue Change</label>
+                        <span className="text-[#06FFA5]">+15%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="bg-[#06FFA5] h-2 rounded-full" style={{ width: '65%' }}></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-medium text-gray-400">Labor Costs</label>
+                        <span className="text-[#FF6B35]">-8%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="bg-[#FF6B35] h-2 rounded-full" style={{ width: '42%' }}></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-medium text-gray-400">Material Costs</label>
+                        <span className="text-[#F7931E]">+5%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="bg-[#F7931E] h-2 rounded-full" style={{ width: '55%' }}></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-medium text-gray-400">Volume Change</label>
+                        <span className="text-[#FFD23F]">+12%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="bg-[#FFD23F] h-2 rounded-full" style={{ width: '62%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-400">Time Period</label>
+                  <Select>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                      <SelectValue placeholder="Select time period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-month">1 Month</SelectItem>
+                      <SelectItem value="3-months">3 Months</SelectItem>
+                      <SelectItem value="6-months">6 Months</SelectItem>
+                      <SelectItem value="1-year">1 Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CVP Analysis Section */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Calculator className="h-5 w-5 mr-2 text-[#06FFA5]" />
+                    CVP Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Break-even Point</span>
+                      <span className="text-[#06FFA5] font-bold">16 Days</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Profit Impact</span>
+                      <span className="text-[#06FFA5] font-bold">+$24,500</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Risk Level</span>
+                      <span className="text-[#FFD23F]">Medium</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-3 mt-4">
+                      <div className="bg-gradient-to-r from-[#06FFA5] to-[#FF6B35] h-3 rounded-full" style={{ width: '78%' }}></div>
+                    </div>
+                    <div className="text-xs text-gray-500 text-center">Scenario Confidence: 78%</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-[#F7931E]" />
+                    Profit Impact Visualization
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={150}>
+                    <ReBarChart data={[
+                      { period: 'Current', profit: 20000 },
+                      { period: 'Scenario', profit: 44500 },
+                    ]}>
+                      <XAxis dataKey="period" stroke="#888888" fontSize={12} />
+                      <YAxis stroke="#888888" fontSize={12} />
+                      <Bar dataKey="profit" fill="#06FFA5" />
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Comparison View */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Scenario Comparison</CardTitle>
+              </CardHeader>
               <CardContent>
-                <Button className="bg-primary hover:bg-secondary">Create New Scenario</Button>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-600">
+                        <th className="text-left py-3 text-gray-400">Metric</th>
+                        <th className="text-left py-3 text-gray-400">Current</th>
+                        <th className="text-left py-3 text-gray-400">Scenario A</th>
+                        <th className="text-left py-3 text-gray-400">Change</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-700">
+                        <td className="py-3 text-white">Revenue</td>
+                        <td className="py-3 text-white">$45,231</td>
+                        <td className="py-3 text-white">$52,016</td>
+                        <td className="py-3 text-[#06FFA5]">+15%</td>
+                      </tr>
+                      <tr className="border-b border-gray-700">
+                        <td className="py-3 text-white">Total Costs</td>
+                        <td className="py-3 text-white">$21,120</td>
+                        <td className="py-3 text-white">$19,516</td>
+                        <td className="py-3 text-[#06FFA5]">-7.6%</td>
+                      </tr>
+                      <tr className="border-b border-gray-700">
+                        <td className="py-3 text-white">Net Profit</td>
+                        <td className="py-3 text-white">$24,111</td>
+                        <td className="py-3 text-white">$32,500</td>
+                        <td className="py-3 text-[#06FFA5]">+34.8%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Time Horizon Analysis */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Clock className="h-5 w-5 mr-2 text-[#FFD23F]" />
+                  Time Horizon Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#06FFA5] mb-2">Short-term (1-3 months)</div>
+                    <div className="text-white text-lg font-bold">+$8,500</div>
+                    <div className="text-xs text-gray-400">Risk: Low (85%)</div>
+                  </div>
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#F7931E] mb-2">Medium-term (3-12 months)</div>
+                    <div className="text-white text-lg font-bold">+$24,500</div>
+                    <div className="text-xs text-gray-400">Risk: Medium (70%)</div>
+                  </div>
+                  <div className="p-4 bg-[#1A1A1A] rounded-lg border border-gray-600">
+                    <div className="text-sm text-[#FFD23F] mb-2">Long-term (1+ years)</div>
+                    <div className="text-white text-lg font-bold">+$95,000</div>
+                    <div className="text-xs text-gray-400">Risk: High (55%)</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Scenario Management */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Saved Scenarios</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                      <div>
+                        <div className="text-white">Price Increase 10%</div>
+                        <div className="text-xs text-gray-400">Created 2 days ago</div>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Share className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-[#1A1A1A] rounded-lg">
+                      <div>
+                        <div className="text-white">Cost Reduction Plan</div>
+                        <div className="text-xs text-gray-400">Created 1 week ago</div>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-white border-gray-600">
+                        <Share className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#2D2D2D] border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">AI Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-900/20 border border-green-700 rounded-lg">
+                      <div className="text-green-400 text-sm mb-1">High Confidence</div>
+                      <div className="text-white text-sm">Consider implementing the cost reduction scenario first</div>
+                    </div>
+                    <div className="p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
+                      <div className="text-yellow-400 text-sm mb-1">Medium Risk</div>
+                      <div className="text-white text-sm">Monitor market conditions before price increases</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Scenario Actions */}
+            <Card className="bg-[#2D2D2D] border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Scenario Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button className="bg-[#FF6B35] hover:bg-[#e55a2b]">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export Scenario Report
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Share className="h-4 w-4 mr-2" />
+                    Share Scenario
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Analysis
+                  </Button>
+                  <Button variant="outline" className="text-white border-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    View History
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

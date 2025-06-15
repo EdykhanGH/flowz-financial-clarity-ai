@@ -168,45 +168,6 @@ const ManualEntry: React.FC = () => {
     return 0;
   });
 
-  const addRow = () => {
-    const newTransaction: ManualTransaction = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      description: '',
-      amount: '',
-      type: 'expense',
-      category: 'Uncategorized'
-    };
-    setTransactions([...transactions, newTransaction]);
-  };
-
-  const removeRow = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  const updateTransaction = (id: string, field: keyof ManualTransaction, value: string) => {
-    setTransactions(transactions.map(t => 
-      t.id === id ? { ...t, [field]: value } : t
-    ));
-  };
-
-  const calculateSummary = () => {
-    const validTransactions = transactions.filter(t => t.amount && !isNaN(parseFloat(t.amount)));
-    const totalIncome = validTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const totalExpenses = validTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    
-    return {
-      totalTransactions: validTransactions.length,
-      totalIncome,
-      totalExpenses,
-      netIncome: totalIncome - totalExpenses
-    };
-  };
-
   const summary = calculateSummary();
 
   return (

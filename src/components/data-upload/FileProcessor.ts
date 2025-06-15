@@ -1,5 +1,9 @@
+
 import * as XLSX from 'xlsx';
-import pdfParse from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export interface Transaction {
   date: string;
@@ -36,12 +40,20 @@ export const parsePDF = (file: File): Promise<any[]> => {
 
     reader.onload = async (e: any) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const pdfData = await pdfParse(data);
-        const text = pdfData.text;
+        const arrayBuffer = e.target.result;
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        // Extract text from all pages
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
         
         // Parse Nigerian bank statement text format
-        const transactions = parseNigerianBankStatement(text);
+        const transactions = parseNigerianBankStatement(fullText);
         resolve(transactions);
       } catch (error) {
         reject(error);

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,31 @@ const parseExcel = (file: File): Promise<any[]> => {
 
     reader.readAsArrayBuffer(file);
   });
+};
+
+// Helper function to map transaction types to valid enum values
+const mapTransactionType = (type: string): 'income' | 'expense' | 'transfer' | 'investment' | 'refund' => {
+  const normalizedType = type.toLowerCase().trim();
+  
+  switch (normalizedType) {
+    case 'income':
+    case 'revenue':
+    case 'earning':
+      return 'income';
+    case 'expense':
+    case 'spending':
+    case 'cost':
+      return 'expense';
+    case 'transfer':
+      return 'transfer';
+    case 'investment':
+      return 'investment';
+    case 'refund':
+      return 'refund';
+    default:
+      // Default to expense if type is not recognized
+      return 'expense';
+  }
 };
 
 const DataUpload: React.FC = () => {
@@ -111,7 +137,16 @@ const DataUpload: React.FC = () => {
 
     try {
       for (const transaction of fileData.transactions) {
-        await addTransaction(transaction);
+        // Map the transaction data to match the expected type structure
+        const mappedTransaction = {
+          date: transaction.date,
+          description: transaction.description,
+          amount: transaction.amount,
+          type: mapTransactionType(transaction.type),
+          category: transaction.category || 'Uncategorized'
+        };
+        
+        await addTransaction(mappedTransaction);
       }
       alert('Data saved successfully!');
       setFileData(null);

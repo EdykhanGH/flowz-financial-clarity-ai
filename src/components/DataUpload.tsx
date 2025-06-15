@@ -6,16 +6,26 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Plus, Download, Edit } from 'lucide-react';
+import { Upload, FileText, Plus, Download, Edit, AlertCircle, CheckCircle } from 'lucide-react';
 import { currencies, defaultExpenseTypes } from '@/data/budgetData';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const DataUpload = () => {
   const { toast } = useToast();
+  const { addTransaction } = useTransactions();
   const [activeTab, setActiveTab] = useState('manual');
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[3]); // Default to INR
   const [expenseTypes, setExpenseTypes] = useState(defaultExpenseTypes);
   const [newExpenseType, setNewExpenseType] = useState('');
   const [isAddingExpenseType, setIsAddingExpenseType] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [fileInsights, setFileInsights] = useState<{
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+    transactionCount: number;
+  } | null>(null);
   const [transactionData, setTransactionData] = useState({
     date: '',
     description: '',
@@ -24,28 +34,156 @@ const DataUpload = () => {
     type: 'expense'
   });
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Transaction Added",
-      description: "Your transaction has been recorded successfully.",
-    });
-    setTransactionData({
-      date: '',
-      description: '',
-      category: '',
-      amount: '',
-      type: 'expense'
+    
+    if (!transactionData.date || !transactionData.description || !transactionData.category || !transactionData.amount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addTransaction({
+        date: transactionData.date,
+        description: transactionData.description,
+        category: transactionData.category,
+        amount: parseFloat(transactionData.amount),
+        type: transactionData.type as 'income' | 'expense' | 'transfer' | 'investment' | 'refund'
+      });
+
+      setTransactionData({
+        date: '',
+        description: '',
+        category: '',
+        amount: '',
+        type: 'expense'
+      });
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+    }
+  };
+
+  const parseFinancialStatement = (file: File): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const lines = text.split('\n');
+          const transactions = [];
+          
+          // Skip header row and parse CSV data
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const columns = line.split(',').map(col => col.replace(/"/g, '').trim());
+            
+            if (columns.length >= 4) {
+              // Assuming CSV format: Date, Description, Category, Amount, Type
+              const [date, description, category, amount, type] = columns;
+              
+              if (date && description && amount) {
+                transactions.push({
+                  date: date,
+                  description: description,
+                  category: category || 'Other',
+                  amount: parseFloat(amount.replace(/[^\d.-]/g, '')),
+                  type: type?.toLowerCase() || (parseFloat(amount) > 0 ? 'income' : 'expense')
+                });
+              }
+            }
+          }
+          
+          resolve(transactions);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    if (!allowedTypes.includes(file.type) && !file.name.endsWith('.csv')) {
       toast({
-        title: "File Uploaded",
-        description: `${file.name} has been uploaded successfully.`,
+        title: "Invalid File Type",
+        description: "Please upload a CSV or Excel file.",
+        variant: "destructive"
       });
+      return;
+    }
+
+    setUploadedFile(file);
+    setIsProcessingFile(true);
+
+    try {
+      // For now, we'll only handle CSV files
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        const transactions = await parseFinancialStatement(file);
+        
+        // Calculate insights
+        let totalRevenue = 0;
+        let totalExpenses = 0;
+        
+        transactions.forEach(transaction => {
+          if (transaction.type === 'income' || transaction.amount > 0) {
+            totalRevenue += Math.abs(transaction.amount);
+          } else {
+            totalExpenses += Math.abs(transaction.amount);
+          }
+        });
+
+        setFileInsights({
+          totalRevenue,
+          totalExpenses,
+          netIncome: totalRevenue - totalExpenses,
+          transactionCount: transactions.length
+        });
+
+        // Add transactions to database
+        for (const transaction of transactions) {
+          await addTransaction({
+            date: transaction.date,
+            description: transaction.description,
+            category: transaction.category,
+            amount: Math.abs(transaction.amount),
+            type: transaction.type === 'income' ? 'income' : 'expense'
+          });
+        }
+
+        toast({
+          title: "File Processed Successfully",
+          description: `${transactions.length} transactions have been imported and analyzed.`,
+        });
+      } else {
+        toast({
+          title: "File Format Not Supported",
+          description: "Currently only CSV files are supported. Excel support coming soon.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: "Error Processing File",
+        description: "There was an error processing your financial statement. Please check the file format.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessingFile(false);
     }
   };
 
@@ -205,35 +343,81 @@ const DataUpload = () => {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
-              File Upload
+              Financial Statement Upload
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Upload CSV or Excel files with transaction data
+              Upload CSV files with transaction data for automatic analysis
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
               <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-400 text-sm mb-2">Drag and drop your file here, or</p>
-              <Button variant="outline" className="text-white border-gray-600" asChild>
+              <p className="text-gray-400 text-sm mb-2">Drag and drop your financial statement here, or</p>
+              <Button 
+                variant="outline" 
+                className="text-white border-gray-600" 
+                asChild
+                disabled={isProcessingFile}
+              >
                 <label htmlFor="file-upload">
-                  Browse Files
+                  {isProcessingFile ? 'Processing...' : 'Browse Files'}
                   <input
                     id="file-upload"
                     type="file"
                     accept=".csv,.xlsx,.xls"
                     onChange={handleFileUpload}
                     className="hidden"
+                    disabled={isProcessingFile}
                   />
                 </label>
               </Button>
             </div>
+            
+            {uploadedFile && (
+              <div className="flex items-center gap-2 p-2 bg-gray-800 rounded">
+                <FileText className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-gray-300">{uploadedFile.name}</span>
+                {isProcessingFile ? (
+                  <AlertCircle className="h-4 w-4 text-yellow-500 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                )}
+              </div>
+            )}
+
+            {fileInsights && (
+              <div className="space-y-2 p-3 bg-gray-800 rounded">
+                <h4 className="text-sm font-medium text-white">File Insights</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-gray-400">Total Revenue:</span>
+                    <span className="text-green-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalRevenue.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Total Expenses:</span>
+                    <span className="text-red-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalExpenses.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Net Income:</span>
+                    <span className={`ml-1 ${fileInsights.netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {selectedCurrency.symbol}{fileInsights.netIncome.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Transactions:</span>
+                    <span className="text-blue-400 ml-1">{fileInsights.transactionCount}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="text-xs text-gray-400">
-              Supported formats: CSV, Excel (.xlsx, .xls)
+              <p>Supported formats: CSV</p>
+              <p>Expected columns: Date, Description, Category, Amount, Type</p>
             </div>
             <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-white">
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              Download CSV Template
             </Button>
           </CardContent>
         </Card>

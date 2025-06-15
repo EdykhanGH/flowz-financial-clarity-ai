@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { Database } from '@/integrations/supabase/types';
+
+type TransactionRow = Database['public']['Tables']['transactions']['Row'];
+type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 
 export interface Transaction {
   id: string;
@@ -13,6 +17,7 @@ export interface Transaction {
   date: string;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 export const useTransactions = () => {
@@ -31,7 +36,14 @@ export const useTransactions = () => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      
+      // Type assertion with validation
+      const validatedTransactions = (data || []).map(row => ({
+        ...row,
+        type: row.type as Transaction['type']
+      })) as Transaction[];
+      
+      setTransactions(validatedTransactions);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -43,7 +55,7 @@ export const useTransactions = () => {
     }
   };
 
-  const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>) => {
+  const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     if (!user) return;
 
     try {
@@ -58,13 +70,18 @@ export const useTransactions = () => {
 
       if (error) throw error;
 
-      setTransactions(prev => [data, ...prev]);
+      const newTransaction = {
+        ...data,
+        type: data.type as Transaction['type']
+      } as Transaction;
+
+      setTransactions(prev => [newTransaction, ...prev]);
       toast({
         title: "Success",
         description: "Transaction added successfully"
       });
 
-      return { data, error: null };
+      return { data: newTransaction, error: null };
     } catch (error: any) {
       toast({
         title: "Error",

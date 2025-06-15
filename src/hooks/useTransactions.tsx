@@ -75,7 +75,7 @@ export const useTransactions = () => {
         type: data.type as Transaction['type']
       } as Transaction;
 
-      setTransactions(prev => [newTransaction, ...prev]);
+      // Real-time updates will handle adding to the list
       toast({
         title: "Success",
         description: "Transaction added successfully"
@@ -93,7 +93,57 @@ export const useTransactions = () => {
   };
 
   useEffect(() => {
+    if (!user) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    // Initial fetch
     fetchTransactions();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time transaction update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newTransaction = {
+              ...payload.new,
+              type: payload.new.type as Transaction['type']
+            } as Transaction;
+            
+            setTransactions(prev => [newTransaction, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedTransaction = {
+              ...payload.new,
+              type: payload.new.type as Transaction['type']
+            } as Transaction;
+            
+            setTransactions(prev => 
+              prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTransactions(prev => 
+              prev.filter(t => t.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

@@ -210,18 +210,18 @@ const DataUpload: React.FC = () => {
                     <div className="bg-gray-700 p-3 rounded-lg text-center">
                       <TrendingUp className="w-5 h-5 mx-auto text-green-400 mb-1" />
                       <p className="text-sm text-gray-300">Total Revenue</p>
-                      <p className="text-lg font-bold text-green-400">₹{fileData.summary.totalRevenue.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-green-400">₦{fileData.summary.totalRevenue.toLocaleString()}</p>
                     </div>
                     <div className="bg-gray-700 p-3 rounded-lg text-center">
                       <TrendingDown className="w-5 h-5 mx-auto text-red-400 mb-1" />
                       <p className="text-sm text-gray-300">Total Expenses</p>
-                      <p className="text-lg font-bold text-red-400">₹{fileData.summary.totalExpenses.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-red-400">₦{fileData.summary.totalExpenses.toLocaleString()}</p>
                     </div>
                     <div className="bg-gray-700 p-3 rounded-lg text-center">
                       <DollarSign className="w-5 h-5 mx-auto text-orange-400 mb-1" />
                       <p className="text-sm text-gray-300">Net Income</p>
                       <p className={`text-lg font-bold ${fileData.summary.netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        ₹{fileData.summary.netIncome.toLocaleString()}
+                        ₦{fileData.summary.netIncome.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -278,18 +278,18 @@ const DataUpload: React.FC = () => {
                   <div className="bg-gray-800 p-4 rounded-lg text-center">
                     <TrendingUp className="w-6 h-6 mx-auto text-green-400 mb-2" />
                     <p className="text-sm text-gray-300">Total Revenue</p>
-                    <p className="text-xl font-bold text-green-400">₹{fileData.summary.totalRevenue.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-green-400">₦{fileData.summary.totalRevenue.toLocaleString()}</p>
                   </div>
                   <div className="bg-gray-800 p-4 rounded-lg text-center">
                     <TrendingDown className="w-6 h-6 mx-auto text-red-400 mb-2" />
                     <p className="text-sm text-gray-300">Total Expenses</p>
-                    <p className="text-xl font-bold text-red-400">₹{fileData.summary.totalExpenses.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-red-400">₦{fileData.summary.totalExpenses.toLocaleString()}</p>
                   </div>
                   <div className="bg-gray-800 p-4 rounded-lg text-center">
                     <DollarSign className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                     <p className="text-sm text-gray-300">Net Income</p>
                     <p className={`text-xl font-bold ${fileData.summary.netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      ₹{fileData.summary.netIncome.toLocaleString()}
+                      ₦{fileData.summary.netIncome.toLocaleString()}
                     </p>
                   </div>
                 </div>

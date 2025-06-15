@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,10 +25,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
   const kpiData = useMemo(() => {
     if (loading || !transactions.length) {
       return {
-        totalRevenue: { value: '₹0', change: '0%', trend: 'up' as const },
-        totalCosts: { value: '₹0', change: '0%', trend: 'down' as const },
+        totalRevenue: { value: '₦0', change: '0%', trend: 'up' as const },
+        totalCosts: { value: '₦0', change: '0%', trend: 'down' as const },
         profitMargin: { value: '0%', change: '0%', trend: 'up' as const },
-        netIncome: { value: '₹0', change: '0%', trend: 'up' as const }
+        netIncome: { value: '₦0', change: '0%', trend: 'up' as const }
       };
     }
 
@@ -46,12 +45,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
 
     return {
       totalRevenue: { 
-        value: `₹${totalRevenue.toLocaleString()}`, 
+        value: `₦${totalRevenue.toLocaleString()}`, 
         change: '+12.5%', 
         trend: 'up' as const 
       },
       totalCosts: { 
-        value: `₹${totalCosts.toLocaleString()}`, 
+        value: `₦${totalCosts.toLocaleString()}`, 
         change: '-5.2%', 
         trend: 'down' as const 
       },
@@ -61,7 +60,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         trend: 'up' as const 
       },
       netIncome: { 
-        value: `₹${netIncome.toLocaleString()}`, 
+        value: `₦${netIncome.toLocaleString()}`, 
         change: netIncome >= 0 ? '+8.3%' : '-8.3%', 
         trend: netIncome >= 0 ? 'up' as const : 'down' as const 
       }

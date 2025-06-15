@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Save, Calculator, List } from 'lucide-react';
+import { Plus, Trash2, Save, Calculator, List, ArrowUpDown } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,6 +30,8 @@ const ManualEntry: React.FC = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sortField, setSortField] = useState<'date' | 'description' | 'amount' | 'type' | 'category'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const { transactions: savedTransactions, loading, addTransaction } = useTransactions();
   const { toast } = useToast();
 
@@ -121,6 +124,87 @@ const ManualEntry: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedTransactions = [...savedTransactions].sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortField) {
+      case 'date':
+        aValue = new Date(a.date);
+        bValue = new Date(b.date);
+        break;
+      case 'description':
+        aValue = a.description || '';
+        bValue = b.description || '';
+        break;
+      case 'amount':
+        aValue = a.amount;
+        bValue = b.amount;
+        break;
+      case 'type':
+        aValue = a.type;
+        bValue = b.type;
+        break;
+      case 'category':
+        aValue = a.category;
+        bValue = b.category;
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const addRow = () => {
+    const newTransaction: ManualTransaction = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      amount: '',
+      type: 'expense',
+      category: 'Uncategorized'
+    };
+    setTransactions([...transactions, newTransaction]);
+  };
+
+  const removeRow = (id: string) => {
+    setTransactions(transactions.filter(t => t.id !== id));
+  };
+
+  const updateTransaction = (id: string, field: keyof ManualTransaction, value: string) => {
+    setTransactions(transactions.map(t => 
+      t.id === id ? { ...t, [field]: value } : t
+    ));
+  };
+
+  const calculateSummary = () => {
+    const validTransactions = transactions.filter(t => t.amount && !isNaN(parseFloat(t.amount)));
+    const totalIncome = validTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const totalExpenses = validTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    return {
+      totalTransactions: validTransactions.length,
+      totalIncome,
+      totalExpenses,
+      netIncome: totalIncome - totalExpenses
+    };
   };
 
   const summary = calculateSummary();
@@ -268,12 +352,17 @@ const ManualEntry: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Saved Transactions Display */}
+      {/* Excel-like Saved Transactions Display */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white flex items-center">
-            <List className="w-5 h-5 mr-2 text-orange-400" />
-            Saved Transactions ({savedTransactions.length})
+          <CardTitle className="text-white flex items-center justify-between">
+            <div className="flex items-center">
+              <List className="w-5 h-5 mr-2 text-orange-400" />
+              All Transactions ({savedTransactions.length})
+            </div>
+            <div className="text-sm text-gray-400">
+              Excel-like View
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -286,41 +375,89 @@ const ManualEntry: React.FC = () => {
               <p className="text-gray-400">No transactions saved yet. Add some transactions above to get started.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-600 rounded-lg">
+            <div className="overflow-x-auto border border-gray-600 rounded-lg bg-white">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-700 hover:bg-gray-700">
-                    <TableHead className="text-gray-300 font-semibold">Date</TableHead>
-                    <TableHead className="text-gray-300 font-semibold">Description</TableHead>
-                    <TableHead className="text-gray-300 font-semibold">Amount (₦)</TableHead>
-                    <TableHead className="text-gray-300 font-semibold">Type</TableHead>
-                    <TableHead className="text-gray-300 font-semibold">Category</TableHead>
+                  <TableRow className="bg-gray-100 hover:bg-gray-100 border-b-2 border-gray-300">
+                    <TableHead 
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
+                      onClick={() => handleSort('date')}
+                    >
+                      <div className="flex items-center">
+                        Date
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
+                      onClick={() => handleSort('description')}
+                    >
+                      <div className="flex items-center">
+                        Description
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
+                      onClick={() => handleSort('amount')}
+                    >
+                      <div className="flex items-center">
+                        Amount (₦)
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
+                      onClick={() => handleSort('type')}
+                    >
+                      <div className="flex items-center">
+                        Type
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200"
+                      onClick={() => handleSort('category')}
+                    >
+                      <div className="flex items-center">
+                        Category
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {savedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id} className="bg-gray-800 hover:bg-gray-750">
-                      <TableCell className="text-gray-300">
-                        {new Date(transaction.date).toLocaleDateString()}
+                  {sortedTransactions.map((transaction, index) => (
+                    <TableRow 
+                      key={transaction.id} 
+                      className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 border-b border-gray-200`}
+                    >
+                      <TableCell className="text-gray-900 border-r border-gray-200 font-mono text-sm">
+                        {new Date(transaction.date).toLocaleDateString('en-GB')}
                       </TableCell>
-                      <TableCell className="text-gray-300">
+                      <TableCell className="text-gray-900 border-r border-gray-200">
                         {transaction.description || 'No description'}
                       </TableCell>
-                      <TableCell className={`font-medium ${
-                        transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                      <TableCell className={`font-mono text-right border-r border-gray-200 ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transaction.type === 'income' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString()}
+                        {transaction.type === 'income' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
                       </TableCell>
-                      <TableCell className="text-gray-300 capitalize">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          transaction.type === 'income' ? 'bg-green-900/30 text-green-400' :
-                          transaction.type === 'expense' ? 'bg-red-900/30 text-red-400' :
-                          'bg-blue-900/30 text-blue-400'
+                      <TableCell className="text-gray-900 border-r border-gray-200">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          transaction.type === 'income' ? 'bg-green-100 text-green-800' :
+                          transaction.type === 'expense' ? 'bg-red-100 text-red-800' :
+                          transaction.type === 'transfer' ? 'bg-blue-100 text-blue-800' :
+                          transaction.type === 'investment' ? 'bg-purple-100 text-purple-800' :
+                          'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {transaction.type}
+                          {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-gray-300">
+                      <TableCell className="text-gray-900">
                         {transaction.category}
                       </TableCell>
                     </TableRow>

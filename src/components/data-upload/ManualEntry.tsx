@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Save, Calculator } from 'lucide-react';
+import { Plus, Trash2, Save, Calculator, List } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,7 +29,7 @@ const ManualEntry: React.FC = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const { addTransaction } = useTransactions();
+  const { transactions: savedTransactions, loading, addTransaction } = useTransactions();
   const { toast } = useToast();
 
   const addRow = () => {
@@ -128,6 +127,7 @@ const ManualEntry: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Entry Form Card */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
@@ -265,6 +265,70 @@ const ManualEntry: React.FC = () => {
               {isLoading ? 'Saving...' : 'Save Transactions'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Saved Transactions Display */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <List className="w-5 h-5 mr-2 text-orange-400" />
+            Saved Transactions ({savedTransactions.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Loading transactions...</p>
+            </div>
+          ) : savedTransactions.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No transactions saved yet. Add some transactions above to get started.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-gray-600 rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-700 hover:bg-gray-700">
+                    <TableHead className="text-gray-300 font-semibold">Date</TableHead>
+                    <TableHead className="text-gray-300 font-semibold">Description</TableHead>
+                    <TableHead className="text-gray-300 font-semibold">Amount (₦)</TableHead>
+                    <TableHead className="text-gray-300 font-semibold">Type</TableHead>
+                    <TableHead className="text-gray-300 font-semibold">Category</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {savedTransactions.map((transaction) => (
+                    <TableRow key={transaction.id} className="bg-gray-800 hover:bg-gray-750">
+                      <TableCell className="text-gray-300">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {transaction.description || 'No description'}
+                      </TableCell>
+                      <TableCell className={`font-medium ${
+                        transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-gray-300 capitalize">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          transaction.type === 'income' ? 'bg-green-900/30 text-green-400' :
+                          transaction.type === 'expense' ? 'bg-red-900/30 text-red-400' :
+                          'bg-blue-900/30 text-blue-400'
+                        }`}>
+                          {transaction.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {transaction.category}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

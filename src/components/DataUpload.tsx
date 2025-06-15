@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText } from 'lucide-react';
+import { Upload, FileText, Edit } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import TemplateSelector from './TemplateSelector';
 import FileUploadSection from './data-upload/FileUploadSection';
 import FinancialAnalysisModal from './data-upload/FinancialAnalysisModal';
+import ManualEntry from './data-upload/ManualEntry';
 import { parseFile, mapTransactionType, calculateSummary, Transaction } from './data-upload/FileProcessor';
 
 interface FileData {
@@ -86,14 +88,18 @@ const DataUpload: React.FC = () => {
     <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-white mb-2">Financial Data Management</h1>
-        <p className="text-gray-400">Upload your financial statements or use our templates to get started</p>
+        <p className="text-gray-400">Upload your financial statements, use our templates, or enter data manually</p>
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-800">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-800">
           <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">
             <Upload className="w-4 h-4 mr-2" />
             Upload Data
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="data-[state=active]:bg-orange-500">
+            <Edit className="w-4 h-4 mr-2" />
+            Manual Entry
           </TabsTrigger>
           <TabsTrigger value="templates" className="data-[state=active]:bg-orange-500">
             <FileText className="w-4 h-4 mr-2" />
@@ -109,6 +115,10 @@ const DataUpload: React.FC = () => {
             onSaveData={handleSaveData}
             onAnalyze={() => setShowAnalysis(true)}
           />
+        </TabsContent>
+
+        <TabsContent value="manual" className="space-y-6">
+          <ManualEntry />
         </TabsContent>
 
         <TabsContent value="templates">

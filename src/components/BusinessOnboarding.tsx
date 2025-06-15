@@ -87,8 +87,17 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     setIsLoading(true);
     try {
       const { error } = await supabase.from("business_profiles").insert({
-        ...formData,
         user_id: user.id,
+        business_name: formData.businessName,
+        category: formData.category,
+        description: formData.description,
+        turnover: formData.turnover,
+        employees: formData.employees,
+        business_model: formData.businessModel,
+        revenue_streams: formData.revenueStreams,
+        cost_centers: formData.costCenters,
+        market_scope: formData.marketScope,
+        seasonal_business: formData.seasonalBusiness,
       });
 
       if (error) throw error;

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Plus, Download, Edit, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Plus, Download, Edit, AlertCircle, CheckCircle, BarChart3, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { currencies, defaultExpenseTypes } from '@/data/budgetData';
 import { useTransactions } from '@/hooks/useTransactions';
 import * as XLSX from 'xlsx';
@@ -35,6 +35,7 @@ const DataUpload = () => {
     amount: '',
     type: 'expense'
   });
+  const [isAnalyzeModalOpen, setIsAnalyzeModalOpen] = useState(false);
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,6 +241,120 @@ const DataUpload = () => {
     }
   };
 
+  const renderAnalysisModal = () => {
+    if (!fileInsights) return null;
+
+    const profitMargin = fileInsights.totalRevenue > 0 
+      ? ((fileInsights.netIncome / fileInsights.totalRevenue) * 100).toFixed(1)
+      : '0';
+
+    const expenseRatio = fileInsights.totalRevenue > 0
+      ? ((fileInsights.totalExpenses / fileInsights.totalRevenue) * 100).toFixed(1)
+      : '0';
+
+    return (
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Financial Analysis Results
+          </DialogTitle>
+          <DialogDescription>
+            Detailed insights from your uploaded financial statement
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-300">Total Revenue</span>
+              </div>
+              <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                {selectedCurrency.symbol}{fileInsights.totalRevenue.toLocaleString()}
+              </p>
+            </div>
+            
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="h-4 w-4 text-red-600" />
+                <span className="text-sm font-medium text-red-700 dark:text-red-300">Total Expenses</span>
+              </div>
+              <p className="text-2xl font-bold text-red-800 dark:text-red-200">
+                {selectedCurrency.symbol}{fileInsights.totalExpenses.toLocaleString()}
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg border ${
+              fileInsights.netIncome >= 0 
+                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Net Income</span>
+              </div>
+              <p className={`text-2xl font-bold ${
+                fileInsights.netIncome >= 0 
+                  ? 'text-blue-800 dark:text-blue-200' 
+                  : 'text-orange-800 dark:text-orange-200'
+              }`}>
+                {selectedCurrency.symbol}{fileInsights.netIncome.toLocaleString()}
+              </p>
+            </div>
+            
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Transactions</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                {fileInsights.transactionCount}
+              </p>
+            </div>
+          </div>
+
+          {/* Financial Ratios */}
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3">Financial Ratios</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Profit Margin</span>
+                <p className="text-xl font-bold">{profitMargin}%</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Expense Ratio</span>
+                <p className="text-xl font-bold">{expenseRatio}%</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Insights and Recommendations */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">Key Insights</h3>
+            <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+              {fileInsights.netIncome > 0 ? (
+                <li>• Your business is profitable with a positive net income</li>
+              ) : (
+                <li>• Your expenses exceed revenue - consider cost optimization</li>
+              )}
+              {parseFloat(profitMargin) > 20 ? (
+                <li>• Excellent profit margin indicates strong financial health</li>
+              ) : parseFloat(profitMargin) > 10 ? (
+                <li>• Good profit margin, room for improvement</li>
+              ) : (
+                <li>• Low profit margin - focus on increasing revenue or reducing costs</li>
+              )}
+              <li>• Processed {fileInsights.transactionCount} transactions successfully</li>
+            </ul>
+          </div>
+        </div>
+      </DialogContent>
+    );
+  };
+
   const mockTransactions = [
     { id: 1, date: '2024-06-10', description: 'Office Supplies', category: 'Administrative', amount: -2500, type: 'expense' },
     { id: 2, date: '2024-06-09', description: 'Client Payment', category: 'Revenue', amount: 45000, type: 'income' },
@@ -427,29 +542,41 @@ const DataUpload = () => {
             )}
 
             {fileInsights && (
-              <div className="space-y-2 p-3 bg-gray-800 rounded">
-                <h4 className="text-sm font-medium text-white">File Insights</h4>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-gray-400">Total Revenue:</span>
-                    <span className="text-green-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalRevenue.toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Total Expenses:</span>
-                    <span className="text-red-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalExpenses.toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Net Income:</span>
-                    <span className={`ml-1 ${fileInsights.netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {selectedCurrency.symbol}{fileInsights.netIncome.toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Transactions:</span>
-                    <span className="text-blue-400 ml-1">{fileInsights.transactionCount}</span>
+              <>
+                <div className="space-y-2 p-3 bg-gray-800 rounded">
+                  <h4 className="text-sm font-medium text-white">File Insights</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-400">Total Revenue:</span>
+                      <span className="text-green-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalRevenue.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Expenses:</span>
+                      <span className="text-red-400 ml-1">{selectedCurrency.symbol}{fileInsights.totalExpenses.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Net Income:</span>
+                      <span className={`ml-1 ${fileInsights.netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {selectedCurrency.symbol}{fileInsights.netIncome.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Transactions:</span>
+                      <span className="text-blue-400 ml-1">{fileInsights.transactionCount}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                <Dialog open={isAnalyzeModalOpen} onOpenChange={setIsAnalyzeModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-primary hover:bg-primary/90">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Analyze Financial Data
+                    </Button>
+                  </DialogTrigger>
+                  {renderAnalysisModal()}
+                </Dialog>
+              </>
             )}
             
             <div className="text-xs text-gray-400">

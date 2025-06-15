@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
   Home,
   Database,
@@ -12,7 +14,8 @@ import {
   Settings,
   User,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { AIAssistant } from '@/components/AIAssistant';
 import DataUpload from '@/components/DataUpload';
@@ -21,9 +24,10 @@ import AnalysisSection from '@/components/dashboard/AnalysisSection';
 import ScenariosSection from '@/components/dashboard/ScenariosSection';
 import BudgetSection from '@/components/dashboard/BudgetSection';
 
-const Dashboard = () => {
+const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { signOut, user } = useAuth();
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -33,6 +37,10 @@ const Dashboard = () => {
     { id: 'budgets', label: 'Budgets', icon: Calculator },
     { id: 'assistant', label: 'AI Assistant', icon: Bot }
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -93,6 +101,27 @@ const Dashboard = () => {
             </button>
           ))}
         </nav>
+
+        {/* User section */}
+        <div className="absolute bottom-0 w-full p-4 border-t border-gray-700">
+          <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
+            {sidebarOpen && (
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm truncate">{user?.email}</span>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="text-white hover:bg-gray-700"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -132,6 +161,14 @@ const Dashboard = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 };
 

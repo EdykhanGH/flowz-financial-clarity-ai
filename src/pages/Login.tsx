@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuth } from '@/hooks/useAuth';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ const loginSchema = z.object({
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -33,18 +35,33 @@ const Login = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    // This is a mock login. In a real app, you'd send credentials to a server.
-    console.log("Login credentials:", values);
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    try {
+      const { error } = await signIn(values.email, values.password);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Login Successful",
+          description: "Redirecting to your dashboard...",
+        });
 
-    toast({
-      title: "Login Successful",
-      description: "Redirecting to your dashboard...",
-    });
-
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1000);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Login failed. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -89,7 +106,13 @@ const Login = () => {
             <div className="flex items-center justify-between">
               <Link to="#" className="text-sm text-primary hover:underline">Forgot password?</Link>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-secondary">Log In</Button>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-secondary"
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? "Logging in..." : "Log In"}
+            </Button>
           </form>
         </Form>
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">

@@ -9,7 +9,111 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      budgets: {
+        Row: {
+          allocated_amount: number
+          category: string
+          created_at: string | null
+          end_date: string
+          id: string
+          name: string
+          period: string | null
+          spent_amount: number | null
+          start_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allocated_amount: number
+          category: string
+          created_at?: string | null
+          end_date: string
+          id?: string
+          name: string
+          period?: string | null
+          spent_amount?: number | null
+          start_date: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          category?: string
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          period?: string | null
+          spent_amount?: number | null
+          start_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          date: string
+          description: string | null
+          id: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

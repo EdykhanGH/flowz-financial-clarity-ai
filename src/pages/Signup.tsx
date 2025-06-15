@@ -1,5 +1,7 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -48,21 +52,27 @@ const Signup = () => {
       return;
     }
 
-    // Simulate signup process (replace with actual authentication later)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const { error } = await signUp(formData.email, formData.password, formData.fullName);
       
-      toast({
-        title: "Success!",
-        description: "Account created successfully. Redirecting to dashboard...",
-      });
-
-      // Navigate to dashboard after successful signup
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
-
-    } catch (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. Please check your email to verify your account.",
+        });
+        
+        // Navigate to login page
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to create account. Please try again.",
@@ -85,6 +95,19 @@ const Signup = () => {
           <p className="text-sm text-gray-600 dark:text-gray-400">Start your journey to financial clarity.</p>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <Label htmlFor="fullName" className="dark:text-gray-300">Full Name</Label>
+            <Input 
+              id="fullName" 
+              type="text" 
+              placeholder="Enter your full name" 
+              required 
+              className="mt-1"
+              value={formData.fullName}
+              onChange={handleInputChange}
+              disabled={isLoading}
+            />
+          </div>
           <div>
             <Label htmlFor="email" className="dark:text-gray-300">Email Address</Label>
             <Input 

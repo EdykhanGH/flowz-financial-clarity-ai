@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Plus, Download, Edit, AlertCircle, CheckCircle } from 'lucide-react';
 import { currencies, defaultExpenseTypes } from '@/data/budgetData';
 import { useTransactions } from '@/hooks/useTransactions';
+import * as XLSX from 'xlsx';
 
 const DataUpload = () => {
   const { toast } = useToast();
@@ -73,28 +75,67 @@ const DataUpload = () => {
       
       reader.onload = (e) => {
         try {
-          const text = e.target?.result as string;
-          const lines = text.split('\n');
-          const transactions = [];
+          const data = e.target?.result;
+          let transactions = [];
           
-          // Skip header row and parse CSV data
-          for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+          if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+            // Handle CSV files
+            const text = data as string;
+            const lines = text.split('\n');
             
-            const columns = line.split(',').map(col => col.replace(/"/g, '').trim());
+            // Skip header row and parse CSV data
+            for (let i = 1; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+              
+              const columns = line.split(',').map(col => col.replace(/"/g, '').trim());
+              
+              if (columns.length >= 4) {
+                // Assuming CSV format: Date, Description, Category, Amount, Type
+                const [date, description, category, amount, type] = columns;
+                
+                if (date && description && amount) {
+                  transactions.push({
+                    date: date,
+                    description: description,
+                    category: category || 'Other',
+                    amount: parseFloat(amount.replace(/[^\d.-]/g, '')),
+                    type: type?.toLowerCase() || (parseFloat(amount) > 0 ? 'income' : 'expense')
+                  });
+                }
+              }
+            }
+          } else {
+            // Handle Excel files (XLS/XLSX)
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
-            if (columns.length >= 4) {
-              // Assuming CSV format: Date, Description, Category, Amount, Type
-              const [date, description, category, amount, type] = columns;
+            // Skip header row and parse Excel data
+            for (let i = 1; i < jsonData.length; i++) {
+              const row = jsonData[i] as any[];
+              if (!row || row.length < 4) continue;
+              
+              const [date, description, category, amount, type] = row;
               
               if (date && description && amount) {
+                // Handle Excel date formats
+                let formattedDate = date;
+                if (typeof date === 'number') {
+                  // Excel serial date
+                  const excelDate = new Date((date - 25569) * 86400 * 1000);
+                  formattedDate = excelDate.toISOString().split('T')[0];
+                } else if (date instanceof Date) {
+                  formattedDate = date.toISOString().split('T')[0];
+                }
+                
                 transactions.push({
-                  date: date,
-                  description: description,
-                  category: category || 'Other',
-                  amount: parseFloat(amount.replace(/[^\d.-]/g, '')),
-                  type: type?.toLowerCase() || (parseFloat(amount) > 0 ? 'income' : 'expense')
+                  date: formattedDate,
+                  description: description.toString(),
+                  category: category?.toString() || 'Other',
+                  amount: parseFloat(amount.toString().replace(/[^\d.-]/g, '')),
+                  type: type?.toString().toLowerCase() || (parseFloat(amount) > 0 ? 'income' : 'expense')
                 });
               }
             }
@@ -107,7 +148,12 @@ const DataUpload = () => {
       };
       
       reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsText(file);
+      
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
     });
   };
 
@@ -117,10 +163,14 @@ const DataUpload = () => {
 
     // Validate file type
     const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-    if (!allowedTypes.includes(file.type) && !file.name.endsWith('.csv')) {
+    const allowedExtensions = ['.csv', '.xls', '.xlsx'];
+    const hasValidType = allowedTypes.includes(file.type);
+    const hasValidExtension = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+    if (!hasValidType && !hasValidExtension) {
       toast({
         title: "Invalid File Type",
-        description: "Please upload a CSV or Excel file.",
+        description: "Please upload a CSV, XLS, or XLSX file.",
         variant: "destructive"
       });
       return;
@@ -130,51 +180,42 @@ const DataUpload = () => {
     setIsProcessingFile(true);
 
     try {
-      // For now, we'll only handle CSV files
-      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-        const transactions = await parseFinancialStatement(file);
-        
-        // Calculate insights
-        let totalRevenue = 0;
-        let totalExpenses = 0;
-        
-        transactions.forEach(transaction => {
-          if (transaction.type === 'income' || transaction.amount > 0) {
-            totalRevenue += Math.abs(transaction.amount);
-          } else {
-            totalExpenses += Math.abs(transaction.amount);
-          }
-        });
-
-        setFileInsights({
-          totalRevenue,
-          totalExpenses,
-          netIncome: totalRevenue - totalExpenses,
-          transactionCount: transactions.length
-        });
-
-        // Add transactions to database
-        for (const transaction of transactions) {
-          await addTransaction({
-            date: transaction.date,
-            description: transaction.description,
-            category: transaction.category,
-            amount: Math.abs(transaction.amount),
-            type: transaction.type === 'income' ? 'income' : 'expense'
-          });
+      const transactions = await parseFinancialStatement(file);
+      
+      // Calculate insights
+      let totalRevenue = 0;
+      let totalExpenses = 0;
+      
+      transactions.forEach(transaction => {
+        if (transaction.type === 'income' || transaction.amount > 0) {
+          totalRevenue += Math.abs(transaction.amount);
+        } else {
+          totalExpenses += Math.abs(transaction.amount);
         }
+      });
 
-        toast({
-          title: "File Processed Successfully",
-          description: `${transactions.length} transactions have been imported and analyzed.`,
-        });
-      } else {
-        toast({
-          title: "File Format Not Supported",
-          description: "Currently only CSV files are supported. Excel support coming soon.",
-          variant: "destructive"
+      setFileInsights({
+        totalRevenue,
+        totalExpenses,
+        netIncome: totalRevenue - totalExpenses,
+        transactionCount: transactions.length
+      });
+
+      // Add transactions to database
+      for (const transaction of transactions) {
+        await addTransaction({
+          date: transaction.date,
+          description: transaction.description,
+          category: transaction.category,
+          amount: Math.abs(transaction.amount),
+          type: transaction.type === 'income' ? 'income' : 'expense'
         });
       }
+
+      toast({
+        title: "File Processed Successfully",
+        description: `${transactions.length} transactions have been imported and analyzed.`,
+      });
     } catch (error) {
       console.error('Error processing file:', error);
       toast({
@@ -346,7 +387,7 @@ const DataUpload = () => {
               Financial Statement Upload
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Upload CSV files with transaction data for automatic analysis
+              Upload CSV, XLS, or XLSX files with transaction data for automatic analysis
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -412,7 +453,7 @@ const DataUpload = () => {
             )}
             
             <div className="text-xs text-gray-400">
-              <p>Supported formats: CSV</p>
+              <p>Supported formats: CSV, XLS, XLSX</p>
               <p>Expected columns: Date, Description, Category, Amount, Type</p>
             </div>
             <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-white">

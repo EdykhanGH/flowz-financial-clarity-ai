@@ -10,6 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BusinessOnboardingProps {
   onComplete: () => void;
@@ -17,7 +19,9 @@ interface BusinessOnboardingProps {
 
 const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     category: '',
@@ -70,12 +74,39 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     }
   };
 
-  const handleComplete = () => {
-    toast({
-      title: "Setup Complete!",
-      description: "Your business profile has been created successfully.",
-    });
-    onComplete();
+  const handleComplete = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to complete the setup.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.from("business_profiles").insert({
+        ...formData,
+        user_id: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Setup Complete!",
+        description: "Your business profile has been created successfully.",
+      });
+      onComplete();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to save business profile: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCheckboxChange = (field: 'revenueStreams' | 'costCenters', value: string, checked: boolean) => {
@@ -260,7 +291,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             <Button
               variant="outline"
               onClick={handlePrev}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || isLoading}
               className="flex items-center gap-2"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -268,9 +299,10 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             </Button>
             <Button
               onClick={handleNext}
+              disabled={isLoading}
               className="bg-primary hover:bg-secondary flex items-center gap-2"
             >
-              {currentStep === 3 ? 'Complete Setup' : 'Next'}
+              {isLoading ? 'Saving...' : (currentStep === 3 ? 'Complete Setup' : 'Next')}
               {currentStep < 3 && <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>

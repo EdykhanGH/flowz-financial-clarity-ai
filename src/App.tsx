@@ -10,6 +10,10 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
+import CheckEmail from "./pages/CheckEmail";
+import ProtectedRoute from "./components/ProtectedRoute";
+import OnboardingCheck from "./components/OnboardingCheck";
 
 const queryClient = new QueryClient();
 
@@ -24,7 +28,25 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/check-email" element={<CheckEmail />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <OnboardingCheck>
+                    <Dashboard />
+                  </OnboardingCheck>
+                </ProtectedRoute>
+              } 
+            />
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

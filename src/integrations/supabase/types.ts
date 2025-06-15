@@ -51,6 +51,57 @@ export type Database = {
         }
         Relationships: []
       }
+      business_profiles: {
+        Row: {
+          business_model: string | null
+          business_name: string | null
+          category: string | null
+          cost_centers: string[] | null
+          created_at: string | null
+          description: string | null
+          employees: string | null
+          id: string
+          market_scope: string | null
+          revenue_streams: string[] | null
+          seasonal_business: boolean | null
+          turnover: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_model?: string | null
+          business_name?: string | null
+          category?: string | null
+          cost_centers?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          employees?: string | null
+          id?: string
+          market_scope?: string | null
+          revenue_streams?: string[] | null
+          seasonal_business?: boolean | null
+          turnover?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_model?: string | null
+          business_name?: string | null
+          category?: string | null
+          cost_centers?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          employees?: string | null
+          id?: string
+          market_scope?: string | null
+          revenue_streams?: string[] | null
+          seasonal_business?: boolean | null
+          turnover?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null

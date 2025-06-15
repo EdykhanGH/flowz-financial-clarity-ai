@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -67,10 +66,8 @@ const Signup = () => {
           description: "Account created successfully. Please check your email to verify your account.",
         });
         
-        // Navigate to login page
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        // Navigate to check email page
+        navigate('/check-email');
       }
     } catch (error: any) {
       toast({

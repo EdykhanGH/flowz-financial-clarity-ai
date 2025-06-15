@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Plus, Download } from 'lucide-react';
+import { Upload, FileText, Plus, Download, Edit } from 'lucide-react';
+import { currencies, defaultExpenseTypes } from '@/data/budgetData';
 
 const DataUpload = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('manual');
+  const [selectedCurrency, setSelectedCurrency] = useState(currencies[3]); // Default to INR
+  const [expenseTypes, setExpenseTypes] = useState(defaultExpenseTypes);
+  const [newExpenseType, setNewExpenseType] = useState('');
+  const [isAddingExpenseType, setIsAddingExpenseType] = useState(false);
   const [transactionData, setTransactionData] = useState({
     date: '',
     description: '',
@@ -45,6 +49,18 @@ const DataUpload = () => {
     }
   };
 
+  const handleAddExpenseType = () => {
+    if (newExpenseType.trim() && !expenseTypes.includes(newExpenseType.trim().toLowerCase())) {
+      setExpenseTypes([...expenseTypes, newExpenseType.trim().toLowerCase()]);
+      setNewExpenseType('');
+      setIsAddingExpenseType(false);
+      toast({
+        title: "Expense Type Added",
+        description: `"${newExpenseType}" has been added to your expense types.`,
+      });
+    }
+  };
+
   const mockTransactions = [
     { id: 1, date: '2024-06-10', description: 'Office Supplies', category: 'Administrative', amount: -2500, type: 'expense' },
     { id: 2, date: '2024-06-09', description: 'Client Payment', category: 'Revenue', amount: 45000, type: 'income' },
@@ -55,10 +71,27 @@ const DataUpload = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Data Management</h2>
-        <Button variant="outline" className="text-white border-gray-600">
-          <Download className="h-4 w-4 mr-2" />
-          Export Data
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Label className="text-white">Currency:</Label>
+            <Select value={selectedCurrency.code} onValueChange={(value) => setSelectedCurrency(currencies.find(c => c.code === value) || currencies[0])}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    {currency.symbol} {currency.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" className="text-white border-gray-600">
+            <Download className="h-4 w-4 mr-2" />
+            Export Data
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -111,7 +144,7 @@ const DataUpload = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="amount" className="text-gray-300">Amount (₹)</Label>
+                <Label htmlFor="amount" className="text-gray-300">Amount ({selectedCurrency.symbol})</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -122,16 +155,44 @@ const DataUpload = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="type" className="text-gray-300">Type</Label>
-                <Select value={transactionData.type} onValueChange={(value) => setTransactionData({...transactionData, type: value})}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="type" className="text-gray-300">Type</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsAddingExpenseType(true)}
+                    className="text-primary hover:text-primary-dark"
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    Add Type
+                  </Button>
+                </div>
+                {isAddingExpenseType ? (
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={newExpenseType}
+                      onChange={(e) => setNewExpenseType(e.target.value)}
+                      placeholder="New expense type"
+                      className="flex-1"
+                    />
+                    <Button type="button" size="sm" onClick={handleAddExpenseType}>Add</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setIsAddingExpenseType(false)}>Cancel</Button>
+                  </div>
+                ) : (
+                  <Select value={transactionData.type} onValueChange={(value) => setTransactionData({...transactionData, type: value})}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {expenseTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <Button type="submit" className="w-full bg-primary hover:bg-secondary">
                 Add Transaction
@@ -233,7 +294,7 @@ const DataUpload = () => {
                     <td className="py-2 text-gray-300">{transaction.description}</td>
                     <td className="py-2 text-gray-300">{transaction.category}</td>
                     <td className={`py-2 text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      ₹{Math.abs(transaction.amount).toLocaleString()}
+                      {selectedCurrency.symbol}{Math.abs(transaction.amount).toLocaleString()}
                     </td>
                     <td className="py-2">
                       <span className={`px-2 py-1 rounded text-xs ${

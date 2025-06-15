@@ -51,12 +51,12 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       <CardContent className="space-y-4">
         <div>
           <Label htmlFor="file-upload" className="text-gray-300">
-            Choose File (CSV, XLS, XLSX)
+            Choose File (PDF, CSV, XLS, XLSX)
           </Label>
           <Input
             id="file-upload"
             type="file"
-            accept=".csv,.xls,.xlsx"
+            accept=".pdf,.csv,.xls,.xlsx"
             onChange={onFileUpload}
             className="mt-1"
           />

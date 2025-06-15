@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText } from 'lucide-react';
@@ -6,7 +5,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import TemplateSelector from './TemplateSelector';
 import FileUploadSection from './data-upload/FileUploadSection';
 import FinancialAnalysisModal from './data-upload/FinancialAnalysisModal';
-import { parseExcel, mapTransactionType, calculateSummary, Transaction } from './data-upload/FileProcessor';
+import { parseFile, mapTransactionType, calculateSummary, Transaction } from './data-upload/FileProcessor';
 
 interface FileData {
   transactions: Transaction[];
@@ -31,8 +30,11 @@ const DataUpload: React.FC = () => {
       return;
     }
 
+    console.log('Uploading file:', file.name, 'Type:', file.type);
+
     try {
-      const jsonData = await parseExcel(file);
+      const jsonData = await parseFile(file);
+      console.log('Parsed data:', jsonData);
 
       const transactions: Transaction[] = jsonData.map((item: any) => ({
         date: item.Date || item.date || '',
@@ -47,7 +49,7 @@ const DataUpload: React.FC = () => {
       setFileData({ transactions, summary });
     } catch (error) {
       console.error('Error reading file:', error);
-      alert('Error reading file. Please ensure it is a valid CSV or Excel file.');
+      alert(`Error reading file: ${error.message}. Please ensure it is a valid PDF, CSV or Excel file.`);
     }
   };
 

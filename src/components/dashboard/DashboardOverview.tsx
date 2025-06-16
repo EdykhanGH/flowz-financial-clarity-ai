@@ -1,8 +1,9 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Upload,
   FileText,
@@ -10,10 +11,13 @@ import {
   ChevronUp,
   ChevronDown,
   BarChart3,
-  Target
+  Target,
+  Filter,
+  Calendar
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useBusinessCategories } from '@/hooks/useBusinessCategories';
 
 interface DashboardOverviewProps {
   setActiveTab: (tab: string) => void;
@@ -21,10 +25,90 @@ interface DashboardOverviewProps {
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) => {
   const { transactions, loading } = useTransactions();
+  const { categories } = useBusinessCategories();
+  
+  // Filter states
+  const [selectedPeriod, setSelectedPeriod] = useState<'all' | 'month' | 'week' | 'quarter'>('all');
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [selectedWeeks, setSelectedWeeks] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Calculate real-time KPIs from transactions data with new logic
+  // Generate available months and weeks from transactions
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    transactions.forEach(t => {
+      const date = new Date(t.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthKey);
+    });
+    return Array.from(months).sort().map(monthKey => ({
+      value: monthKey,
+      label: new Date(monthKey + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+    }));
+  }, [transactions]);
+
+  const availableWeeks = useMemo(() => {
+    const weeks = new Set<string>();
+    transactions.forEach(t => {
+      const date = new Date(t.date);
+      const year = date.getFullYear();
+      const weekNumber = Math.ceil((date.getDate() - date.getDay() + 1) / 7);
+      const weekKey = `${year}-W${String(weekNumber).padStart(2, '0')}`;
+      weeks.add(weekKey);
+    });
+    return Array.from(weeks).sort().map(weekKey => ({
+      value: weekKey,
+      label: `Week ${weekKey.split('-W')[1]}, ${weekKey.split('-W')[0]}`
+    }));
+  }, [transactions]);
+
+  const availableCategories = useMemo(() => {
+    const transactionCategories = new Set(transactions.map(t => t.category));
+    const userCategories = new Set(categories.map(c => c.category_name));
+    return Array.from(new Set([...transactionCategories, ...userCategories]));
+  }, [transactions, categories]);
+
+  // Filter transactions based on selected filters
+  const filteredTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    // Filter by period
+    if (selectedPeriod === 'month' && selectedMonths.length > 0) {
+      filtered = filtered.filter(t => {
+        const date = new Date(t.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return selectedMonths.includes(monthKey);
+      });
+    } else if (selectedPeriod === 'week' && selectedWeeks.length > 0) {
+      filtered = filtered.filter(t => {
+        const date = new Date(t.date);
+        const year = date.getFullYear();
+        const weekNumber = Math.ceil((date.getDate() - date.getDay() + 1) / 7);
+        const weekKey = `${year}-W${String(weekNumber).padStart(2, '0')}`;
+        return selectedWeeks.includes(weekKey);
+      });
+    } else if (selectedPeriod === 'quarter') {
+      const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3);
+      const currentYear = new Date().getFullYear();
+      filtered = filtered.filter(t => {
+        const date = new Date(t.date);
+        const quarter = Math.floor((date.getMonth() + 3) / 3);
+        const year = date.getFullYear();
+        return quarter === currentQuarter && year === currentYear;
+      });
+    }
+
+    // Filter by categories
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(t => selectedCategories.includes(t.category));
+    }
+
+    return filtered;
+  }, [transactions, selectedPeriod, selectedMonths, selectedWeeks, selectedCategories]);
+
+  // Calculate real-time KPIs from filtered transactions data
   const kpiData = useMemo(() => {
-    if (loading || !transactions.length) {
+    if (loading || !filteredTransactions.length) {
       return {
         totalRevenue: { value: '₦0', change: '0%', trend: 'up' as const },
         totalCosts: { value: '₦0', change: '0%', trend: 'down' as const },
@@ -34,12 +118,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
     }
 
     // Income includes both income and refund types
-    const totalRevenue = transactions
+    const totalRevenue = filteredTransactions
       .filter(t => t.type === 'income' || t.type === 'refund')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    // Costs include expense type (which maps to Capital Cost and Daily Expenses)
-    const totalCosts = transactions
+    // Costs include expense type
+    const totalCosts = filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -68,14 +152,14 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         trend: netIncome >= 0 ? 'up' as const : 'down' as const 
       }
     };
-  }, [transactions, loading]);
+  }, [filteredTransactions, loading]);
 
-  // Generate chart data from real transactions
+  // Generate chart data from filtered transactions
   const chartData = useMemo(() => {
-    if (!transactions.length) return [];
+    if (!filteredTransactions.length) return [];
 
     // Group transactions by month
-    const monthlyData = transactions.reduce((acc, transaction) => {
+    const monthlyData = filteredTransactions.reduce((acc, transaction) => {
       const date = new Date(transaction.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
@@ -102,13 +186,13 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         ...item,
         month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' })
       }));
-  }, [transactions]);
+  }, [filteredTransactions]);
 
-  // Generate income breakdown by category (not type)
+  // Generate income breakdown by user-defined categories
   const incomeBreakdown = useMemo(() => {
-    if (!transactions.length) return [];
+    if (!filteredTransactions.length) return [];
 
-    const incomeTransactions = transactions.filter(t => t.type === 'income' || t.type === 'refund');
+    const incomeTransactions = filteredTransactions.filter(t => t.type === 'income' || t.type === 'refund');
     const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
     
     if (totalIncome === 0) return [];
@@ -130,13 +214,13 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); // Top 5 categories
-  }, [transactions]);
+  }, [filteredTransactions]);
 
-  // Generate cost breakdown by category (not type)
+  // Generate cost breakdown by user-defined categories
   const costBreakdown = useMemo(() => {
-    if (!transactions.length) return [];
+    if (!filteredTransactions.length) return [];
 
-    const expenses = transactions.filter(t => t.type === 'expense');
+    const expenses = filteredTransactions.filter(t => t.type === 'expense');
     const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
     
     if (totalExpenses === 0) return [];
@@ -158,9 +242,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); // Top 5 categories
-  }, [transactions]);
+  }, [filteredTransactions]);
 
-  // Combined category data for bar chart
+  // Combined category data for bar chart (using user-defined categories)
   const categoryComparisonData = useMemo(() => {
     const allCategories = new Set([
       ...incomeBreakdown.map(item => item.name),
@@ -180,7 +264,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
   }, [incomeBreakdown, costBreakdown]);
 
   const recentActivity = useMemo(() => {
-    const recentTransactions = transactions.slice(0, 3);
+    const recentTransactions = filteredTransactions.slice(0, 3);
     
     return recentTransactions.map(transaction => ({
       type: 'transaction',
@@ -189,7 +273,14 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       status: 'completed' as const,
       icon: transaction.type === 'income' || transaction.type === 'refund' ? Target : BarChart3
     }));
-  }, [transactions]);
+  }, [filteredTransactions]);
+
+  const clearFilters = () => {
+    setSelectedPeriod('all');
+    setSelectedMonths([]);
+    setSelectedWeeks([]);
+    setSelectedCategories([]);
+  };
 
   if (loading) {
     return (
@@ -206,6 +297,121 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back to Flowz!</h2>
         <p className="text-gray-700">Your comprehensive cost management dashboard with real-time updates</p>
       </div>
+
+      {/* Filter Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Filter className="w-5 h-5 mr-2 text-orange-500" />
+            Scorecard Analysis Filters
+          </CardTitle>
+          <CardDescription>Filter your financial data by time period and categories</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Period Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Time Period</label>
+              <Select value={selectedPeriod} onValueChange={(value: 'all' | 'month' | 'week' | 'quarter') => setSelectedPeriod(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="month">By Month</SelectItem>
+                  <SelectItem value="week">By Week</SelectItem>
+                  <SelectItem value="quarter">Current Quarter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Month Filter - Only show when month period is selected */}
+            {selectedPeriod === 'month' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Select Months</label>
+                <Select value={selectedMonths.join(',')} onValueChange={(value) => setSelectedMonths(value ? value.split(',') : [])}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select months" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map(month => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Week Filter - Only show when week period is selected */}
+            {selectedPeriod === 'week' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Select Weeks</label>
+                <Select value={selectedWeeks.join(',')} onValueChange={(value) => setSelectedWeeks(value ? value.split(',') : [])}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select weeks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableWeeks.map(week => (
+                      <SelectItem key={week.value} value={week.value}>
+                        {week.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Category Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Categories</label>
+              <Select value={selectedCategories.join(',')} onValueChange={(value) => setSelectedCategories(value ? value.split(',') : [])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={clearFilters}
+                className="w-full"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(selectedPeriod !== 'all' || selectedCategories.length > 0) && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+              {selectedPeriod !== 'all' && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                  {selectedPeriod === 'quarter' ? 'Current Quarter' : 
+                   selectedPeriod === 'month' ? `${selectedMonths.length} Months` :
+                   `${selectedWeeks.length} Weeks`}
+                </Badge>
+              )}
+              {selectedCategories.map(category => (
+                <Badge key={category} variant="secondary" className="bg-blue-100 text-blue-800">
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -376,11 +582,11 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
           </CardContent>
         </Card>
 
-        {/* Category Comparison Bar Chart */}
+        {/* Category Comparison Bar Chart - Now using user-defined categories */}
         <Card>
           <CardHeader>
             <CardTitle>Income vs Costs by Category</CardTitle>
-            <CardDescription>Comparison across different categories</CardDescription>
+            <CardDescription>Comparison across your business categories</CardDescription>
           </CardHeader>
           <CardContent>
             {categoryComparisonData.length > 0 ? (
@@ -404,13 +610,13 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         </Card>
       </div>
 
-      {/* Detailed Breakdown Charts */}
+      {/* Detailed Breakdown Charts - Now using user-defined categories */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Income Breakdown */}
         <Card>
           <CardHeader>
             <CardTitle>Income Breakdown by Category</CardTitle>
-            <CardDescription>Distribution of income sources with percentages</CardDescription>
+            <CardDescription>Distribution of income by your business categories</CardDescription>
           </CardHeader>
           <CardContent>
             {incomeBreakdown.length > 0 ? (
@@ -457,7 +663,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         <Card>
           <CardHeader>
             <CardTitle>Cost Breakdown by Category</CardTitle>
-            <CardDescription>Distribution of expense categories with percentages</CardDescription>
+            <CardDescription>Distribution of costs by your business categories</CardDescription>
           </CardHeader>
           <CardContent>
             {costBreakdown.length > 0 ? (

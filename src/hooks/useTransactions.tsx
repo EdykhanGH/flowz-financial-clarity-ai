@@ -102,9 +102,10 @@ export const useTransactions = () => {
     // Initial fetch
     fetchTransactions();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with unique channel name per user
+    const channelName = `transactions-${user.id}`;
     const channel = supabase
-      .channel('transactions-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -142,9 +143,10 @@ export const useTransactions = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up realtime subscription for user:', user.id);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   return {
     transactions,

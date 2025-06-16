@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
   BarChart3,
   Target
 } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { useTransactions } from '@/hooks/useTransactions';
 
 interface DashboardOverviewProps {
@@ -21,7 +22,7 @@ interface DashboardOverviewProps {
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) => {
   const { transactions, loading } = useTransactions();
 
-  // Calculate real-time KPIs from transactions data
+  // Calculate real-time KPIs from transactions data with new logic
   const kpiData = useMemo(() => {
     if (loading || !transactions.length) {
       return {
@@ -32,10 +33,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       };
     }
 
+    // Income includes both income and refund types
     const totalRevenue = transactions
-      .filter(t => t.type === 'income')
+      .filter(t => t.type === 'income' || t.type === 'refund')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
+    // Costs include expense type (which maps to Capital Cost and Daily Expenses)
     const totalCosts = transactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -80,7 +83,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         acc[monthKey] = { month: monthKey, revenue: 0, costs: 0, profit: 0 };
       }
 
-      if (transaction.type === 'income') {
+      if (transaction.type === 'income' || transaction.type === 'refund') {
         acc[monthKey].revenue += Number(transaction.amount);
       } else if (transaction.type === 'expense') {
         acc[monthKey].costs += Number(transaction.amount);
@@ -101,7 +104,35 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       }));
   }, [transactions]);
 
-  // Generate cost breakdown from real transactions
+  // Generate income breakdown by category
+  const incomeBreakdown = useMemo(() => {
+    if (!transactions.length) return [];
+
+    const incomeTransactions = transactions.filter(t => t.type === 'income' || t.type === 'refund');
+    const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    if (totalIncome === 0) return [];
+
+    const categoryTotals = incomeTransactions.reduce((acc, transaction) => {
+      const category = transaction.category || 'Uncategorized';
+      acc[category] = (acc[category] || 0) + Number(transaction.amount);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const colors = ['#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+    
+    return Object.entries(categoryTotals)
+      .map(([name, value], index) => ({
+        name,
+        value: Number(value.toFixed(2)),
+        percentage: Math.round((value / totalIncome) * 100),
+        color: colors[index % colors.length]
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Top 5 categories
+  }, [transactions]);
+
+  // Generate cost breakdown by category
   const costBreakdown = useMemo(() => {
     if (!transactions.length) return [];
 
@@ -116,27 +147,47 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       return acc;
     }, {} as Record<string, number>);
 
-    const colors = ['#FF6B35', '#F7931E', '#FFD23F', '#4ECDC4', '#45B7D1'];
+    const colors = ['#FF6B35', '#F7931E', '#FFD23F', '#FF8C69', '#FA8072'];
     
     return Object.entries(categoryTotals)
       .map(([name, value], index) => ({
         name,
-        value: Math.round((value / totalExpenses) * 100),
+        value: Number(value.toFixed(2)),
+        percentage: Math.round((value / totalExpenses) * 100),
         color: colors[index % colors.length]
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); // Top 5 categories
   }, [transactions]);
 
+  // Combined category data for bar chart
+  const categoryComparisonData = useMemo(() => {
+    const allCategories = new Set([
+      ...incomeBreakdown.map(item => item.name),
+      ...costBreakdown.map(item => item.name)
+    ]);
+
+    return Array.from(allCategories).map(category => {
+      const incomeItem = incomeBreakdown.find(item => item.name === category);
+      const costItem = costBreakdown.find(item => item.name === category);
+      
+      return {
+        category,
+        income: incomeItem ? incomeItem.value : 0,
+        costs: costItem ? costItem.value : 0
+      };
+    }).filter(item => item.income > 0 || item.costs > 0);
+  }, [incomeBreakdown, costBreakdown]);
+
   const recentActivity = useMemo(() => {
     const recentTransactions = transactions.slice(0, 3);
     
     return recentTransactions.map(transaction => ({
       type: 'transaction',
-      description: `${transaction.type === 'income' ? 'Income' : 'Expense'}: ${transaction.description || transaction.category}`,
+      description: `${transaction.type === 'income' || transaction.type === 'refund' ? 'Income' : 'Expense'}: ${transaction.description || transaction.category}`,
       time: new Date(transaction.created_at).toLocaleDateString(),
       status: 'completed' as const,
-      icon: transaction.type === 'income' ? Target : BarChart3
+      icon: transaction.type === 'income' || transaction.type === 'refund' ? Target : BarChart3
     }));
   }, [transactions]);
 
@@ -297,8 +348,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         </CardContent>
       </Card>
 
-      {/* Charts Preview */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue vs Costs Trend */}
         <Card>
           <CardHeader>
             <CardTitle>Revenue vs Costs Trend</CardTitle>
@@ -311,9 +363,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="revenue" stackId="1" stroke="#FF6B35" fill="#FF6B35" fillOpacity={0.6} />
-                  <Area type="monotone" dataKey="costs" stackId="1" stroke="#F7931E" fill="#F7931E" fillOpacity={0.6} />
+                  <Tooltip formatter={(value) => [`₦${Number(value).toLocaleString()}`, '']} />
+                  <Area type="monotone" dataKey="revenue" stackId="1" stroke="#4ECDC4" fill="#4ECDC4" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="costs" stackId="1" stroke="#FF6B35" fill="#FF6B35" fillOpacity={0.6} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -324,31 +376,122 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
           </CardContent>
         </Card>
 
+        {/* Category Comparison Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Income vs Costs by Category</CardTitle>
+            <CardDescription>Comparison across different categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {categoryComparisonData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={categoryComparisonData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="category" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`₦${Number(value).toLocaleString()}`, '']} />
+                  <Legend />
+                  <Bar dataKey="income" fill="#4ECDC4" name="Income" />
+                  <Bar dataKey="costs" fill="#FF6B35" name="Costs" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                No data available. Upload transactions to see category comparison.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Breakdown Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Income Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Income Breakdown</CardTitle>
+            <CardDescription>Distribution of income sources with percentages</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {incomeBreakdown.length > 0 ? (
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={incomeBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    >
+                      {incomeBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`₦${Number(value).toLocaleString()}`, 'Amount']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2">
+                  {incomeBreakdown.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="font-medium">₦{item.value.toLocaleString()} ({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                No income data available. Upload transactions to see breakdown.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Cost Breakdown */}
         <Card>
           <CardHeader>
             <CardTitle>Cost Breakdown</CardTitle>
-            <CardDescription>Distribution of expense categories</CardDescription>
+            <CardDescription>Distribution of expense categories with percentages</CardDescription>
           </CardHeader>
           <CardContent>
             {costBreakdown.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={costBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}%`}
-                  >
-                    {costBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={costBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    >
+                      {costBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`₦${Number(value).toLocaleString()}`, 'Amount']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2">
+                  {costBreakdown.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="font-medium">₦{item.value.toLocaleString()} ({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-[300px] text-gray-500">
                 No expense data available. Upload transactions to see breakdown.

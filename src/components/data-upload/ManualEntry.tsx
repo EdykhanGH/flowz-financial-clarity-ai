@@ -14,7 +14,7 @@ interface ManualTransaction {
   date: string;
   description: string;
   amount: string;
-  type: 'income' | 'expense' | 'transfer' | 'investment' | 'refund';
+  type: 'Income' | 'Capital Cost' | 'Daily Expenses' | 'Refund';
   category: string;
 }
 
@@ -25,7 +25,7 @@ const ManualEntry: React.FC = () => {
       date: new Date().toISOString().split('T')[0],
       description: '',
       amount: '',
-      type: 'expense',
+      type: 'Daily Expenses',
       category: 'Uncategorized'
     }
   ]);
@@ -41,7 +41,7 @@ const ManualEntry: React.FC = () => {
       date: new Date().toISOString().split('T')[0],
       description: '',
       amount: '',
-      type: 'expense',
+      type: 'Daily Expenses',
       category: 'Uncategorized'
     };
     setTransactions([...transactions, newTransaction]);
@@ -59,19 +59,44 @@ const ManualEntry: React.FC = () => {
 
   const calculateSummary = () => {
     const validTransactions = transactions.filter(t => t.amount && !isNaN(parseFloat(t.amount)));
+    
+    // Calculate total income (Income + Refund)
     const totalIncome = validTransactions
-      .filter(t => t.type === 'income')
+      .filter(t => t.type === 'Income')
       .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    const totalRefunds = validTransactions
+      .filter(t => t.type === 'Refund')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    // Calculate total costs (Capital Cost + Daily Expenses)
     const totalExpenses = validTransactions
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === 'Capital Cost' || t.type === 'Daily Expenses')
       .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    // Net income = (Income + Refund) - (Capital Cost + Daily Expenses)
+    const adjustedIncome = totalIncome + totalRefunds;
     
     return {
       totalTransactions: validTransactions.length,
-      totalIncome,
+      totalIncome: adjustedIncome,
       totalExpenses,
-      netIncome: totalIncome - totalExpenses
+      netIncome: adjustedIncome - totalExpenses
     };
+  };
+
+  const mapTransactionType = (type: ManualTransaction['type']) => {
+    switch (type) {
+      case 'Income':
+        return 'income';
+      case 'Capital Cost':
+      case 'Daily Expenses':
+        return 'expense';
+      case 'Refund':
+        return 'refund';
+      default:
+        return 'expense';
+    }
   };
 
   const handleSave = async () => {
@@ -96,8 +121,8 @@ const ManualEntry: React.FC = () => {
           date: transaction.date,
           description: transaction.description,
           amount: parseFloat(transaction.amount),
-          type: transaction.type,
-          category: transaction.category
+          type: mapTransactionType(transaction.type),
+          category: transaction.type // Store the original type as category for better tracking
         });
       }
 
@@ -112,7 +137,7 @@ const ManualEntry: React.FC = () => {
         date: new Date().toISOString().split('T')[0],
         description: '',
         amount: '',
-        type: 'expense',
+        type: 'Daily Expenses',
         category: 'Uncategorized'
       }]);
     } catch (error) {
@@ -189,11 +214,11 @@ const ManualEntry: React.FC = () => {
                 <p className="text-lg font-bold text-white">{summary.totalTransactions}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-300">Total Income</p>
+                <p className="text-sm text-gray-300">Total Income (Inc. Refunds)</p>
                 <p className="text-lg font-bold text-green-400">₦{summary.totalIncome.toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-300">Total Expenses</p>
+                <p className="text-sm text-gray-300">Total Costs</p>
                 <p className="text-lg font-bold text-red-400">₦{summary.totalExpenses.toLocaleString()}</p>
               </div>
               <div className="text-center">
@@ -252,15 +277,14 @@ const ManualEntry: React.FC = () => {
                         value={transaction.type}
                         onValueChange={(value) => updateTransaction(transaction.id, 'type', value)}
                       >
-                        <SelectTrigger className="min-w-[120px] h-8 text-sm">
+                        <SelectTrigger className="min-w-[140px] h-8 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="income">Income</SelectItem>
-                          <SelectItem value="expense">Expense</SelectItem>
-                          <SelectItem value="transfer">Transfer</SelectItem>
-                          <SelectItem value="investment">Investment</SelectItem>
-                          <SelectItem value="refund">Refund</SelectItem>
+                          <SelectItem value="Income">Income</SelectItem>
+                          <SelectItem value="Capital Cost">Capital Cost</SelectItem>
+                          <SelectItem value="Daily Expenses">Daily Expenses</SelectItem>
+                          <SelectItem value="Refund">Refund</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -400,9 +424,9 @@ const ManualEntry: React.FC = () => {
                         {transaction.description || 'No description'}
                       </TableCell>
                       <TableCell className={`font-mono text-right border-r border-gray-200 ${
-                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'income' || transaction.type === 'refund' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transaction.type === 'income' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString('en-US', {
+                        {transaction.type === 'income' || transaction.type === 'refund' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2
                         })}
@@ -415,7 +439,7 @@ const ManualEntry: React.FC = () => {
                           transaction.type === 'investment' ? 'bg-purple-100 text-purple-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                          {transaction.category}
                         </span>
                       </TableCell>
                       <TableCell className="text-gray-900">

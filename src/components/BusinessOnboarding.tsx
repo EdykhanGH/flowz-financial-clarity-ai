@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import CategoryManager from '@/components/CategoryManager';
 
 interface BusinessOnboardingProps {
   onComplete: () => void;
@@ -61,7 +62,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   ];
 
   const handleNext = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -268,6 +269,16 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     </div>
   );
 
+  const renderStep4 = () => (
+    <div className="space-y-6">
+      <CategoryManager 
+        title="Transaction Categories"
+        description="Add categories that will be used for organizing your financial transactions. You can always add more categories later."
+        showTitle={true}
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl bg-[#2D2D2D] border-gray-700">
@@ -276,11 +287,16 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             <div>
               <CardTitle className="text-white">Business Setup</CardTitle>
               <CardDescription className="text-gray-400">
-                Step {currentStep} of 3: {currentStep === 1 ? 'Business Details' : currentStep === 2 ? 'Business Profile' : 'Setup Preferences'}
+                Step {currentStep} of 4: {
+                  currentStep === 1 ? 'Business Details' : 
+                  currentStep === 2 ? 'Business Profile' : 
+                  currentStep === 3 ? 'Setup Preferences' : 
+                  'Transaction Categories'
+                }
               </CardDescription>
             </div>
             <div className="flex space-x-1">
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3, 4].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -295,6 +311,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
+          {currentStep === 4 && renderStep4()}
           
           <div className="flex justify-between pt-6">
             <Button
@@ -311,8 +328,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               disabled={isLoading}
               className="bg-primary hover:bg-secondary flex items-center gap-2"
             >
-              {isLoading ? 'Saving...' : (currentStep === 3 ? 'Complete Setup' : 'Next')}
-              {currentStep < 3 && <ChevronRight className="h-4 w-4" />}
+              {isLoading ? 'Saving...' : (currentStep === 4 ? 'Complete Setup' : 'Next')}
+              {currentStep < 4 && <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>

@@ -1,13 +1,15 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useBusinessCategories } from '@/hooks/useBusinessCategories';
 import { useToast } from '@/hooks/use-toast';
+import CategoryManager from '@/components/CategoryManager';
 
 interface ManualTransaction {
   id: string;
@@ -34,7 +36,9 @@ const ManualEntry: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [editingTransaction, setEditingTransaction] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<any>(null);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const { transactions: savedTransactions, loading, addTransaction } = useTransactions();
+  const { categories, loading: categoriesLoading } = useBusinessCategories();
   const { toast } = useToast();
 
   const addRow = () => {
@@ -252,6 +256,39 @@ const ManualEntry: React.FC = () => {
 
   const summary = calculateSummary();
 
+  // Get available categories including user's custom categories
+  const availableCategories = [
+    'Uncategorized',
+    ...categories.map(cat => cat.category_name),
+  ];
+
+  const renderCategorySelect = (value: string, onChange: (value: string) => void) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="min-w-[120px] h-8 text-sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {availableCategories.map((category) => (
+          <SelectItem key={category} value={category}>{category}</SelectItem>
+        ))}
+        <SelectItem value="__add_new__">
+          <div className="flex items-center gap-2 text-orange-500">
+            <Plus className="w-4 h-4" />
+            Add Category
+          </div>
+        </SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const handleCategoryChange = (transactionId: string, value: string) => {
+    if (value === '__add_new__') {
+      setShowCategoryDialog(true);
+    } else {
+      updateTransaction(transactionId, 'category', value);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Entry Form Card */}
@@ -346,12 +383,10 @@ const ManualEntry: React.FC = () => {
                       </Select>
                     </TableCell>
                     <TableCell className="p-2">
-                      <Input
-                        placeholder="Category"
-                        value={transaction.category}
-                        onChange={(e) => updateTransaction(transaction.id, 'category', e.target.value)}
-                        className="min-w-[120px] h-8 text-sm"
-                      />
+                      {renderCategorySelect(
+                        transaction.category,
+                        (value) => handleCategoryChange(transaction.id, value)
+                      )}
                     </TableCell>
                     <TableCell className="p-2">
                       {transactions.length > 1 && (
@@ -544,17 +579,25 @@ const ManualEntry: React.FC = () => {
                             transaction.type === 'investment' ? 'bg-purple-100 text-purple-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {transaction.category}
+                            {transaction.type}
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="text-gray-900 border-r border-gray-200">
                         {editingTransaction === transaction.id ? (
-                          <Input
+                          <Select
                             value={editingData?.category || ''}
-                            onChange={(e) => setEditingData({...editingData, category: e.target.value})}
-                            className="h-8 text-sm"
-                          />
+                            onValueChange={(value) => setEditingData({...editingData, category: value})}
+                          >
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableCategories.map((category) => (
+                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           transaction.category
                         )}
@@ -598,6 +641,29 @@ const ManualEntry: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Category Dialog */}
+      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add New Category</DialogTitle>
+          </DialogHeader>
+          <CategoryManager 
+            showTitle={false}
+            title=""
+            description=""
+          />
+          <div className="flex justify-end mt-4">
+            <Button 
+              onClick={() => setShowCategoryDialog(false)}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

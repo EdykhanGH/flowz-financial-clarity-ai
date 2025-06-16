@@ -104,7 +104,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       }));
   }, [transactions]);
 
-  // Generate income breakdown by category
+  // Generate income breakdown by category (not type)
   const incomeBreakdown = useMemo(() => {
     if (!transactions.length) return [];
 
@@ -132,7 +132,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
       .slice(0, 5); // Top 5 categories
   }, [transactions]);
 
-  // Generate cost breakdown by category
+  // Generate cost breakdown by category (not type)
   const costBreakdown = useMemo(() => {
     if (!transactions.length) return [];
 
@@ -409,7 +409,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         {/* Income Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Income Breakdown</CardTitle>
+            <CardTitle>Income Breakdown by Category</CardTitle>
             <CardDescription>Distribution of income sources with percentages</CardDescription>
           </CardHeader>
           <CardContent>
@@ -456,7 +456,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         {/* Cost Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Cost Breakdown</CardTitle>
+            <CardTitle>Cost Breakdown by Category</CardTitle>
             <CardDescription>Distribution of expense categories with percentages</CardDescription>
           </CardHeader>
           <CardContent>

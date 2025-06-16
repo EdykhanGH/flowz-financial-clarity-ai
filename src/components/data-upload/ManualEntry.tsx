@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Save, Calculator, List, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +32,8 @@ const ManualEntry: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<'date' | 'description' | 'amount' | 'type' | 'category'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [editingTransaction, setEditingTransaction] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<any>(null);
   const { transactions: savedTransactions, loading, addTransaction } = useTransactions();
   const { toast } = useToast();
 
@@ -55,6 +57,61 @@ const ManualEntry: React.FC = () => {
     setTransactions(transactions.map(t => 
       t.id === id ? { ...t, [field]: value } : t
     ));
+  };
+
+  const startEditing = (transaction: any) => {
+    setEditingTransaction(transaction.id);
+    setEditingData({
+      date: new Date(transaction.date).toISOString().split('T')[0],
+      description: transaction.description || '',
+      amount: transaction.amount.toString(),
+      category: transaction.category,
+      type: getTypeFromCategory(transaction.category)
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingTransaction(null);
+    setEditingData(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingData || !editingTransaction) return;
+
+    try {
+      // Here you would typically call an update function
+      // For now, we'll just show a toast since we don't have an update function in useTransactions
+      toast({
+        title: "Edit functionality",
+        description: "Transaction editing will be implemented with update API",
+        variant: "default"
+      });
+      
+      setEditingTransaction(null);
+      setEditingData(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update transaction",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getTypeFromCategory = (category: string) => {
+    // Map database category back to UI type
+    switch (category) {
+      case 'Income':
+        return 'Income';
+      case 'Capital Cost':
+        return 'Capital Cost';
+      case 'Daily Expenses':
+        return 'Daily Expenses';
+      case 'Refund':
+        return 'Refund';
+      default:
+        return 'Daily Expenses';
+    }
   };
 
   const calculateSummary = () => {
@@ -122,7 +179,7 @@ const ManualEntry: React.FC = () => {
           description: transaction.description,
           amount: parseFloat(transaction.amount),
           type: mapTransactionType(transaction.type),
-          category: transaction.type // Store the original type as category for better tracking
+          category: transaction.category
         });
       }
 
@@ -337,7 +394,7 @@ const ManualEntry: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Excel-like Saved Transactions Display */}
+      {/* Excel-like Saved Transactions Display with Edit Functionality */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center justify-between">
@@ -346,7 +403,7 @@ const ManualEntry: React.FC = () => {
               All Transactions ({savedTransactions.length})
             </div>
             <div className="text-sm text-gray-400">
-              Excel-like View
+              Excel-like View with Editing
             </div>
           </CardTitle>
         </CardHeader>
@@ -401,13 +458,16 @@ const ManualEntry: React.FC = () => {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200"
+                      className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
                       onClick={() => handleSort('category')}
                     >
                       <div className="flex items-center">
                         Category
                         <ArrowUpDown className="w-3 h-3 ml-1" />
                       </div>
+                    </TableHead>
+                    <TableHead className="text-gray-800 font-bold border-r border-gray-300">
+                      Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -418,32 +478,117 @@ const ManualEntry: React.FC = () => {
                       className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 border-b border-gray-200`}
                     >
                       <TableCell className="text-gray-900 border-r border-gray-200 font-mono text-sm">
-                        {new Date(transaction.date).toLocaleDateString('en-GB')}
+                        {editingTransaction === transaction.id ? (
+                          <Input
+                            type="date"
+                            value={editingData?.date || ''}
+                            onChange={(e) => setEditingData({...editingData, date: e.target.value})}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          new Date(transaction.date).toLocaleDateString('en-GB')
+                        )}
                       </TableCell>
                       <TableCell className="text-gray-900 border-r border-gray-200">
-                        {transaction.description || 'No description'}
+                        {editingTransaction === transaction.id ? (
+                          <Input
+                            value={editingData?.description || ''}
+                            onChange={(e) => setEditingData({...editingData, description: e.target.value})}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          transaction.description || 'No description'
+                        )}
                       </TableCell>
                       <TableCell className={`font-mono text-right border-r border-gray-200 ${
                         transaction.type === 'income' || transaction.type === 'refund' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transaction.type === 'income' || transaction.type === 'refund' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
+                        {editingTransaction === transaction.id ? (
+                          <Input
+                            type="number"
+                            value={editingData?.amount || ''}
+                            onChange={(e) => setEditingData({...editingData, amount: e.target.value})}
+                            className="h-8 text-sm text-right"
+                            step="0.01"
+                          />
+                        ) : (
+                          <>
+                            {transaction.type === 'income' || transaction.type === 'refund' ? '+' : '-'}₦{Math.abs(transaction.amount).toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </>
+                        )}
                       </TableCell>
                       <TableCell className="text-gray-900 border-r border-gray-200">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          transaction.type === 'income' ? 'bg-green-100 text-green-800' :
-                          transaction.type === 'expense' ? 'bg-red-100 text-red-800' :
-                          transaction.type === 'transfer' ? 'bg-blue-100 text-blue-800' :
-                          transaction.type === 'investment' ? 'bg-purple-100 text-purple-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {transaction.category}
-                        </span>
+                        {editingTransaction === transaction.id ? (
+                          <Select
+                            value={editingData?.type || ''}
+                            onValueChange={(value) => setEditingData({...editingData, type: value})}
+                          >
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Income">Income</SelectItem>
+                              <SelectItem value="Capital Cost">Capital Cost</SelectItem>
+                              <SelectItem value="Daily Expenses">Daily Expenses</SelectItem>
+                              <SelectItem value="Refund">Refund</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            transaction.type === 'income' ? 'bg-green-100 text-green-800' :
+                            transaction.type === 'expense' ? 'bg-red-100 text-red-800' :
+                            transaction.type === 'transfer' ? 'bg-blue-100 text-blue-800' :
+                            transaction.type === 'investment' ? 'bg-purple-100 text-purple-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {transaction.category}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-gray-900 border-r border-gray-200">
+                        {editingTransaction === transaction.id ? (
+                          <Input
+                            value={editingData?.category || ''}
+                            onChange={(e) => setEditingData({...editingData, category: e.target.value})}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          transaction.category
+                        )}
                       </TableCell>
                       <TableCell className="text-gray-900">
-                        {transaction.category}
+                        {editingTransaction === transaction.id ? (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveEdit}
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditing}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditing(transaction)}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

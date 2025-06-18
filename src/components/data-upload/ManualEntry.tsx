@@ -9,13 +9,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X, Calendar as CalendarIcon, Lightbulb } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useToast } from '@/hooks/use-toast';
 import CategoryManager from '@/components/CategoryManager';
+import { CostClassificationService } from '@/services/CostClassificationService';
 
 interface ManualTransaction {
   id: string;
@@ -27,6 +29,7 @@ interface ManualTransaction {
   totalAmount: string;
   businessCategory: string;
   costClassification: string[];
+  isAutoClassified?: boolean;
 }
 
 const ManualEntry: React.FC = () => {
@@ -40,7 +43,8 @@ const ManualEntry: React.FC = () => {
       unitCost: '',
       totalAmount: '',
       businessCategory: 'Uncategorized',
-      costClassification: []
+      costClassification: [],
+      isAutoClassified: false
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +55,7 @@ const ManualEntry: React.FC = () => {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const { transactions: savedTransactions, loading, addTransaction } = useTransactions();
   const { categories, loading: categoriesLoading } = useBusinessCategories();
+  const { data: businessContext } = useBusinessContext();
   const { toast } = useToast();
 
   const transactionTypes = [
@@ -69,38 +74,6 @@ const ManualEntry: React.FC = () => {
     'Mixed Cost'
   ];
 
-  // Smart cost classification suggestions based on keywords
-  const getSmartClassificationSuggestions = (description: string): string[] => {
-    const desc = description.toLowerCase();
-    const suggestions: string[] = [];
-
-    // Direct cost keywords
-    if (desc.includes('material') || desc.includes('raw') || desc.includes('inventory') || 
-        desc.includes('product') || desc.includes('manufacturing') || desc.includes('labor')) {
-      suggestions.push('Direct Cost');
-    }
-
-    // Indirect cost keywords
-    if (desc.includes('overhead') || desc.includes('utility') || desc.includes('maintenance') ||
-        desc.includes('supervision') || desc.includes('facility')) {
-      suggestions.push('Indirect Cost');
-    }
-
-    // Fixed cost keywords
-    if (desc.includes('rent') || desc.includes('salary') || desc.includes('insurance') ||
-        desc.includes('depreciation') || desc.includes('lease')) {
-      suggestions.push('Fixed Cost');
-    }
-
-    // Variable cost keywords
-    if (desc.includes('commission') || desc.includes('shipping') || desc.includes('packaging') ||
-        desc.includes('per unit') || desc.includes('variable')) {
-      suggestions.push('Variable Cost');
-    }
-
-    return [...new Set(suggestions)]; // Remove duplicates
-  };
-
   const addRow = () => {
     const newTransaction: ManualTransaction = {
       id: Date.now().toString(),
@@ -111,7 +84,8 @@ const ManualEntry: React.FC = () => {
       unitCost: '',
       totalAmount: '',
       businessCategory: 'Uncategorized',
-      costClassification: []
+      costClassification: [],
+      isAutoClassified: false
     };
     setTransactions([...transactions, newTransaction]);
   };
@@ -132,11 +106,20 @@ const ManualEntry: React.FC = () => {
           updated.totalAmount = (qty * unit).toFixed(2);
         }
 
-        // Smart classification suggestions when description changes
-        if (field === 'description' && value) {
-          const suggestions = getSmartClassificationSuggestions(value);
-          if (suggestions.length > 0 && updated.costClassification.length === 0) {
-            updated.costClassification = suggestions;
+        // Intelligent cost classification when description or transaction type changes
+        if ((field === 'description' || field === 'transactionType') && 
+            (updated.description || updated.transactionType)) {
+          
+          const autoClassifications = CostClassificationService.classifyTransaction(
+            updated.description,
+            updated.transactionType,
+            businessContext || undefined
+          );
+          
+          // Only auto-classify if user hasn't manually set classifications or if it's a new entry
+          if (updated.costClassification.length === 0 || updated.isAutoClassified !== false) {
+            updated.costClassification = autoClassifications;
+            updated.isAutoClassified = true;
           }
         }
 
@@ -144,6 +127,14 @@ const ManualEntry: React.FC = () => {
       }
       return t;
     }));
+  };
+
+  const handleManualClassificationChange = (id: string, classifications: string[]) => {
+    setTransactions(transactions.map(t => 
+      t.id === id 
+        ? { ...t, costClassification: classifications, isAutoClassified: false }
+        : t
+    ));
   };
 
   const startEditing = (transaction: any) => {
@@ -271,7 +262,8 @@ const ManualEntry: React.FC = () => {
         unitCost: '',
         totalAmount: '',
         businessCategory: 'Uncategorized',
-        costClassification: []
+        costClassification: [],
+        isAutoClassified: false
       }]);
     } catch (error) {
       toast({
@@ -362,40 +354,57 @@ const ManualEntry: React.FC = () => {
 
   const renderCostClassificationMultiSelect = (
     value: string[],
-    onChange: (value: string[]) => void
+    onChange: (value: string[]) => void,
+    transactionId: string,
+    isAutoClassified?: boolean
   ) => (
     <div className="relative">
-      <Select
-        value=""
-        onValueChange={(selectedValue) => {
-          if (!value.includes(selectedValue)) {
-            onChange([...value, selectedValue]);
-          }
-        }}
-      >
-        <SelectTrigger className="min-w-[150px] h-8 text-sm">
-          <SelectValue placeholder="Select classifications" />
-        </SelectTrigger>
-        <SelectContent>
-          {costClassificationOptions.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center gap-2 mb-1">
+        <Select
+          value=""
+          onValueChange={(selectedValue) => {
+            if (!value.includes(selectedValue)) {
+              const newValue = [...value, selectedValue];
+              handleManualClassificationChange(transactionId, newValue);
+            }
+          }}
+        >
+          <SelectTrigger className="min-w-[150px] h-8 text-sm">
+            <SelectValue placeholder="Select classifications" />
+          </SelectTrigger>
+          <SelectContent>
+            {costClassificationOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {isAutoClassified && value.length > 0 && (
+          <div className="flex items-center text-xs text-orange-500">
+            <Lightbulb className="w-3 h-3 mr-1" />
+            Auto
+          </div>
+        )}
+      </div>
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-1">
           {value.map((classification) => (
             <Badge
               key={classification}
-              variant="secondary"
-              className="text-xs flex items-center gap-1"
+              variant={isAutoClassified ? "default" : "secondary"}
+              className={cn(
+                "text-xs flex items-center gap-1",
+                isAutoClassified && "bg-orange-100 text-orange-800 border-orange-200"
+              )}
             >
               {classification}
               <X
                 className="w-3 h-3 cursor-pointer"
-                onClick={() => onChange(value.filter(c => c !== classification))}
+                onClick={() => {
+                  const newValue = value.filter(c => c !== classification);
+                  handleManualClassificationChange(transactionId, newValue);
+                }}
               />
             </Badge>
           ))}
@@ -438,7 +447,12 @@ const ManualEntry: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-white flex items-center">
             <Calculator className="w-5 h-5 mr-2 text-orange-400" />
-            Enhanced Transaction Entry
+            Enhanced Transaction Entry with Smart Classification
+            {businessContext && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {businessContext.category} Business
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -555,7 +569,9 @@ const ManualEntry: React.FC = () => {
                     <TableCell className="p-2">
                       {renderCostClassificationMultiSelect(
                         transaction.costClassification,
-                        (value) => updateTransaction(transaction.id, 'costClassification', value)
+                        (value) => updateTransaction(transaction.id, 'costClassification', value),
+                        transaction.id,
+                        transaction.isAutoClassified
                       )}
                     </TableCell>
                     <TableCell className="p-2">

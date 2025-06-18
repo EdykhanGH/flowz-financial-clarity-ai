@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Trash2, Save, Calculator, List, ArrowUpDown, Edit2, Check, X, Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
 import { useToast } from '@/hooks/use-toast';
@@ -13,26 +19,32 @@ import CategoryManager from '@/components/CategoryManager';
 
 interface ManualTransaction {
   id: string;
-  date: string;
+  date: Date | undefined;
+  transactionType: 'Sales Revenue' | 'Other Income' | 'Direct/Product Costs' | 'Indirect/Operational Costs' | 'Administrative Expenses';
   description: string;
-  amount: string;
-  type: 'Income' | 'Capital Cost' | 'Daily Expenses' | 'Refund';
-  category: string;
+  quantity: string;
+  unitCost: string;
+  totalAmount: string;
+  businessCategory: string;
+  costClassification: string[];
 }
 
 const ManualEntry: React.FC = () => {
   const [transactions, setTransactions] = useState<ManualTransaction[]>([
     {
       id: '1',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date(),
+      transactionType: 'Sales Revenue',
       description: '',
-      amount: '',
-      type: 'Daily Expenses',
-      category: 'Uncategorized'
+      quantity: '1',
+      unitCost: '',
+      totalAmount: '',
+      businessCategory: 'Uncategorized',
+      costClassification: []
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sortField, setSortField] = useState<'date' | 'description' | 'amount' | 'type' | 'category'>('date');
+  const [sortField, setSortField] = useState<'date' | 'description' | 'totalAmount' | 'transactionType' | 'businessCategory'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [editingTransaction, setEditingTransaction] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<any>(null);
@@ -41,14 +53,65 @@ const ManualEntry: React.FC = () => {
   const { categories, loading: categoriesLoading } = useBusinessCategories();
   const { toast } = useToast();
 
+  const transactionTypes = [
+    'Sales Revenue',
+    'Other Income',
+    'Direct/Product Costs',
+    'Indirect/Operational Costs',
+    'Administrative Expenses'
+  ];
+
+  const costClassificationOptions = [
+    'Direct Cost',
+    'Indirect Cost',
+    'Fixed Cost',
+    'Variable Cost',
+    'Mixed Cost'
+  ];
+
+  // Smart cost classification suggestions based on keywords
+  const getSmartClassificationSuggestions = (description: string): string[] => {
+    const desc = description.toLowerCase();
+    const suggestions: string[] = [];
+
+    // Direct cost keywords
+    if (desc.includes('material') || desc.includes('raw') || desc.includes('inventory') || 
+        desc.includes('product') || desc.includes('manufacturing') || desc.includes('labor')) {
+      suggestions.push('Direct Cost');
+    }
+
+    // Indirect cost keywords
+    if (desc.includes('overhead') || desc.includes('utility') || desc.includes('maintenance') ||
+        desc.includes('supervision') || desc.includes('facility')) {
+      suggestions.push('Indirect Cost');
+    }
+
+    // Fixed cost keywords
+    if (desc.includes('rent') || desc.includes('salary') || desc.includes('insurance') ||
+        desc.includes('depreciation') || desc.includes('lease')) {
+      suggestions.push('Fixed Cost');
+    }
+
+    // Variable cost keywords
+    if (desc.includes('commission') || desc.includes('shipping') || desc.includes('packaging') ||
+        desc.includes('per unit') || desc.includes('variable')) {
+      suggestions.push('Variable Cost');
+    }
+
+    return [...new Set(suggestions)]; // Remove duplicates
+  };
+
   const addRow = () => {
     const newTransaction: ManualTransaction = {
       id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
+      date: new Date(),
+      transactionType: 'Sales Revenue',
       description: '',
-      amount: '',
-      type: 'Daily Expenses',
-      category: 'Uncategorized'
+      quantity: '1',
+      unitCost: '',
+      totalAmount: '',
+      businessCategory: 'Uncategorized',
+      costClassification: []
     };
     setTransactions([...transactions, newTransaction]);
   };
@@ -57,20 +120,40 @@ const ManualEntry: React.FC = () => {
     setTransactions(transactions.filter(t => t.id !== id));
   };
 
-  const updateTransaction = (id: string, field: keyof ManualTransaction, value: string) => {
-    setTransactions(transactions.map(t => 
-      t.id === id ? { ...t, [field]: value } : t
-    ));
+  const updateTransaction = (id: string, field: keyof ManualTransaction, value: any) => {
+    setTransactions(transactions.map(t => {
+      if (t.id === id) {
+        const updated = { ...t, [field]: value };
+        
+        // Auto-calculate total amount when quantity or unit cost changes
+        if (field === 'quantity' || field === 'unitCost') {
+          const qty = parseFloat(field === 'quantity' ? value : updated.quantity) || 0;
+          const unit = parseFloat(field === 'unitCost' ? value : updated.unitCost) || 0;
+          updated.totalAmount = (qty * unit).toFixed(2);
+        }
+
+        // Smart classification suggestions when description changes
+        if (field === 'description' && value) {
+          const suggestions = getSmartClassificationSuggestions(value);
+          if (suggestions.length > 0 && updated.costClassification.length === 0) {
+            updated.costClassification = suggestions;
+          }
+        }
+
+        return updated;
+      }
+      return t;
+    }));
   };
 
   const startEditing = (transaction: any) => {
     setEditingTransaction(transaction.id);
     setEditingData({
-      date: new Date(transaction.date).toISOString().split('T')[0],
+      date: new Date(transaction.date),
       description: transaction.description || '',
-      amount: transaction.amount.toString(),
-      category: transaction.category,
-      type: getTypeFromCategory(transaction.category)
+      totalAmount: transaction.amount.toString(),
+      businessCategory: transaction.category,
+      transactionType: getTransactionTypeFromDbType(transaction.type)
     });
   };
 
@@ -83,8 +166,6 @@ const ManualEntry: React.FC = () => {
     if (!editingData || !editingTransaction) return;
 
     try {
-      // Here you would typically call an update function
-      // For now, we'll just show a toast since we don't have an update function in useTransactions
       toast({
         title: "Edit functionality",
         description: "Transaction editing will be implemented with update API",
@@ -102,59 +183,47 @@ const ManualEntry: React.FC = () => {
     }
   };
 
-  const getTypeFromCategory = (category: string) => {
-    // Map database category back to UI type
-    switch (category) {
-      case 'Income':
-        return 'Income';
-      case 'Capital Cost':
-        return 'Capital Cost';
-      case 'Daily Expenses':
-        return 'Daily Expenses';
-      case 'Refund':
-        return 'Refund';
+  const getTransactionTypeFromDbType = (dbType: string) => {
+    switch (dbType) {
+      case 'income':
+        return 'Sales Revenue';
+      case 'expense':
+        return 'Direct/Product Costs';
+      case 'refund':
+        return 'Other Income';
       default:
-        return 'Daily Expenses';
+        return 'Sales Revenue';
     }
   };
 
   const calculateSummary = () => {
-    const validTransactions = transactions.filter(t => t.amount && !isNaN(parseFloat(t.amount)));
+    const validTransactions = transactions.filter(t => t.totalAmount && !isNaN(parseFloat(t.totalAmount)));
     
-    // Calculate total income (Income + Refund)
     const totalIncome = validTransactions
-      .filter(t => t.type === 'Income')
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      .filter(t => t.transactionType === 'Sales Revenue' || t.transactionType === 'Other Income')
+      .reduce((sum, t) => sum + parseFloat(t.totalAmount), 0);
     
-    const totalRefunds = validTransactions
-      .filter(t => t.type === 'Refund')
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    
-    // Calculate total costs (Capital Cost + Daily Expenses)
     const totalExpenses = validTransactions
-      .filter(t => t.type === 'Capital Cost' || t.type === 'Daily Expenses')
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    
-    // Net income = (Income + Refund) - (Capital Cost + Daily Expenses)
-    const adjustedIncome = totalIncome + totalRefunds;
+      .filter(t => ['Direct/Product Costs', 'Indirect/Operational Costs', 'Administrative Expenses'].includes(t.transactionType))
+      .reduce((sum, t) => sum + parseFloat(t.totalAmount), 0);
     
     return {
       totalTransactions: validTransactions.length,
-      totalIncome: adjustedIncome,
+      totalIncome,
       totalExpenses,
-      netIncome: adjustedIncome - totalExpenses
+      netIncome: totalIncome - totalExpenses
     };
   };
 
-  const mapTransactionType = (type: ManualTransaction['type']) => {
+  const mapTransactionTypeToDb = (type: ManualTransaction['transactionType']) => {
     switch (type) {
-      case 'Income':
+      case 'Sales Revenue':
+      case 'Other Income':
         return 'income';
-      case 'Capital Cost':
-      case 'Daily Expenses':
+      case 'Direct/Product Costs':
+      case 'Indirect/Operational Costs':
+      case 'Administrative Expenses':
         return 'expense';
-      case 'Refund':
-        return 'refund';
       default:
         return 'expense';
     }
@@ -162,7 +231,7 @@ const ManualEntry: React.FC = () => {
 
   const handleSave = async () => {
     const validTransactions = transactions.filter(t => 
-      t.date && t.description && t.amount && !isNaN(parseFloat(t.amount))
+      t.date && t.description && t.totalAmount && !isNaN(parseFloat(t.totalAmount))
     );
 
     if (validTransactions.length === 0) {
@@ -179,11 +248,11 @@ const ManualEntry: React.FC = () => {
     try {
       for (const transaction of validTransactions) {
         await addTransaction({
-          date: transaction.date,
+          date: format(transaction.date!, 'yyyy-MM-dd'),
           description: transaction.description,
-          amount: parseFloat(transaction.amount),
-          type: mapTransactionType(transaction.type),
-          category: transaction.category
+          amount: parseFloat(transaction.totalAmount),
+          type: mapTransactionTypeToDb(transaction.transactionType),
+          category: transaction.businessCategory
         });
       }
 
@@ -195,11 +264,14 @@ const ManualEntry: React.FC = () => {
       // Reset to single empty row
       setTransactions([{
         id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(),
+        transactionType: 'Sales Revenue',
         description: '',
-        amount: '',
-        type: 'Daily Expenses',
-        category: 'Uncategorized'
+        quantity: '1',
+        unitCost: '',
+        totalAmount: '',
+        businessCategory: 'Uncategorized',
+        costClassification: []
       }]);
     } catch (error) {
       toast({
@@ -233,15 +305,15 @@ const ManualEntry: React.FC = () => {
         aValue = a.description || '';
         bValue = b.description || '';
         break;
-      case 'amount':
+      case 'totalAmount':
         aValue = a.amount;
         bValue = b.amount;
         break;
-      case 'type':
+      case 'transactionType':
         aValue = a.type;
         bValue = b.type;
         break;
-      case 'category':
+      case 'businessCategory':
         aValue = a.category;
         bValue = b.category;
         break;
@@ -261,6 +333,76 @@ const ManualEntry: React.FC = () => {
     'Uncategorized',
     ...categories.map(cat => cat.category_name),
   ];
+
+  const renderDatePicker = (value: Date | undefined, onChange: (date: Date | undefined) => void) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal h-8 text-sm",
+            !value && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? format(value, "dd/MM/yyyy") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          initialFocus
+          className="pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+
+  const renderCostClassificationMultiSelect = (
+    value: string[],
+    onChange: (value: string[]) => void
+  ) => (
+    <div className="relative">
+      <Select
+        value=""
+        onValueChange={(selectedValue) => {
+          if (!value.includes(selectedValue)) {
+            onChange([...value, selectedValue]);
+          }
+        }}
+      >
+        <SelectTrigger className="min-w-[150px] h-8 text-sm">
+          <SelectValue placeholder="Select classifications" />
+        </SelectTrigger>
+        <SelectContent>
+          {costClassificationOptions.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {value.map((classification) => (
+            <Badge
+              key={classification}
+              variant="secondary"
+              className="text-xs flex items-center gap-1"
+            >
+              {classification}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => onChange(value.filter(c => c !== classification))}
+              />
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const renderCategorySelect = (value: string, onChange: (value: string) => void) => (
     <Select value={value} onValueChange={onChange}>
@@ -285,7 +427,7 @@ const ManualEntry: React.FC = () => {
     if (value === '__add_new__') {
       setShowCategoryDialog(true);
     } else {
-      updateTransaction(transactionId, 'category', value);
+      updateTransaction(transactionId, 'businessCategory', value);
     }
   };
 
@@ -296,7 +438,7 @@ const ManualEntry: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-white flex items-center">
             <Calculator className="w-5 h-5 mr-2 text-orange-400" />
-            Manual Transaction Entry
+            Enhanced Transaction Entry
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -308,11 +450,11 @@ const ManualEntry: React.FC = () => {
                 <p className="text-lg font-bold text-white">{summary.totalTransactions}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-300">Total Income (Inc. Refunds)</p>
+                <p className="text-sm text-gray-300">Total Income</p>
                 <p className="text-lg font-bold text-green-400">₦{summary.totalIncome.toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-300">Total Costs</p>
+                <p className="text-sm text-gray-300">Total Expenses</p>
                 <p className="text-lg font-bold text-red-400">₦{summary.totalExpenses.toLocaleString()}</p>
               </div>
               <div className="text-center">
@@ -324,16 +466,19 @@ const ManualEntry: React.FC = () => {
             </div>
           )}
 
-          {/* Excel-like Table */}
+          {/* Enhanced Table */}
           <div className="overflow-x-auto border border-gray-600 rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-700 hover:bg-gray-700">
-                  <TableHead className="text-gray-300 font-semibold">Date</TableHead>
-                  <TableHead className="text-gray-300 font-semibold">Description</TableHead>
-                  <TableHead className="text-gray-300 font-semibold">Amount (₦)</TableHead>
-                  <TableHead className="text-gray-300 font-semibold">Type</TableHead>
-                  <TableHead className="text-gray-300 font-semibold">Category</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Date *</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Transaction Type *</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Description *</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Qty</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Unit Cost (₦)</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Total Amount (₦) *</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Business Category</TableHead>
+                  <TableHead className="text-gray-300 font-semibold">Cost Classification</TableHead>
                   <TableHead className="text-gray-300 font-semibold w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -341,12 +486,25 @@ const ManualEntry: React.FC = () => {
                 {transactions.map((transaction) => (
                   <TableRow key={transaction.id} className="bg-gray-800 hover:bg-gray-750">
                     <TableCell className="p-2">
-                      <Input
-                        type="date"
-                        value={transaction.date}
-                        onChange={(e) => updateTransaction(transaction.id, 'date', e.target.value)}
-                        className="min-w-[140px] h-8 text-sm"
-                      />
+                      {renderDatePicker(
+                        transaction.date,
+                        (date) => updateTransaction(transaction.id, 'date', date)
+                      )}
+                    </TableCell>
+                    <TableCell className="p-2">
+                      <Select
+                        value={transaction.transactionType}
+                        onValueChange={(value) => updateTransaction(transaction.id, 'transactionType', value)}
+                      >
+                        <SelectTrigger className="min-w-[160px] h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {transactionTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="p-2">
                       <Input
@@ -359,33 +517,45 @@ const ManualEntry: React.FC = () => {
                     <TableCell className="p-2">
                       <Input
                         type="number"
-                        placeholder="0.00"
-                        value={transaction.amount}
-                        onChange={(e) => updateTransaction(transaction.id, 'amount', e.target.value)}
-                        className="min-w-[120px] h-8 text-sm"
+                        value={transaction.quantity}
+                        onChange={(e) => updateTransaction(transaction.id, 'quantity', e.target.value)}
+                        className="min-w-[80px] h-8 text-sm"
                         step="0.01"
+                        min="0"
                       />
                     </TableCell>
                     <TableCell className="p-2">
-                      <Select
-                        value={transaction.type}
-                        onValueChange={(value) => updateTransaction(transaction.id, 'type', value)}
-                      >
-                        <SelectTrigger className="min-w-[140px] h-8 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Income">Income</SelectItem>
-                          <SelectItem value="Capital Cost">Capital Cost</SelectItem>
-                          <SelectItem value="Daily Expenses">Daily Expenses</SelectItem>
-                          <SelectItem value="Refund">Refund</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={transaction.unitCost}
+                        onChange={(e) => updateTransaction(transaction.id, 'unitCost', e.target.value)}
+                        className="min-w-[100px] h-8 text-sm"
+                        step="0.01"
+                        min="0"
+                      />
+                    </TableCell>
+                    <TableCell className="p-2">
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={transaction.totalAmount}
+                        onChange={(e) => updateTransaction(transaction.id, 'totalAmount', e.target.value)}
+                        className="min-w-[120px] h-8 text-sm"
+                        step="0.01"
+                        min="0"
+                      />
                     </TableCell>
                     <TableCell className="p-2">
                       {renderCategorySelect(
-                        transaction.category,
+                        transaction.businessCategory,
                         (value) => handleCategoryChange(transaction.id, value)
+                      )}
+                    </TableCell>
+                    <TableCell className="p-2">
+                      {renderCostClassificationMultiSelect(
+                        transaction.costClassification,
+                        (value) => updateTransaction(transaction.id, 'costClassification', value)
                       )}
                     </TableCell>
                     <TableCell className="p-2">
@@ -476,7 +646,7 @@ const ManualEntry: React.FC = () => {
                     </TableHead>
                     <TableHead 
                       className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
-                      onClick={() => handleSort('amount')}
+                      onClick={() => handleSort('totalAmount')}
                     >
                       <div className="flex items-center">
                         Amount (₦)
@@ -485,7 +655,7 @@ const ManualEntry: React.FC = () => {
                     </TableHead>
                     <TableHead 
                       className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
-                      onClick={() => handleSort('type')}
+                      onClick={() => handleSort('transactionType')}
                     >
                       <div className="flex items-center">
                         Type
@@ -494,7 +664,7 @@ const ManualEntry: React.FC = () => {
                     </TableHead>
                     <TableHead 
                       className="text-gray-800 font-bold cursor-pointer hover:bg-gray-200 border-r border-gray-300"
-                      onClick={() => handleSort('category')}
+                      onClick={() => handleSort('businessCategory')}
                     >
                       <div className="flex items-center">
                         Category
@@ -541,8 +711,8 @@ const ManualEntry: React.FC = () => {
                         {editingTransaction === transaction.id ? (
                           <Input
                             type="number"
-                            value={editingData?.amount || ''}
-                            onChange={(e) => setEditingData({...editingData, amount: e.target.value})}
+                            value={editingData?.totalAmount || ''}
+                            onChange={(e) => setEditingData({...editingData, totalAmount: e.target.value})}
                             className="h-8 text-sm text-right"
                             step="0.01"
                           />
@@ -558,17 +728,18 @@ const ManualEntry: React.FC = () => {
                       <TableCell className="text-gray-900 border-r border-gray-200">
                         {editingTransaction === transaction.id ? (
                           <Select
-                            value={editingData?.type || ''}
-                            onValueChange={(value) => setEditingData({...editingData, type: value})}
+                            value={editingData?.transactionType || ''}
+                            onValueChange={(value) => setEditingData({...editingData, transactionType: value})}
                           >
                             <SelectTrigger className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Income">Income</SelectItem>
-                              <SelectItem value="Capital Cost">Capital Cost</SelectItem>
-                              <SelectItem value="Daily Expenses">Daily Expenses</SelectItem>
-                              <SelectItem value="Refund">Refund</SelectItem>
+                              <SelectItem value="Sales Revenue">Sales Revenue</SelectItem>
+                              <SelectItem value="Other Income">Other Income</SelectItem>
+                              <SelectItem value="Direct/Product Costs">Direct/Product Costs</SelectItem>
+                              <SelectItem value="Indirect/Operational Costs">Indirect/Operational Costs</SelectItem>
+                              <SelectItem value="Administrative Expenses">Administrative Expenses</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
@@ -586,8 +757,8 @@ const ManualEntry: React.FC = () => {
                       <TableCell className="text-gray-900 border-r border-gray-200">
                         {editingTransaction === transaction.id ? (
                           <Select
-                            value={editingData?.category || ''}
-                            onValueChange={(value) => setEditingData({...editingData, category: value})}
+                            value={editingData?.businessCategory || ''}
+                            onValueChange={(value) => setEditingData({...editingData, businessCategory: value})}
                           >
                             <SelectTrigger className="h-8 text-sm">
                               <SelectValue />

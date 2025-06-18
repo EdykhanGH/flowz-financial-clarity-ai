@@ -103,7 +103,7 @@ export const useTransactions = () => {
     fetchTransactions();
 
     // Set up real-time subscription with unique channel name per user
-    const channelName = `transactions-${user.id}`;
+    const channelName = `transactions-${user.id}-${Date.now()}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -143,7 +143,7 @@ export const useTransactions = () => {
       .subscribe();
 
     return () => {
-      console.log('Cleaning up realtime subscription for user:', user.id);
+      console.log('Cleaning up realtime subscription for channel:', channelName);
       supabase.removeChannel(channel);
     };
   }, [user?.id]); // Only depend on user.id, not the entire user object

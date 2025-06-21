@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useToast } from '@/hooks/use-toast';
 import CategoryManager from '@/components/CategoryManager';
 
@@ -56,41 +56,127 @@ const ManualEntry: React.FC = () => {
     }
   ]);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingIncome, setIsLoadingIncome] = useState(false);
+  const [isLoadingCost, setIsLoadingCost] = useState(false);
   const [showQuantityIncome, setShowQuantityIncome] = useState(false);
   const [showQuantityCost, setShowQuantityCost] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [customIncomeCategory, setCustomIncomeCategory] = useState('');
   const [customCostCategory, setCustomCostCategory] = useState('');
-  const [incomeCategories, setIncomeCategories] = useState([
-    'Product Sales',
-    'Service Fees',
-    'Subscription Revenue',
-    'Consulting Fees',
-    'Rental Income',
-    'Commission Revenue',
-    'Licensing Revenue',
-    'Interest Income',
-    'Dividend Income',
-    'Other Income'
-  ]);
-  const [costCategories, setCostCategories] = useState([
-    'Payroll and Benefits',
-    'Rent and Facilities',
-    'Marketing and Advertising',
-    'Raw Materials/Inventory',
-    'Technology and Software',
-    'Professional Services',
-    'Utilities and Operations',
-    'Transportation',
-    'Insurance',
-    'Office Supplies',
-    'Other Costs'
-  ]);
 
   const { addTransaction } = useTransactions();
   const { categories, loading: categoriesLoading } = useBusinessCategories();
+  const { data: businessContext } = useBusinessContext();
   const { toast } = useToast();
+
+  // Generate customized categories based on business context
+  const getCustomizedIncomeCategories = () => {
+    const baseCategories = [
+      'Product Sales',
+      'Service Fees',
+      'Subscription Revenue',
+      'Consulting Fees',
+      'Rental Income',
+      'Commission Revenue',
+      'Licensing Revenue',
+      'Interest Income',
+      'Dividend Income',
+      'Other Income'
+    ];
+
+    if (!businessContext) return baseCategories;
+
+    const customizedCategories = [...baseCategories];
+    
+    // Add business-specific income categories based on business model and revenue streams
+    if (businessContext.businessModel?.toLowerCase().includes('subscription')) {
+      if (!customizedCategories.includes('Monthly Subscription Fees')) {
+        customizedCategories.splice(2, 0, 'Monthly Subscription Fees', 'Annual Subscription Fees');
+      }
+    }
+    
+    if (businessContext.businessModel?.toLowerCase().includes('e-commerce') || 
+        businessContext.category?.toLowerCase().includes('retail')) {
+      if (!customizedCategories.includes('Online Sales')) {
+        customizedCategories.splice(1, 0, 'Online Sales', 'In-Store Sales');
+      }
+    }
+
+    if (businessContext.category?.toLowerCase().includes('technology') || 
+        businessContext.category?.toLowerCase().includes('software')) {
+      if (!customizedCategories.includes('Software Licensing')) {
+        customizedCategories.splice(6, 0, 'Software Licensing', 'SaaS Revenue', 'API Usage Fees');
+      }
+    }
+
+    if (businessContext.category?.toLowerCase().includes('education') || 
+        businessContext.category?.toLowerCase().includes('training')) {
+      if (!customizedCategories.includes('Course Fees')) {
+        customizedCategories.splice(3, 0, 'Course Fees', 'Training Revenue', 'Certification Fees');
+      }
+    }
+
+    return customizedCategories;
+  };
+
+  const getCustomizedCostCategories = () => {
+    const baseCategories = [
+      'Payroll and Benefits',
+      'Rent and Facilities',
+      'Marketing and Advertising',
+      'Raw Materials/Inventory',
+      'Technology and Software',
+      'Professional Services',
+      'Utilities and Operations',
+      'Transportation',
+      'Insurance',
+      'Office Supplies',
+      'Other Costs'
+    ];
+
+    if (!businessContext) return baseCategories;
+
+    const customizedCategories = [...baseCategories];
+
+    // Add business-specific cost categories
+    if (businessContext.category?.toLowerCase().includes('technology') || 
+        businessContext.category?.toLowerCase().includes('software')) {
+      if (!customizedCategories.includes('Cloud Infrastructure')) {
+        customizedCategories.splice(4, 0, 'Cloud Infrastructure', 'Development Tools', 'API Costs');
+      }
+    }
+
+    if (businessContext.category?.toLowerCase().includes('retail') || 
+        businessContext.category?.toLowerCase().includes('e-commerce')) {
+      if (!customizedCategories.includes('Payment Processing')) {
+        customizedCategories.splice(3, 0, 'Payment Processing', 'Shipping and Fulfillment', 'Packaging Materials');
+      }
+    }
+
+    if (businessContext.category?.toLowerCase().includes('restaurant') || 
+        businessContext.category?.toLowerCase().includes('food')) {
+      if (!customizedCategories.includes('Food Costs')) {
+        customizedCategories.splice(3, 0, 'Food Costs', 'Kitchen Equipment', 'Health Permits');
+      }
+    }
+
+    if (businessContext.category?.toLowerCase().includes('manufacturing')) {
+      if (!customizedCategories.includes('Production Equipment')) {
+        customizedCategories.splice(3, 0, 'Production Equipment', 'Quality Control', 'Safety Equipment');
+      }
+    }
+
+    return customizedCategories;
+  };
+
+  const [incomeCategories, setIncomeCategories] = useState(getCustomizedIncomeCategories());
+  const [costCategories, setCostCategories] = useState(getCustomizedCostCategories());
+
+  // Update categories when business context changes
+  useEffect(() => {
+    setIncomeCategories(getCustomizedIncomeCategories());
+    setCostCategories(getCustomizedCostCategories());
+  }, [businessContext]);
 
   const addIncomeRow = () => {
     const newTransaction: ManualTransaction = {
@@ -298,30 +384,23 @@ const ManualEntry: React.FC = () => {
     };
   };
 
-  const handleSave = async () => {
+  const handleSaveIncome = async () => {
     const validIncomeTransactions = incomeTransactions.filter(t => 
       t.date && t.category && t.totalAmount && !isNaN(parseFloat(t.totalAmount))
     );
-    
-    const validCostTransactions = costTransactions.filter(t => 
-      t.date && t.category && t.totalAmount && !isNaN(parseFloat(t.totalAmount))
-    );
 
-    const totalValid = validIncomeTransactions.length + validCostTransactions.length;
-
-    if (totalValid === 0) {
+    if (validIncomeTransactions.length === 0) {
       toast({
-        title: "No valid transactions",
-        description: "Please add at least one complete transaction",
+        title: "No valid income transactions",
+        description: "Please add at least one complete income transaction",
         variant: "destructive"
       });
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingIncome(true);
     
     try {
-      // Save income transactions
       for (const transaction of validIncomeTransactions) {
         await addTransaction({
           date: format(transaction.date!, 'yyyy-MM-dd'),
@@ -332,7 +411,50 @@ const ManualEntry: React.FC = () => {
         });
       }
 
-      // Save cost transactions
+      toast({
+        title: "Success",
+        description: `${validIncomeTransactions.length} income transactions saved successfully`
+      });
+
+      // Reset to single empty row
+      setIncomeTransactions([{
+        id: Date.now().toString(),
+        date: new Date(),
+        category: '',
+        description: '',
+        quantity: '1',
+        unitCost: '',
+        totalAmount: '',
+        businessCategory: 'Uncategorized'
+      }]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save income transactions",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingIncome(false);
+    }
+  };
+
+  const handleSaveCost = async () => {
+    const validCostTransactions = costTransactions.filter(t => 
+      t.date && t.category && t.totalAmount && !isNaN(parseFloat(t.totalAmount))
+    );
+
+    if (validCostTransactions.length === 0) {
+      toast({
+        title: "No valid cost transactions",
+        description: "Please add at least one complete cost transaction",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoadingCost(true);
+    
+    try {
       for (const transaction of validCostTransactions) {
         await addTransaction({
           date: format(transaction.date!, 'yyyy-MM-dd'),
@@ -345,23 +467,12 @@ const ManualEntry: React.FC = () => {
 
       toast({
         title: "Success",
-        description: `${totalValid} transactions saved successfully`
+        description: `${validCostTransactions.length} cost transactions saved successfully`
       });
 
-      // Reset to single empty rows
-      setIncomeTransactions([{
-        id: Date.now().toString(),
-        date: new Date(),
-        category: '',
-        description: '',
-        quantity: '1',
-        unitCost: '',
-        totalAmount: '',
-        businessCategory: 'Uncategorized'
-      }]);
-
+      // Reset to single empty row
       setCostTransactions([{
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         date: new Date(),
         category: '',
         description: '',
@@ -373,11 +484,11 @@ const ManualEntry: React.FC = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save transactions",
+        description: "Failed to save cost transactions",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingCost(false);
     }
   };
 
@@ -426,7 +537,7 @@ const ManualEntry: React.FC = () => {
                 />
                 <Label htmlFor="show-quantity-income" className="text-sm text-gray-300">
                   {showQuantityIncome ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  Show Quantity & Unit Cost
+                  Input Quantity & Unit Cost
                 </Label>
               </div>
             </div>
@@ -531,14 +642,24 @@ const ManualEntry: React.FC = () => {
               </TableBody>
             </Table>
           </div>
-          <Button
-            onClick={addIncomeRow}
-            variant="outline"
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Income Row
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button
+              onClick={addIncomeRow}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Income Row
+            </Button>
+            <Button
+              onClick={handleSaveIncome}
+              disabled={isLoadingIncome}
+              className="bg-green-500 hover:bg-green-600"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isLoadingIncome ? 'Saving...' : 'Save Income Transactions'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -559,7 +680,7 @@ const ManualEntry: React.FC = () => {
                 />
                 <Label htmlFor="show-quantity-cost" className="text-sm text-gray-300">
                   {showQuantityCost ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  Show Quantity & Unit Cost
+                  Input Quantity & Unit Cost
                 </Label>
               </div>
             </div>
@@ -664,28 +785,26 @@ const ManualEntry: React.FC = () => {
               </TableBody>
             </Table>
           </div>
-          <Button
-            onClick={addCostRow}
-            variant="outline"
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Cost Row
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button
+              onClick={addCostRow}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Cost Row
+            </Button>
+            <Button
+              onClick={handleSaveCost}
+              disabled={isLoadingCost}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isLoadingCost ? 'Saving...' : 'Save Cost Transactions'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-center">
-        <Button
-          onClick={handleSave}
-          disabled={isLoading}
-          className="bg-orange-500 hover:bg-orange-600"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? 'Saving...' : 'Save All Transactions'}
-        </Button>
-      </div>
 
       {/* Add Category Dialog */}
       <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import CategoryManager from '@/components/CategoryManager';
@@ -25,6 +24,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [customActivity, setCustomActivity] = useState('');
   const [formData, setFormData] = useState({
     businessName: '',
     category: '',
@@ -145,6 +145,27 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     }));
   };
 
+  const addCustomActivity = () => {
+    if (customActivity.trim() && !formData.coreActivities.includes(customActivity.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        coreActivities: [...prev.coreActivities, customActivity.trim()]
+      }));
+      setCustomActivity('');
+      toast({
+        title: "Activity Added",
+        description: `"${customActivity.trim()}" has been added to your core activities.`,
+      });
+    }
+  };
+
+  const removeCustomActivity = (activity: string) => {
+    setFormData(prev => ({
+      ...prev,
+      coreActivities: prev.coreActivities.filter(item => item !== activity)
+    }));
+  };
+
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
@@ -225,6 +246,53 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               <Label htmlFor={activity} className="text-sm text-gray-300">{activity}</Label>
             </div>
           ))}
+        </div>
+        
+        {/* Custom Activities Section */}
+        <div className="mt-4 space-y-3">
+          <div className="flex gap-2">
+            <Input
+              value={customActivity}
+              onChange={(e) => setCustomActivity(e.target.value)}
+              placeholder="Add a custom activity..."
+              className="flex-1"
+              onKeyPress={(e) => e.key === 'Enter' && addCustomActivity()}
+            />
+            <Button
+              type="button"
+              onClick={addCustomActivity}
+              size="sm"
+              className="px-3"
+              disabled={!customActivity.trim()}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Display added custom activities */}
+          {formData.coreActivities.filter(activity => !coreActivitiesOptions.includes(activity)).length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-400">Custom Activities:</Label>
+              <div className="flex flex-wrap gap-2">
+                {formData.coreActivities
+                  .filter(activity => !coreActivitiesOptions.includes(activity))
+                  .map((activity) => (
+                    <div key={activity} className="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded text-sm">
+                      <span className="text-gray-300">{activity}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 w-4 h-4 text-gray-400 hover:text-red-400"
+                        onClick={() => removeCustomActivity(activity)}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

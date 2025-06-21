@@ -75,17 +75,47 @@ export type Database = {
         }
         Relationships: []
       }
+      business_cost_centers: {
+        Row: {
+          cost_center: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_center: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_center?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_profiles: {
         Row: {
+          annual_revenue_range: string | null
           business_model: string | null
           business_name: string | null
+          business_size_employees: string | null
+          business_size_scale: string | null
           category: string | null
+          core_activities: string[] | null
           cost_centers: string[] | null
           created_at: string | null
           description: string | null
           employees: string | null
           id: string
+          location: string | null
           market_scope: string | null
+          revenue_frequency: string[] | null
           revenue_streams: string[] | null
           seasonal_business: boolean | null
           turnover: string | null
@@ -93,15 +123,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          annual_revenue_range?: string | null
           business_model?: string | null
           business_name?: string | null
+          business_size_employees?: string | null
+          business_size_scale?: string | null
           category?: string | null
+          core_activities?: string[] | null
           cost_centers?: string[] | null
           created_at?: string | null
           description?: string | null
           employees?: string | null
           id?: string
+          location?: string | null
           market_scope?: string | null
+          revenue_frequency?: string[] | null
           revenue_streams?: string[] | null
           seasonal_business?: boolean | null
           turnover?: string | null
@@ -109,19 +145,52 @@ export type Database = {
           user_id: string
         }
         Update: {
+          annual_revenue_range?: string | null
           business_model?: string | null
           business_name?: string | null
+          business_size_employees?: string | null
+          business_size_scale?: string | null
           category?: string | null
+          core_activities?: string[] | null
           cost_centers?: string[] | null
           created_at?: string | null
           description?: string | null
           employees?: string | null
           id?: string
+          location?: string | null
           market_scope?: string | null
+          revenue_frequency?: string[] | null
           revenue_streams?: string[] | null
           seasonal_business?: boolean | null
           turnover?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      business_revenue_streams: {
+        Row: {
+          created_at: string
+          frequency: string
+          id: string
+          revenue_stream: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          frequency: string
+          id?: string
+          revenue_stream: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string
+          id?: string
+          revenue_stream?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

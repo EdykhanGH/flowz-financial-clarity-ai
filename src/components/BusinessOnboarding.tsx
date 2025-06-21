@@ -13,6 +13,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import CategoryManager from '@/components/CategoryManager';
+import RevenueStreamManager from '@/components/RevenueStreamManager';
+import CostCenterManager from '@/components/CostCenterManager';
 
 interface BusinessOnboardingProps {
   onComplete: () => void;
@@ -27,11 +29,12 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     businessName: '',
     category: '',
     description: '',
-    turnover: '',
-    employees: '',
+    businessSizeEmployees: '',
+    businessSizeScale: '',
+    annualRevenueRange: '',
     businessModel: '',
-    revenueStreams: [] as string[],
-    costCenters: [] as string[],
+    coreActivities: [] as string[],
+    location: '',
     marketScope: '',
     seasonalBusiness: false
   });
@@ -53,16 +56,29 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     'Other Services'
   ];
 
-  const revenueStreamOptions = [
-    'Product Sales', 'Service Revenue', 'Subscription Revenue', 'Licensing', 'Consulting', 'Commission'
+  const businessScales = ['Micro', 'Small', 'Medium', 'Large'];
+
+  const businessModels = ['B2B', 'B2C', 'Hybrid', 'E-commerce', 'Marketplace', 'Subscription', 'Franchise'];
+
+  const coreActivitiesOptions = [
+    'Production', 'Sales', 'Customer Service', 'Logistics', 'R&D', 'Marketing', 'Quality Control', 'Administration'
   ];
 
-  const costCenterOptions = [
-    'Production', 'Sales & Marketing', 'Administration', 'R&D', 'IT', 'HR', 'Finance'
-  ];
+  const getDescriptionTemplate = (category: string) => {
+    const categoryLower = category.toLowerCase();
+    if (categoryLower.includes('manufacturing')) {
+      return "We are a manufacturing company that specializes in [product type]. Our main activities include [production processes], [quality control], and [distribution]. What makes us unique is [unique selling proposition/competitive advantage].";
+    } else if (categoryLower.includes('services')) {
+      return "We provide [type of services] to [target customers]. Our core services include [main service offerings]. We differentiate ourselves through [unique value proposition/expertise].";
+    } else if (categoryLower.includes('retail') || categoryLower.includes('trade')) {
+      return "We are a [retail/wholesale] business that sells [product categories] to [target market]. Our operations include [buying/sourcing], [inventory management], and [sales channels]. Our competitive advantage is [what sets you apart].";
+    } else {
+      return "We are a [business type] company that [what you do]. Our main activities include [core business processes]. What makes us unique is [unique features/competitive advantages].";
+    }
+  };
 
   const handleNext = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -92,11 +108,12 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
         business_name: formData.businessName,
         category: formData.category,
         description: formData.description,
-        turnover: formData.turnover,
-        employees: formData.employees,
+        business_size_employees: formData.businessSizeEmployees,
+        business_size_scale: formData.businessSizeScale,
+        annual_revenue_range: formData.annualRevenueRange,
         business_model: formData.businessModel,
-        revenue_streams: formData.revenueStreams,
-        cost_centers: formData.costCenters,
+        core_activities: formData.coreActivities,
+        location: formData.location,
         market_scope: formData.marketScope,
         seasonal_business: formData.seasonalBusiness,
       });
@@ -119,7 +136,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     }
   };
 
-  const handleCheckboxChange = (field: 'revenueStreams' | 'costCenters', value: string, checked: boolean) => {
+  const handleCheckboxChange = (field: 'coreActivities', value: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: checked 
@@ -131,7 +148,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
-        <Label htmlFor="businessName" className="text-white">Business Name</Label>
+        <Label htmlFor="businessName" className="text-white">Business Name *</Label>
         <Input
           id="businessName"
           value={formData.businessName}
@@ -141,7 +158,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
         />
       </div>
       <div>
-        <Label htmlFor="category" className="text-white">Business Category</Label>
+        <Label htmlFor="category" className="text-white">Business Category *</Label>
         <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select your business category" />
@@ -153,95 +170,107 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <Label htmlFor="location" className="text-white">Area/Location</Label>
+        <Input
+          id="location"
+          value={formData.location}
+          onChange={(e) => setFormData({...formData, location: e.target.value})}
+          placeholder="Enter your business location (city, state)"
+          className="mt-1"
+        />
+      </div>
     </div>
   );
 
   const renderStep2 = () => (
     <div className="space-y-6">
       <div>
-        <Label htmlFor="description" className="text-white">Business Description</Label>
+        <Label htmlFor="description" className="text-white">Business Description *</Label>
+        <div className="text-sm text-gray-400 mb-2">
+          Template: {getDescriptionTemplate(formData.category)}
+        </div>
         <Textarea
           id="description"
           value={formData.description}
           onChange={(e) => setFormData({...formData, description: e.target.value})}
-          placeholder="Describe your business (AI suggestions coming soon...)"
+          placeholder="Describe what your business does, main activities, and unique features..."
           className="mt-1"
+          rows={4}
         />
       </div>
       <div>
-        <Label htmlFor="turnover" className="text-white">Annual Turnover Range</Label>
-        <Select value={formData.turnover} onValueChange={(value) => setFormData({...formData, turnover: value})}>
-          <SelectTrigger className="mt-1">
-            <SelectValue placeholder="Select turnover range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0-1cr">₹0 - ₹1 Crore</SelectItem>
-            <SelectItem value="1-10cr">₹1 - ₹10 Crore</SelectItem>
-            <SelectItem value="10-50cr">₹10 - ₹50 Crore</SelectItem>
-            <SelectItem value="50cr+">₹50+ Crore</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="employees" className="text-white">Number of Employees</Label>
-        <Select value={formData.employees} onValueChange={(value) => setFormData({...formData, employees: value})}>
-          <SelectTrigger className="mt-1">
-            <SelectValue placeholder="Select employee count" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1-10">1-10</SelectItem>
-            <SelectItem value="11-50">11-50</SelectItem>
-            <SelectItem value="51-200">51-200</SelectItem>
-            <SelectItem value="200+">200+</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="businessModel" className="text-white">Business Model</Label>
+        <Label htmlFor="businessModel" className="text-white">Business Model *</Label>
         <Select value={formData.businessModel} onValueChange={(value) => setFormData({...formData, businessModel: value})}>
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select business model" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="B2B">B2B</SelectItem>
-            <SelectItem value="B2C">B2C</SelectItem>
-            <SelectItem value="Hybrid">Hybrid</SelectItem>
+            {businessModels.map((model) => (
+              <SelectItem key={model} value={model}>{model}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
+      </div>
+      <div>
+        <Label className="text-white">Core Activities/Operations</Label>
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          {coreActivitiesOptions.map((activity) => (
+            <div key={activity} className="flex items-center space-x-2">
+              <Checkbox
+                id={activity}
+                checked={formData.coreActivities.includes(activity)}
+                onCheckedChange={(checked) => handleCheckboxChange('coreActivities', activity, checked as boolean)}
+              />
+              <Label htmlFor={activity} className="text-sm text-gray-300">{activity}</Label>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div>
-        <Label className="text-white">Primary Revenue Streams</Label>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {revenueStreamOptions.map((stream) => (
-            <div key={stream} className="flex items-center space-x-2">
-              <Checkbox
-                id={stream}
-                checked={formData.revenueStreams.includes(stream)}
-                onCheckedChange={(checked) => handleCheckboxChange('revenueStreams', stream, checked as boolean)}
-              />
-              <Label htmlFor={stream} className="text-sm text-gray-300">{stream}</Label>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor="employees" className="text-white">Number of Employees</Label>
+          <Input
+            id="employees"
+            type="number"
+            value={formData.businessSizeEmployees}
+            onChange={(e) => setFormData({...formData, businessSizeEmployees: e.target.value})}
+            placeholder="e.g., 25"
+            className="mt-1"
+          />
         </div>
-      </div>
-      <div>
-        <Label className="text-white">Main Cost Centers</Label>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {costCenterOptions.map((center) => (
-            <div key={center} className="flex items-center space-x-2">
-              <Checkbox
-                id={center}
-                checked={formData.costCenters.includes(center)}
-                onCheckedChange={(checked) => handleCheckboxChange('costCenters', center, checked as boolean)}
-              />
-              <Label htmlFor={center} className="text-sm text-gray-300">{center}</Label>
-            </div>
-          ))}
+        <div>
+          <Label htmlFor="scale" className="text-white">Business Scale</Label>
+          <Select value={formData.businessSizeScale} onValueChange={(value) => setFormData({...formData, businessSizeScale: value})}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select scale" />
+            </SelectTrigger>
+            <SelectContent>
+              {businessScales.map((scale) => (
+                <SelectItem key={scale} value={scale.toLowerCase()}>{scale}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="revenue" className="text-white">Annual Revenue Range (₹)</Label>
+          <Select value={formData.annualRevenueRange} onValueChange={(value) => setFormData({...formData, annualRevenueRange: value})}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0-1cr">₹0 - ₹1 Crore</SelectItem>
+              <SelectItem value="1-10cr">₹1 - ₹10 Crore</SelectItem>
+              <SelectItem value="10-50cr">₹10 - ₹50 Crore</SelectItem>
+              <SelectItem value="50-100cr">₹50 - ₹100 Crore</SelectItem>
+              <SelectItem value="100cr+">₹100+ Crore</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div>
@@ -271,6 +300,13 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
 
   const renderStep4 = () => (
     <div className="space-y-6">
+      <RevenueStreamManager businessCategory={formData.category} />
+      <CostCenterManager businessCategory={formData.category} />
+    </div>
+  );
+
+  const renderStep5 = () => (
+    <div className="space-y-6">
       <CategoryManager 
         title="Transaction Categories"
         description="Add categories that will be used for organizing your financial transactions. You can always add more categories later."
@@ -281,22 +317,23 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-[#2D2D2D] border-gray-700">
+      <Card className="w-full max-w-4xl bg-[#2D2D2D] border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-white">Business Setup</CardTitle>
               <CardDescription className="text-gray-400">
-                Step {currentStep} of 4: {
-                  currentStep === 1 ? 'Business Details' : 
-                  currentStep === 2 ? 'Business Profile' : 
-                  currentStep === 3 ? 'Setup Preferences' : 
+                Step {currentStep} of 5: {
+                  currentStep === 1 ? 'Basic Information' : 
+                  currentStep === 2 ? 'Business Details' : 
+                  currentStep === 3 ? 'Business Size & Scope' : 
+                  currentStep === 4 ? 'Revenue & Cost Structure' : 
                   'Transaction Categories'
                 }
               </CardDescription>
             </div>
             <div className="flex space-x-1">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -312,6 +349,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
           {currentStep === 4 && renderStep4()}
+          {currentStep === 5 && renderStep5()}
           
           <div className="flex justify-between pt-6">
             <Button
@@ -328,8 +366,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               disabled={isLoading}
               className="bg-primary hover:bg-secondary flex items-center gap-2"
             >
-              {isLoading ? 'Saving...' : (currentStep === 4 ? 'Complete Setup' : 'Next')}
-              {currentStep < 4 && <ChevronRight className="h-4 w-4" />}
+              {isLoading ? 'Saving...' : (currentStep === 5 ? 'Complete Setup' : 'Next')}
+              {currentStep < 5 && <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>

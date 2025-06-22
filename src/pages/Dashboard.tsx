@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +22,8 @@ import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import AnalysisSection from '@/components/dashboard/AnalysisSection';
 import ScenariosSection from '@/components/dashboard/ScenariosSection';
 import BudgetSection from '@/components/dashboard/BudgetSection';
+import CostClassificationManager from '@/components/CostClassificationManager';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
 
 const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -66,7 +67,7 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Sidebar */}
       <div className={`bg-[#1A1A1A] text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
         <div className="p-4 border-b border-gray-700">
@@ -156,8 +157,62 @@ const DashboardContent = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6 bg-white">
-          {renderContent()}
+        <main className="container mx-auto px-4 py-8">
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-5 bg-gray-800">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-orange-500">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="data" className="data-[state=active]:bg-orange-500">
+                Data
+              </TabsTrigger>
+              <TabsTrigger value="analysis" className="data-[state=active]:bg-orange-500">
+                Analysis
+              </TabsTrigger>
+              <TabsTrigger value="scenarios" className="data-[state=active]:bg-orange-500">
+                What-If Scenarios
+              </TabsTrigger>
+              <TabsTrigger value="budgets" className="data-[state=active]:bg-orange-500">
+                Budgets
+              </TabsTrigger>
+              <TabsTrigger value="assistant" className="data-[state=active]:bg-orange-500">
+                AI Assistant
+              </TabsTrigger>
+              <TabsTrigger value="cost-analysis" className="data-[state=active]:bg-orange-500">
+                Cost Analysis
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <DashboardOverview setActiveTab={setActiveTab} />
+            </TabsContent>
+
+            <TabsContent value="data" className="space-y-6">
+              <div className="bg-gray-900 min-h-full p-6 rounded-lg">
+                <DataUpload />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="analysis" className="space-y-6">
+              <AnalysisSection />
+            </TabsContent>
+
+            <TabsContent value="scenarios" className="space-y-6">
+              <ScenariosSection />
+            </TabsContent>
+
+            <TabsContent value="budgets" className="space-y-6">
+              <BudgetSection />
+            </TabsContent>
+
+            <TabsContent value="assistant" className="space-y-6">
+              <AIAssistant />
+            </TabsContent>
+
+            <TabsContent value="cost-analysis" className="space-y-6">
+              <CostClassificationManager />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>

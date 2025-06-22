@@ -1,207 +1,335 @@
 
-interface BusinessContext {
+import { supabase } from '@/integrations/supabase/client';
+
+export interface BusinessProfile {
   category: string;
-  description: string;
-  businessModel: string;
-  costCenters: string[];
-  revenueStreams: string[];
+  business_model: string;
+  core_activities: string[];
+  revenue_streams: string[];
+  cost_centers: string[];
+  business_size_scale: string;
+  annual_revenue_range: string;
 }
 
-interface ClassificationRule {
-  keywords: string[];
-  transactionTypes: string[];
-  classifications: string[];
-  businessCategories?: string[];
+export interface CostClassification {
+  cost_type: 'fixed' | 'variable' | 'mixed';
+  cost_nature: 'direct' | 'indirect';
+  confidence: number;
+  reasoning?: string;
+}
+
+export interface CostPattern {
+  pattern_name: string;
+  business_category: string;
+  cost_keywords: string[];
+  typical_cost_type: 'fixed' | 'variable' | 'mixed';
+  typical_cost_nature: 'direct' | 'indirect';
+  industry_relevance: number;
 }
 
 export class CostClassificationService {
-  private static rules: ClassificationRule[] = [
-    // Direct Cost Rules
-    {
-      keywords: ['raw material', 'materials', 'inventory', 'stock', 'product', 'manufacturing', 'production', 'direct labor', 'labor cost', 'wages', 'factory', 'assembly'],
-      transactionTypes: ['Direct/Product Costs'],
-      classifications: ['Direct Cost', 'Variable Cost']
-    },
-    {
-      keywords: ['cogs', 'cost of goods', 'purchase', 'supplier', 'vendor payment', 'procurement'],
-      transactionTypes: ['Direct/Product Costs'],
-      classifications: ['Direct Cost', 'Variable Cost']
-    },
+  
+  // Get business profile for a user
+  async getBusinessProfile(userId: string): Promise<BusinessProfile | null> {
+    const { data, error } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
 
-    // Indirect Cost Rules
-    {
-      keywords: ['overhead', 'utilities', 'electricity', 'water', 'gas', 'maintenance', 'repair', 'cleaning', 'security', 'supervision'],
-      transactionTypes: ['Indirect/Operational Costs'],
-      classifications: ['Indirect Cost', 'Fixed Cost']
-    },
-    {
-      keywords: ['facility', 'building', 'premises', 'workshop', 'office space', 'factory rent'],
-      transactionTypes: ['Indirect/Operational Costs', 'Administrative Expenses'],
-      classifications: ['Indirect Cost', 'Fixed Cost']
-    },
-
-    // Fixed Cost Rules
-    {
-      keywords: ['rent', 'lease', 'salary', 'salaries', 'insurance', 'license', 'permit', 'subscription', 'depreciation', 'amortization'],
-      transactionTypes: ['Administrative Expenses', 'Indirect/Operational Costs'],
-      classifications: ['Fixed Cost', 'Indirect Cost']
-    },
-    {
-      keywords: ['loan payment', 'mortgage', 'interest', 'bank charges', 'legal fees', 'audit', 'accounting'],
-      transactionTypes: ['Administrative Expenses'],
-      classifications: ['Fixed Cost', 'Indirect Cost']
-    },
-
-    // Variable Cost Rules
-    {
-      keywords: ['commission', 'sales commission', 'shipping', 'delivery', 'transport', 'fuel', 'packaging', 'per unit', 'per piece'],
-      transactionTypes: ['Direct/Product Costs', 'Indirect/Operational Costs'],
-      classifications: ['Variable Cost', 'Direct Cost']
-    },
-    {
-      keywords: ['marketing spend', 'advertising', 'promotion', 'campaign', 'per sale', 'performance bonus'],
-      transactionTypes: ['Administrative Expenses', 'Indirect/Operational Costs'],
-      classifications: ['Variable Cost', 'Indirect Cost']
-    },
-
-    // Mixed Cost Rules
-    {
-      keywords: ['telephone', 'phone', 'internet', 'mobile', 'communication', 'data plan', 'cloud service'],
-      transactionTypes: ['Administrative Expenses', 'Indirect/Operational Costs'],
-      classifications: ['Mixed Cost', 'Indirect Cost']
-    },
-    {
-      keywords: ['vehicle', 'car', 'truck', 'fleet', 'transportation', 'travel'],
-      transactionTypes: ['Administrative Expenses', 'Indirect/Operational Costs'],
-      classifications: ['Mixed Cost', 'Indirect Cost']
-    },
-
-    // Revenue Classifications
-    {
-      keywords: ['sale', 'sales', 'revenue', 'income', 'payment received', 'customer payment', 'invoice'],
-      transactionTypes: ['Sales Revenue'],
-      classifications: []
-    },
-    {
-      keywords: ['interest income', 'dividend', 'investment return', 'rental income', 'other income'],
-      transactionTypes: ['Other Income'],
-      classifications: []
-    }
-  ];
-
-  private static businessSpecificRules: Record<string, ClassificationRule[]> = {
-    'Manufacturing': [
-      {
-        keywords: ['machine', 'equipment', 'tool', 'spare parts', 'consumables'],
-        transactionTypes: ['Direct/Product Costs'],
-        classifications: ['Direct Cost', 'Variable Cost']
-      }
-    ],
-    'Retail': [
-      {
-        keywords: ['store rent', 'shop', 'display', 'pos', 'cashier'],
-        transactionTypes: ['Indirect/Operational Costs'],
-        classifications: ['Indirect Cost', 'Fixed Cost']
-      }
-    ],
-    'Service': [
-      {
-        keywords: ['consultant fee', 'professional service', 'expertise', 'consultation'],
-        transactionTypes: ['Direct/Product Costs'],
-        classifications: ['Direct Cost', 'Variable Cost']
-      }
-    ],
-    'Technology': [
-      {
-        keywords: ['software', 'hosting', 'server', 'domain', 'api', 'cloud', 'development'],
-        transactionTypes: ['Indirect/Operational Costs'],
-        classifications: ['Indirect Cost', 'Mixed Cost']
-      }
-    ]
-  };
-
-  static classifyTransaction(
-    description: string,
-    transactionType: string,
-    businessContext?: BusinessContext
-  ): string[] {
-    const desc = description.toLowerCase();
-    const suggestions = new Set<string>();
-
-    // Apply general rules
-    for (const rule of this.rules) {
-      if (rule.transactionTypes.includes(transactionType)) {
-        const hasKeyword = rule.keywords.some(keyword => desc.includes(keyword));
-        if (hasKeyword) {
-          rule.classifications.forEach(classification => suggestions.add(classification));
-        }
-      }
+    if (error || !data) {
+      console.error('Error fetching business profile:', error);
+      return null;
     }
 
-    // Apply business-specific rules if context is available
-    if (businessContext) {
-      const businessCategory = businessContext.category;
-      const businessRules = this.businessSpecificRules[businessCategory] || [];
-      
-      for (const rule of businessRules) {
-        if (rule.transactionTypes.includes(transactionType)) {
-          const hasKeyword = rule.keywords.some(keyword => desc.includes(keyword));
-          if (hasKeyword) {
-            rule.classifications.forEach(classification => suggestions.add(classification));
-          }
-        }
-      }
-
-      // Check cost centers from business profile
-      businessContext.costCenters?.forEach(center => {
-        if (desc.includes(center.toLowerCase())) {
-          if (transactionType === 'Direct/Product Costs') {
-            suggestions.add('Direct Cost');
-            suggestions.add('Variable Cost');
-          } else {
-            suggestions.add('Indirect Cost');
-          }
-        }
-      });
-    }
-
-    // Default classifications based on transaction type if no specific rules match
-    if (suggestions.size === 0) {
-      switch (transactionType) {
-        case 'Sales Revenue':
-        case 'Other Income':
-          // No cost classifications for revenue
-          break;
-        case 'Direct/Product Costs':
-          suggestions.add('Direct Cost');
-          suggestions.add('Variable Cost');
-          break;
-        case 'Indirect/Operational Costs':
-          suggestions.add('Indirect Cost');
-          suggestions.add('Fixed Cost');
-          break;
-        case 'Administrative Expenses':
-          suggestions.add('Indirect Cost');
-          suggestions.add('Fixed Cost');
-          break;
-      }
-    }
-
-    return Array.from(suggestions);
+    return {
+      category: data.category || '',
+      business_model: data.business_model || '',
+      core_activities: data.core_activities || [],
+      revenue_streams: data.revenue_streams || [],
+      cost_centers: data.cost_centers || [],
+      business_size_scale: data.business_size_scale || '',
+      annual_revenue_range: data.annual_revenue_range || ''
+    };
   }
 
-  static getKeywordSuggestions(description: string): string[] {
-    const desc = description.toLowerCase();
-    const matchedKeywords: string[] = [];
+  // Get relevant cost patterns based on business category
+  async getCostPatterns(businessCategory: string): Promise<CostPattern[]> {
+    const { data, error } = await supabase
+      .from('business_cost_patterns')
+      .select('*')
+      .or(`business_category.eq.${businessCategory},business_category.eq.General`)
+      .order('industry_relevance', { ascending: false });
 
-    for (const rule of this.rules) {
-      for (const keyword of rule.keywords) {
-        if (desc.includes(keyword) && !matchedKeywords.includes(keyword)) {
-          matchedKeywords.push(keyword);
+    if (error) {
+      console.error('Error fetching cost patterns:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  // Main AI classification function
+  async classifyTransaction(
+    description: string,
+    amount: number,
+    category: string,
+    userId: string
+  ): Promise<CostClassification> {
+    try {
+      // Get business profile
+      const businessProfile = await this.getBusinessProfile(userId);
+      if (!businessProfile) {
+        return this.getDefaultClassification(description, category);
+      }
+
+      // Get relevant cost patterns
+      const costPatterns = await this.getCostPatterns(businessProfile.category);
+
+      // Analyze the transaction
+      const classification = this.analyzeTransaction(
+        description,
+        amount,
+        category,
+        businessProfile,
+        costPatterns
+      );
+
+      return classification;
+    } catch (error) {
+      console.error('Error in cost classification:', error);
+      return this.getDefaultClassification(description, category);
+    }
+  }
+
+  // Core classification logic
+  private analyzeTransaction(
+    description: string,
+    amount: number,
+    category: string,
+    businessProfile: BusinessProfile,
+    costPatterns: CostPattern[]
+  ): CostClassification {
+    const descriptionLower = description.toLowerCase();
+    const categoryLower = category.toLowerCase();
+    
+    let bestMatch: CostPattern | null = null;
+    let highestScore = 0;
+
+    // Find the best matching pattern
+    for (const pattern of costPatterns) {
+      let score = 0;
+      
+      // Keyword matching
+      for (const keyword of pattern.cost_keywords) {
+        if (descriptionLower.includes(keyword.toLowerCase()) || 
+            categoryLower.includes(keyword.toLowerCase())) {
+          score += pattern.industry_relevance;
         }
+      }
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = pattern;
       }
     }
 
-    return matchedKeywords;
+    // If we found a good match, use it
+    if (bestMatch && highestScore > 0.5) {
+      return {
+        cost_type: bestMatch.typical_cost_type,
+        cost_nature: bestMatch.typical_cost_nature,
+        confidence: Math.min(highestScore, 0.95),
+        reasoning: `Matched pattern: ${bestMatch.pattern_name}`
+      };
+    }
+
+    // Apply business-specific rules
+    return this.applyBusinessRules(description, amount, category, businessProfile);
+  }
+
+  // Business-specific classification rules
+  private applyBusinessRules(
+    description: string,
+    amount: number,
+    category: string,
+    businessProfile: BusinessProfile
+  ): CostClassification {
+    const descriptionLower = description.toLowerCase();
+    const categoryLower = category.toLowerCase();
+
+    // Revenue-related costs are typically direct
+    const isRevenueDirect = businessProfile.revenue_streams.some(stream =>
+      descriptionLower.includes(stream.toLowerCase())
+    );
+
+    // Core activity costs are typically direct
+    const isCoreActivityDirect = businessProfile.core_activities?.some(activity =>
+      descriptionLower.includes(activity.toLowerCase())
+    );
+
+    // Cost center classification
+    const isFromCostCenter = businessProfile.cost_centers?.some(center =>
+      descriptionLower.includes(center.toLowerCase())
+    );
+
+    // Default classification logic
+    let cost_type: 'fixed' | 'variable' | 'mixed' = 'variable';
+    let cost_nature: 'direct' | 'indirect' = 'indirect';
+    let confidence = 0.6;
+
+    // Fixed cost indicators
+    const fixedIndicators = ['rent', 'insurance', 'salary', 'subscription', 'license', 'depreciation'];
+    if (fixedIndicators.some(indicator => descriptionLower.includes(indicator))) {
+      cost_type = 'fixed';
+      confidence += 0.2;
+    }
+
+    // Variable cost indicators
+    const variableIndicators = ['materials', 'inventory', 'shipping', 'commission', 'per unit'];
+    if (variableIndicators.some(indicator => descriptionLower.includes(indicator))) {
+      cost_type = 'variable';
+      confidence += 0.2;
+    }
+
+    // Direct cost determination
+    if (isRevenueDirect || isCoreActivityDirect) {
+      cost_nature = 'direct';
+      confidence += 0.15;
+    }
+
+    // Manufacturing business rules
+    if (businessProfile.category.includes('Manufacturing')) {
+      if (descriptionLower.includes('material') || descriptionLower.includes('labor')) {
+        cost_nature = 'direct';
+        cost_type = 'variable';
+        confidence += 0.2;
+      }
+    }
+
+    // Service business rules
+    if (businessProfile.category.includes('Services')) {
+      if (descriptionLower.includes('consultant') || descriptionLower.includes('professional')) {
+        cost_nature = 'direct';
+        cost_type = 'variable';
+        confidence += 0.2;
+      }
+    }
+
+    return {
+      cost_type,
+      cost_nature,
+      confidence: Math.min(confidence, 0.9),
+      reasoning: 'Applied business-specific rules'
+    };
+  }
+
+  // Fallback classification
+  private getDefaultClassification(description: string, category: string): CostClassification {
+    const descriptionLower = description.toLowerCase();
+    
+    // Simple keyword-based classification
+    const fixedKeywords = ['rent', 'insurance', 'salary', 'subscription'];
+    const directKeywords = ['material', 'inventory', 'labor', 'product'];
+    
+    const isFixed = fixedKeywords.some(keyword => descriptionLower.includes(keyword));
+    const isDirect = directKeywords.some(keyword => descriptionLower.includes(keyword));
+    
+    return {
+      cost_type: isFixed ? 'fixed' : 'variable',
+      cost_nature: isDirect ? 'direct' : 'indirect',
+      confidence: 0.5,
+      reasoning: 'Default classification - limited business context'
+    };
+  }
+
+  // Save classification to database
+  async saveClassification(
+    transactionId: string,
+    userId: string,
+    classification: CostClassification
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('transaction_classifications')
+        .upsert({
+          transaction_id: transactionId,
+          user_id: userId,
+          cost_type: classification.cost_type,
+          cost_nature: classification.cost_nature,
+          ai_confidence: classification.confidence,
+          manual_override: false
+        });
+
+      if (error) {
+        console.error('Error saving classification:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in saveClassification:', error);
+      return false;
+    }
+  }
+
+  // Get existing classification
+  async getClassification(transactionId: string): Promise<CostClassification | null> {
+    try {
+      const { data, error } = await supabase
+        .from('transaction_classifications')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return {
+        cost_type: data.cost_type as 'fixed' | 'variable' | 'mixed',
+        cost_nature: data.cost_nature as 'direct' | 'indirect',
+        confidence: data.ai_confidence || 0,
+        reasoning: data.manual_override ? 'Manual override' : 'AI classification'
+      };
+    } catch (error) {
+      console.error('Error getting classification:', error);
+      return null;
+    }
+  }
+
+  // Update user's custom classification rules
+  async addCustomRule(
+    userId: string,
+    businessCategory: string,
+    keyword: string,
+    costType: 'fixed' | 'variable' | 'mixed',
+    costNature: 'direct' | 'indirect',
+    confidence: number = 0.8
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('cost_classification_rules')
+        .insert({
+          user_id: userId,
+          business_category: businessCategory,
+          cost_keyword: keyword,
+          cost_type: costType,
+          cost_nature: costNature,
+          confidence_score: confidence
+        });
+
+      if (error) {
+        console.error('Error adding custom rule:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in addCustomRule:', error);
+      return false;
+    }
   }
 }
+
+export const costClassificationService = new CostClassificationService();

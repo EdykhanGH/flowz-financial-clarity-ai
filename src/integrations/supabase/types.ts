@@ -99,6 +99,39 @@ export type Database = {
         }
         Relationships: []
       }
+      business_cost_patterns: {
+        Row: {
+          business_category: string
+          cost_keywords: string[]
+          created_at: string
+          id: string
+          industry_relevance: number | null
+          pattern_name: string
+          typical_cost_nature: string
+          typical_cost_type: string
+        }
+        Insert: {
+          business_category: string
+          cost_keywords: string[]
+          created_at?: string
+          id?: string
+          industry_relevance?: number | null
+          pattern_name: string
+          typical_cost_nature: string
+          typical_cost_type: string
+        }
+        Update: {
+          business_category?: string
+          cost_keywords?: string[]
+          created_at?: string
+          id?: string
+          industry_relevance?: number | null
+          pattern_name?: string
+          typical_cost_nature?: string
+          typical_cost_type?: string
+        }
+        Relationships: []
+      }
       business_profiles: {
         Row: {
           annual_revenue_range: string | null
@@ -195,6 +228,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_classification_rules: {
+        Row: {
+          business_category: string
+          confidence_score: number | null
+          cost_keyword: string
+          cost_nature: string
+          cost_type: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_category: string
+          confidence_score?: number | null
+          cost_keyword: string
+          cost_nature: string
+          cost_type: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_category?: string
+          confidence_score?: number | null
+          cost_keyword?: string
+          cost_nature?: string
+          cost_type?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -221,6 +290,50 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      transaction_classifications: {
+        Row: {
+          ai_confidence: number | null
+          cost_nature: string | null
+          cost_type: string | null
+          created_at: string
+          id: string
+          manual_override: boolean | null
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          cost_nature?: string | null
+          cost_type?: string | null
+          created_at?: string
+          id?: string
+          manual_override?: boolean | null
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          cost_nature?: string | null
+          cost_type?: string | null
+          created_at?: string
+          id?: string
+          manual_override?: boolean | null
+          transaction_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_classifications_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {

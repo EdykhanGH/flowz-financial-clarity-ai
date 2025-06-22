@@ -1,157 +1,229 @@
 
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { Database } from '@/integrations/supabase/types';
-
-type TransactionRow = Database['public']['Tables']['transactions']['Row'];
-type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
+import { costClassificationService } from '@/services/CostClassificationService';
 
 export interface Transaction {
   id: string;
-  type: 'income' | 'expense' | 'transfer' | 'investment' | 'refund';
-  category: string;
-  amount: number;
-  description: string | null;
-  date: string;
-  created_at: string;
-  updated_at: string;
   user_id: string;
+  date: string;
+  description: string | null;
+  amount: number;
+  category: string;
+  type: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface TransactionWithClassification extends Transaction {
+  classification?: {
+    cost_type: 'fixed' | 'variable' | 'mixed';
+    cost_nature: 'direct' | 'indirect';
+    ai_confidence: number;
+    manual_override: boolean;
+  };
 }
 
 export const useTransactions = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchTransactions = async () => {
-    if (!user) return;
+  // Fetch transactions with classifications
+  const { data: transactions = [], isLoading, error } = useQuery({
+    queryKey: ['transactions', user?.id],
+    queryFn: async (): Promise<TransactionWithClassification[]> => {
+      if (!user) return [];
 
-    try {
-      const { data, error } = await supabase
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (error) throw error;
-      
-      // Type assertion with validation
-      const validatedTransactions = (data || []).map(row => ({
-        ...row,
-        type: row.type as Transaction['type']
-      })) as Transaction[];
-      
-      setTransactions(validatedTransactions);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch transactions",
-        variant: "destructive"
+      if (transactionsError) throw transactionsError;
+
+      // Fetch classifications for all transactions
+      const { data: classificationsData, error: classificationsError } = await supabase
+        .from('transaction_classifications')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (classificationsError) {
+        console.error('Error fetching classifications:', classificationsError);
+      }
+
+      // Merge transactions with their classifications
+      const transactionsWithClassifications = transactionsData.map(transaction => {
+        const classification = classificationsData?.find(
+          c => c.transaction_id === transaction.id
+        );
+
+        return {
+          ...transaction,
+          classification: classification ? {
+            cost_type: classification.cost_type,
+            cost_nature: classification.cost_nature,
+            ai_confidence: classification.ai_confidence,
+            manual_override: classification.manual_override
+          } : undefined
+        };
       });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
-    if (!user) return;
+      return transactionsWithClassifications;
+    },
+    enabled: !!user,
+  });
 
-    try {
+  // Add transaction mutation with automatic classification
+  const addTransactionMutation = useMutation({
+    mutationFn: async (newTransaction: Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+      if (!user) throw new Error('User not authenticated');
+
+      // Insert transaction
       const { data, error } = await supabase
         .from('transactions')
-        .insert([{
-          ...transactionData,
-          user_id: user.id
-        }])
+        .insert([
+          {
+            ...newTransaction,
+            user_id: user.id,
+          },
+        ])
         .select()
         .single();
 
       if (error) throw error;
 
-      const newTransaction = {
-        ...data,
-        type: data.type as Transaction['type']
-      } as Transaction;
+      // Automatically classify the transaction
+      if (data && newTransaction.description) {
+        try {
+          const classification = await costClassificationService.classifyTransaction(
+            newTransaction.description,
+            newTransaction.amount,
+            newTransaction.category,
+            user.id
+          );
 
-      // Real-time updates will handle adding to the list
-      toast({
-        title: "Success",
-        description: "Transaction added successfully"
-      });
+          await costClassificationService.saveClassification(
+            data.id,
+            user.id,
+            classification
+          );
 
-      return { data: newTransaction, error: null };
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to add transaction",
-        variant: "destructive"
-      });
-      return { data: null, error };
-    }
-  };
-
-  useEffect(() => {
-    if (!user) {
-      setTransactions([]);
-      setLoading(false);
-      return;
-    }
-
-    // Initial fetch
-    fetchTransactions();
-
-    // Set up real-time subscription with unique channel name per user
-    const channelName = `transactions-${user.id}-${Date.now()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Real-time transaction update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newTransaction = {
-              ...payload.new,
-              type: payload.new.type as Transaction['type']
-            } as Transaction;
-            
-            setTransactions(prev => [newTransaction, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedTransaction = {
-              ...payload.new,
-              type: payload.new.type as Transaction['type']
-            } as Transaction;
-            
-            setTransactions(prev => 
-              prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setTransactions(prev => 
-              prev.filter(t => t.id !== payload.old.id)
-            );
-          }
+          console.log('Transaction classified:', classification);
+        } catch (classificationError) {
+          console.error('Error classifying transaction:', classificationError);
+          // Don't throw here - transaction was saved successfully
         }
-      )
-      .subscribe();
+      }
 
-    return () => {
-      console.log('Cleaning up realtime subscription for channel:', channelName);
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+    },
+  });
+
+  // Update transaction mutation
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Transaction> }) => {
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Re-classify if description or category changed
+      if ((updates.description || updates.category) && user) {
+        try {
+          const classification = await costClassificationService.classifyTransaction(
+            updates.description || data.description || '',
+            updates.amount || data.amount,
+            updates.category || data.category,
+            user.id
+          );
+
+          await costClassificationService.saveClassification(
+            data.id,
+            user.id,
+            classification
+          );
+        } catch (classificationError) {
+          console.error('Error re-classifying transaction:', classificationError);
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+    },
+  });
+
+  // Delete transaction mutation
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+    },
+  });
+
+  // Bulk classify existing transactions
+  const classifyAllTransactions = async () => {
+    if (!user || !transactions.length) return;
+
+    const unclassifiedTransactions = transactions.filter(t => !t.classification);
+    
+    console.log(`Classifying ${unclassifiedTransactions.length} transactions...`);
+
+    for (const transaction of unclassifiedTransactions) {
+      try {
+        if (transaction.description) {
+          const classification = await costClassificationService.classifyTransaction(
+            transaction.description,
+            transaction.amount,
+            transaction.category,
+            user.id
+          );
+
+          await costClassificationService.saveClassification(
+            transaction.id,
+            user.id,
+            classification
+          );
+        }
+      } catch (error) {
+        console.error(`Error classifying transaction ${transaction.id}:`, error);
+      }
+    }
+
+    // Refresh the data
+    queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+  };
 
   return {
     transactions,
-    loading,
-    addTransaction,
-    refetch: fetchTransactions
+    isLoading,
+    error,
+    addTransaction: addTransactionMutation.mutate,
+    updateTransaction: updateTransactionMutation.mutate,
+    deleteTransaction: deleteTransactionMutation.mutate,
+    classifyAllTransactions,
+    isAddingTransaction: addTransactionMutation.isPending,
+    isUpdatingTransaction: updateTransactionMutation.isPending,
+    isDeletingTransaction: deleteTransactionMutation.isPending,
   };
 };

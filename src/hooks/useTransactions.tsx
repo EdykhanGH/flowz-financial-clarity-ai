@@ -63,8 +63,8 @@ export const useTransactions = () => {
         return {
           ...transaction,
           classification: classification ? {
-            cost_type: classification.cost_type,
-            cost_nature: classification.cost_nature,
+            cost_type: classification.cost_type as 'fixed' | 'variable' | 'mixed',
+            cost_nature: classification.cost_nature as 'direct' | 'indirect',
             ai_confidence: classification.ai_confidence,
             manual_override: classification.manual_override
           } : undefined

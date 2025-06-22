@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface BusinessProfile {
@@ -66,7 +65,15 @@ export class CostClassificationService {
       return [];
     }
 
-    return data || [];
+    // Cast the database types to our interface types
+    return (data || []).map(pattern => ({
+      pattern_name: pattern.pattern_name,
+      business_category: pattern.business_category,
+      cost_keywords: pattern.cost_keywords,
+      typical_cost_type: pattern.typical_cost_type as 'fixed' | 'variable' | 'mixed',
+      typical_cost_nature: pattern.typical_cost_nature as 'direct' | 'indirect',
+      industry_relevance: pattern.industry_relevance || 1.0
+    }));
   }
 
   // Main AI classification function

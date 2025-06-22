@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) => {
-  const { transactions, loading } = useTransactions();
+  const { transactions, isLoading } = useTransactions();
   const { categories } = useBusinessCategories();
   
   // Filter states
@@ -108,7 +107,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
 
   // Calculate real-time KPIs from filtered transactions data
   const kpiData = useMemo(() => {
-    if (loading || !filteredTransactions.length) {
+    if (isLoading || !filteredTransactions.length) {
       return {
         totalRevenue: { value: '₦0', change: '0%', trend: 'up' as const },
         totalCosts: { value: '₦0', change: '0%', trend: 'down' as const },
@@ -152,7 +151,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
         trend: netIncome >= 0 ? 'up' as const : 'down' as const 
       }
     };
-  }, [filteredTransactions, loading]);
+  }, [filteredTransactions, isLoading]);
 
   // Generate chart data from filtered transactions
   const chartData = useMemo(() => {
@@ -282,7 +281,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
     setSelectedCategories([]);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-gray-500">Loading dashboard data...</div>

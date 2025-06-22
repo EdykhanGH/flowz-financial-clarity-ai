@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +24,6 @@ import AnalysisSection from '@/components/dashboard/AnalysisSection';
 import ScenariosSection from '@/components/dashboard/ScenariosSection';
 import BudgetSection from '@/components/dashboard/BudgetSection';
 import CostClassificationManager from '@/components/CostClassificationManager';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
 
 const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -36,7 +36,8 @@ const DashboardContent = () => {
     { id: 'analysis', label: 'Analysis', icon: BarChart3 },
     { id: 'scenarios', label: 'What-If Scenarios', icon: TrendingUp },
     { id: 'budgets', label: 'Budgets', icon: Calculator },
-    { id: 'assistant', label: 'AI Assistant', icon: Bot }
+    { id: 'assistant', label: 'AI Assistant', icon: Bot },
+    { id: 'cost-analysis', label: 'Cost Analysis', icon: BarChart3 }
   ];
 
   const handleSignOut = async () => {
@@ -61,15 +62,17 @@ const DashboardContent = () => {
         return <BudgetSection />;
       case 'assistant':
         return <AIAssistant />;
+      case 'cost-analysis':
+        return <CostClassificationManager />;
       default:
         return <DashboardOverview setActiveTab={setActiveTab} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
-      <div className={`bg-[#1A1A1A] text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+      <div className={`bg-[#1A1A1A] text-white transition-all duration-300 fixed h-full z-10 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
             <h1 className={`text-xl font-bold text-orange-500 ${sidebarOpen ? 'block' : 'hidden'}`}>
@@ -126,7 +129,7 @@ const DashboardContent = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6">
           <div className="flex items-center">
@@ -139,7 +142,8 @@ const DashboardContent = () => {
               <Menu className="w-4 h-4" />
             </Button>
             <h2 className="text-xl font-semibold capitalize text-gray-900">
-              {activeTab === 'scenarios' ? 'What-If Scenarios' : activeTab}
+              {activeTab === 'scenarios' ? 'What-If Scenarios' : 
+               activeTab === 'cost-analysis' ? 'Cost Analysis' : activeTab}
             </h2>
           </div>
           
@@ -157,62 +161,8 @@ const DashboardContent = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="container mx-auto px-4 py-8">
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-gray-800">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-orange-500">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="data" className="data-[state=active]:bg-orange-500">
-                Data
-              </TabsTrigger>
-              <TabsTrigger value="analysis" className="data-[state=active]:bg-orange-500">
-                Analysis
-              </TabsTrigger>
-              <TabsTrigger value="scenarios" className="data-[state=active]:bg-orange-500">
-                What-If Scenarios
-              </TabsTrigger>
-              <TabsTrigger value="budgets" className="data-[state=active]:bg-orange-500">
-                Budgets
-              </TabsTrigger>
-              <TabsTrigger value="assistant" className="data-[state=active]:bg-orange-500">
-                AI Assistant
-              </TabsTrigger>
-              <TabsTrigger value="cost-analysis" className="data-[state=active]:bg-orange-500">
-                Cost Analysis
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <DashboardOverview setActiveTab={setActiveTab} />
-            </TabsContent>
-
-            <TabsContent value="data" className="space-y-6">
-              <div className="bg-gray-900 min-h-full p-6 rounded-lg">
-                <DataUpload />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="analysis" className="space-y-6">
-              <AnalysisSection />
-            </TabsContent>
-
-            <TabsContent value="scenarios" className="space-y-6">
-              <ScenariosSection />
-            </TabsContent>
-
-            <TabsContent value="budgets" className="space-y-6">
-              <BudgetSection />
-            </TabsContent>
-
-            <TabsContent value="assistant" className="space-y-6">
-              <AIAssistant />
-            </TabsContent>
-
-            <TabsContent value="cost-analysis" className="space-y-6">
-              <CostClassificationManager />
-            </TabsContent>
-          </Tabs>
+        <main className="p-6">
+          {renderContent()}
         </main>
       </div>
     </div>

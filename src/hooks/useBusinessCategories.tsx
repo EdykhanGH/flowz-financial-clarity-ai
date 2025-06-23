@@ -19,17 +19,24 @@ export const useBusinessCategories = () => {
   const { toast } = useToast();
 
   const fetchCategories = async () => {
-    if (!user) return;
+    if (!user) {
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('business_categories')
         .select('*')
+        .eq('user_id', user.id)
         .order('category_name');
 
       if (error) throw error;
       setCategories(data || []);
     } catch (error: any) {
+      console.error('Error fetching categories:', error);
       toast({
         title: "Error",
         description: "Failed to fetch categories",
@@ -41,7 +48,28 @@ export const useBusinessCategories = () => {
   };
 
   const addCategory = async (categoryName: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add categories",
+        variant: "destructive"
+      });
+      return { data: null, error: 'Not authenticated' };
+    }
+
+    // Check if category already exists
+    const existingCategory = categories.find(
+      cat => cat.category_name.toLowerCase() === categoryName.toLowerCase()
+    );
+
+    if (existingCategory) {
+      toast({
+        title: "Error",
+        description: "Category already exists",
+        variant: "destructive"
+      });
+      return { data: null, error: 'Category already exists' };
+    }
 
     try {
       const { data, error } = await supabase
@@ -63,9 +91,10 @@ export const useBusinessCategories = () => {
 
       return { data, error: null };
     } catch (error: any) {
+      console.error('Error adding category:', error);
       toast({
         title: "Error",
-        description: "Failed to add category",
+        description: error.message || "Failed to add category",
         variant: "destructive"
       });
       return { data: null, error };
@@ -79,7 +108,8 @@ export const useBusinessCategories = () => {
       const { error } = await supabase
         .from('business_categories')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -89,47 +119,17 @@ export const useBusinessCategories = () => {
         description: "Category deleted successfully"
       });
     } catch (error: any) {
+      console.error('Error deleting category:', error);
       toast({
         title: "Error",
-        description: "Failed to delete category",
+        description: error.message || "Failed to delete category",
         variant: "destructive"
       });
     }
   };
 
   useEffect(() => {
-    if (!user) {
-      setCategories([]);
-      setLoading(false);
-      return;
-    }
-
     fetchCategories();
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel(`business-categories-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'business_categories',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCategories(prev => [...prev, payload.new as BusinessCategory]);
-          } else if (payload.eventType === 'DELETE') {
-            setCategories(prev => prev.filter(cat => cat.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user?.id]);
 
   return {

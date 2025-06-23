@@ -28,21 +28,34 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
     setIsAdding(true);
     try {
-      await addCategory(newCategory.trim());
-      setNewCategory('');
+      const result = await addCategory(newCategory.trim());
+      if (result && !result.error) {
+        setNewCategory('');
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
     } finally {
       setIsAdding(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isAdding) {
+      e.preventDefault();
       handleAddCategory();
     }
   };
 
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await deleteCategory(id);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+  };
+
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-gray-800 border-gray-700">
       {showTitle && (
         <CardHeader>
           <CardTitle className="text-white">{title}</CardTitle>
@@ -59,14 +72,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
               onChange={(e) => setNewCategory(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Enter category name..."
-              className="mt-1"
+              className="mt-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+              disabled={isAdding}
             />
           </div>
           <div className="flex items-end">
             <Button
               onClick={handleAddCategory}
               disabled={!newCategory.trim() || isAdding}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               {isAdding ? 'Adding...' : 'Add'}
@@ -87,12 +101,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                   <Badge
                     key={category.id}
                     variant="secondary"
-                    className="flex items-center gap-2 px-3 py-1"
+                    className="flex items-center gap-2 px-3 py-1 bg-gray-700 text-white hover:bg-gray-600"
                   >
                     {category.category_name}
                     <button
-                      onClick={() => deleteCategory(category.id)}
-                      className="text-red-400 hover:text-red-300"
+                      onClick={() => handleDeleteCategory(category.id)}
+                      className="text-red-400 hover:text-red-300 ml-1"
+                      title="Delete category"
                     >
                       <X className="w-3 h-3" />
                     </button>

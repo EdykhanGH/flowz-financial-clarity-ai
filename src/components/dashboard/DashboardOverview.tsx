@@ -61,6 +61,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
     }));
   }, [transactions]);
 
+  // Use business categories for filtering
   const availableCategories = useMemo(() => {
     const transactionCategories = new Set(transactions.map(t => t.category));
     const userCategories = new Set(categories.map(c => c.category_name));
@@ -362,7 +363,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
               </div>
             )}
 
-            {/* Category Filter */}
+            {/* Category Filter - Now using business categories */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Categories</label>
               <Select value={selectedCategories.join(',')} onValueChange={(value) => setSelectedCategories(value ? value.split(',') : [])}>
@@ -370,11 +371,17 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
                   <SelectValue placeholder="Select categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {availableCategories.length > 0 ? (
+                    availableCategories.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-categories" disabled>
+                      No categories available
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>

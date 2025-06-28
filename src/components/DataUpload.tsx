@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText, Edit } from 'lucide-react';
+import { Upload, FileText, Edit, Link, BankIcon } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import TemplateSelector from './TemplateSelector';
 import FileUploadSection from './data-upload/FileUploadSection';
 import FinancialAnalysisModal from './data-upload/FinancialAnalysisModal';
-import ManualEntry from './data-upload/ManualEntry';
+import EnhancedManualEntry from './data-upload/EnhancedManualEntry';
+import BankStatementUpload from './data-upload/BankStatementUpload';
+import APIConnections from './data-upload/APIConnections';
 import { parseFile, mapTransactionType, calculateSummary, Transaction } from './data-upload/FileProcessor';
 
 interface FileData {
@@ -87,25 +89,41 @@ const DataUpload: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-white mb-2">Financial Data Management</h1>
-        <p className="text-gray-400">Upload your financial statements, use our templates, or enter data manually</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Comprehensive Data Collection</h1>
+        <p className="text-gray-400">Multiple ways to capture your financial data - just like QuickBooks</p>
       </div>
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-800">
-          <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">
-            <Upload className="w-4 h-4 mr-2" />
-            Upload Data
-          </TabsTrigger>
+      <Tabs defaultValue="manual" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-800">
           <TabsTrigger value="manual" className="data-[state=active]:bg-orange-500">
             <Edit className="w-4 h-4 mr-2" />
             Manual Entry
           </TabsTrigger>
+          <TabsTrigger value="bank" className="data-[state=active]:bg-orange-500">
+            <BankIcon className="w-4 h-4 mr-2" />
+            Bank Statements
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">
+            <Upload className="w-4 h-4 mr-2" />
+            Document Upload
+          </TabsTrigger>
+          <TabsTrigger value="api" className="data-[state=active]:bg-orange-500">
+            <Link className="w-4 h-4 mr-2" />
+            API Connections
+          </TabsTrigger>
           <TabsTrigger value="templates" className="data-[state=active]:bg-orange-500">
             <FileText className="w-4 h-4 mr-2" />
-            Use Template
+            Templates
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="manual" className="space-y-6">
+          <EnhancedManualEntry />
+        </TabsContent>
+
+        <TabsContent value="bank" className="space-y-6">
+          <BankStatementUpload />
+        </TabsContent>
 
         <TabsContent value="upload" className="space-y-6">
           <FileUploadSection
@@ -117,8 +135,8 @@ const DataUpload: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="manual" className="space-y-6">
-          <ManualEntry />
+        <TabsContent value="api" className="space-y-6">
+          <APIConnections />
         </TabsContent>
 
         <TabsContent value="templates">

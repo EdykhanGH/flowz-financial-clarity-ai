@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +15,8 @@ import {
   User,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Target
 } from 'lucide-react';
 import { AIAssistant } from '@/components/AIAssistant';
 import DataUpload from '@/components/DataUpload';

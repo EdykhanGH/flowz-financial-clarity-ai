@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText, Edit, Link, BankIcon } from 'lucide-react';
+import { Upload, FileText, Edit, Link, Banknote } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import TemplateSelector from './TemplateSelector';
 import FileUploadSection from './data-upload/FileUploadSection';
@@ -100,7 +100,7 @@ const DataUpload: React.FC = () => {
             Manual Entry
           </TabsTrigger>
           <TabsTrigger value="bank" className="data-[state=active]:bg-orange-500">
-            <BankIcon className="w-4 h-4 mr-2" />
+            <Banknote className="w-4 h-4 mr-2" />
             Bank Statements
           </TabsTrigger>
           <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +23,10 @@ import AnalysisSection from '@/components/dashboard/AnalysisSection';
 import ScenariosSection from '@/components/dashboard/ScenariosSection';
 import BudgetSection from '@/components/dashboard/BudgetSection';
 import CostClassificationManager from '@/components/CostClassificationManager';
+import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
+import ForecastingSection from '@/components/dashboard/ForecastingSection';
+import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
+import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
 
 const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -32,12 +35,14 @@ const DashboardContent = () => {
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'data', label: 'Data', icon: Database },
-    { id: 'analysis', label: 'Analysis', icon: BarChart3 },
+    { id: 'data', label: 'Data Upload', icon: Database },
+    { id: 'cost-analysis', label: 'Cost Analysis', icon: Calculator },
+    { id: 'analysis', label: 'Financial Analysis', icon: BarChart3 },
+    { id: 'forecasting', label: 'Forecasting', icon: TrendingUp },
+    { id: 'variance', label: 'Variance Analysis', icon: Target },
     { id: 'scenarios', label: 'What-If Scenarios', icon: TrendingUp },
-    { id: 'budgets', label: 'Budgets', icon: Calculator },
-    { id: 'assistant', label: 'AI Assistant', icon: Bot },
-    { id: 'cost-analysis', label: 'Cost Analysis', icon: BarChart3 }
+    { id: 'budgets', label: 'Budget Management', icon: Calculator },
+    { id: 'assistant', label: 'AI Assistant', icon: Bot }
   ];
 
   const handleSignOut = async () => {
@@ -54,16 +59,20 @@ const DashboardContent = () => {
             <DataUpload />
           </div>
         );
+      case 'cost-analysis':
+        return <CostAnalysisSection />;
       case 'analysis':
         return <AnalysisSection />;
+      case 'forecasting':
+        return <ForecastingSection />;
+      case 'variance':
+        return <VarianceAnalysisSection />;
       case 'scenarios':
         return <ScenariosSection />;
       case 'budgets':
         return <BudgetSection />;
       case 'assistant':
-        return <AIAssistant />;
-      case 'cost-analysis':
-        return <CostClassificationManager />;
+        return <EnhancedAIAssistant />;
       default:
         return <DashboardOverview setActiveTab={setActiveTab} />;
     }

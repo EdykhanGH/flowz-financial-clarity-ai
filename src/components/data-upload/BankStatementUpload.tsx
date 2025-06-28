@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Check, X, Edit, Save, AlertCircle, FileText } from 'lucide-react';
+import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 import { parseFile, Transaction } from './FileProcessor';
@@ -23,6 +22,7 @@ const BankStatementUpload: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processingProgress, setProcessingProgress] = useState(0);
   const { addTransaction } = useTransactions();
   const { toast } = useToast();
 
@@ -31,6 +31,8 @@ const BankStatementUpload: React.FC = () => {
     if (file) {
       setSelectedFile(file);
       setUploadError(null);
+      setTransactions([]);
+      console.log('Selected file:', file.name, 'Size:', file.size, 'Type:', file.type);
     }
   };
 
@@ -39,14 +41,19 @@ const BankStatementUpload: React.FC = () => {
 
     setIsProcessing(true);
     setUploadError(null);
+    setProcessingProgress(0);
     
     try {
-      console.log('Processing file:', selectedFile.name);
+      console.log('Starting file processing:', selectedFile.name);
+      setProcessingProgress(25);
+      
       const parsedTransactions = await parseFile(selectedFile);
-      console.log('Parsed transactions:', parsedTransactions);
+      setProcessingProgress(75);
+      
+      console.log('Successfully parsed transactions:', parsedTransactions.length);
       
       if (parsedTransactions.length === 0) {
-        throw new Error('No transactions found in the file. Please check the file format and content.');
+        throw new Error('No transactions found in the file. Please check if:\n• The file contains transaction data\n• The file is not password protected\n• The file format is supported (PDF with text, not scanned images)');
       }
 
       const bankTransactions: BankTransaction[] = parsedTransactions.map((transaction, index) => ({
@@ -56,21 +63,35 @@ const BankStatementUpload: React.FC = () => {
       }));
 
       setTransactions(bankTransactions);
+      setProcessingProgress(100);
+      
       toast({
-        title: "Success",
-        description: `${bankTransactions.length} transactions extracted successfully`,
+        title: "Success!",
+        description: `Successfully extracted ${bankTransactions.length} transactions from your bank statement`,
       });
     } catch (error: any) {
       console.error('File processing error:', error);
-      const errorMessage = error.message || 'Failed to process bank statement';
+      let errorMessage = 'Failed to process bank statement';
+      
+      if (error.message.includes('PDF')) {
+        errorMessage = `PDF Processing Error: ${error.message}`;
+      } else if (error.message.includes('worker')) {
+        errorMessage = 'PDF processing failed. Please try refreshing the page and uploading again.';
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Network error occurred. Please check your internet connection and try again.';
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
       setUploadError(errorMessage);
       toast({
-        title: "Processing Error",
+        title: "Processing Failed",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
+      setProcessingProgress(0);
     }
   };
 
@@ -114,6 +135,7 @@ const BankStatementUpload: React.FC = () => {
     setIsProcessing(true);
     
     try {
+      let savedCount = 0;
       for (const transaction of transactions) {
         await addTransaction({
           date: transaction.date,
@@ -122,11 +144,12 @@ const BankStatementUpload: React.FC = () => {
           type: transaction.type,
           category: transaction.category || 'Uncategorized'
         });
+        savedCount++;
       }
       
       toast({
-        title: "Success",
-        description: `${transactions.length} transactions saved successfully`,
+        title: "Success!",
+        description: `${savedCount} transactions saved successfully to your account`,
       });
       
       setTransactions([]);
@@ -134,8 +157,8 @@ const BankStatementUpload: React.FC = () => {
     } catch (error) {
       console.error('Save error:', error);
       toast({
-        title: "Error",
-        description: "Failed to save transactions",
+        title: "Save Failed",
+        description: "Failed to save transactions. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -157,6 +180,21 @@ const BankStatementUpload: React.FC = () => {
       <CardContent className="space-y-6">
         {/* File Upload Section */}
         <div className="space-y-4">
+          {/* File Format Info */}
+          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+            <div className="flex items-start">
+              <Info className="w-4 h-4 text-blue-400 mr-2 mt-0.5" />
+              <div className="text-sm text-blue-300">
+                <p className="font-medium mb-1">Supported Formats:</p>
+                <ul className="text-xs text-blue-200 space-y-1">
+                  <li>• PDF bank statements (with readable text, not scanned images)</li>
+                  <li>• CSV files exported from your bank</li>
+                  <li>• Excel files (.xls, .xlsx) with transaction data</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="bank-statement" className="text-gray-300">
               Select Bank Statement File
@@ -169,39 +207,50 @@ const BankStatementUpload: React.FC = () => {
               className="mt-1"
             />
             {selectedFile && (
-              <p className="text-sm text-green-400 mt-1">
-                Selected: {selectedFile.name}
-              </p>
+              <div className="mt-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
+                <p className="text-sm text-green-400">
+                  ✓ Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              </div>
             )}
           </div>
 
           <Button 
             onClick={handleFileUpload}
             disabled={!selectedFile || isProcessing}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 w-full"
           >
             <Upload className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Processing...' : 'Process Statement'}
+            {isProcessing ? 'Processing Statement...' : 'Process Statement'}
           </Button>
+
+          {/* Processing Progress */}
+          {isProcessing && (
+            <div className="space-y-2">
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${processingProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-center text-sm text-gray-300">
+                Processing your bank statement... {processingProgress}%
+              </p>
+            </div>
+          )}
 
           {uploadError && (
             <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                <span className="text-red-400">{uploadError}</span>
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5" />
+                <div>
+                  <p className="text-red-400 font-medium">Processing Failed</p>
+                  <p className="text-red-300 text-sm mt-1 whitespace-pre-line">{uploadError}</p>
+                </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Processing Indicator */}
-        {isProcessing && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="text-gray-300 mt-4">Processing bank statement...</p>
-            <p className="text-gray-500 text-sm">This may take a few moments</p>
-          </div>
-        )}
 
         {/* Results Section */}
         {transactions.length > 0 && (
@@ -318,7 +367,10 @@ const BankStatementUpload: React.FC = () => {
                             <SelectItem value="Bank Charges">Bank Charges</SelectItem>
                             <SelectItem value="Salary">Salary</SelectItem>
                             <SelectItem value="Business Income">Business Income</SelectItem>
+                            <SelectItem value="Investment Income">Investment Income</SelectItem>
                             <SelectItem value="Savings & Investment">Savings & Investment</SelectItem>
+                            <SelectItem value="Shopping">Shopping</SelectItem>
+                            <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
                             <SelectItem value="Uncategorized">Uncategorized</SelectItem>
                           </SelectContent>
                         </Select>

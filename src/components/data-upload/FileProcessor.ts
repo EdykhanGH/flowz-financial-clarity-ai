@@ -1,9 +1,11 @@
-
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF.js worker using a more reliable method
+if (typeof window !== 'undefined') {
+  // Use local worker for better reliability
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).href;
+}
 
 export interface Transaction {
   date: string;
@@ -46,26 +48,36 @@ const processExcelData = (rawData: any[][]): any[] => {
   const transactions: any[] = [];
   let headerRow = -1;
   
-  // Find header row
-  for (let i = 0; i < rawData.length; i++) {
+  // Find header row with more comprehensive search
+  for (let i = 0; i < Math.min(rawData.length, 20); i++) {
     const row = rawData[i];
     if (row && Array.isArray(row)) {
       const rowStr = row.join('').toLowerCase();
-      if (rowStr.includes('date') && (rowStr.includes('description') || rowStr.includes('narration') || rowStr.includes('details'))) {
+      if ((rowStr.includes('date') || rowStr.includes('transaction date') || rowStr.includes('value date')) && 
+          (rowStr.includes('description') || rowStr.includes('narration') || rowStr.includes('details') || rowStr.includes('particulars'))) {
         headerRow = i;
         break;
       }
     }
   }
   
-  if (headerRow === -1) return transactions;
+  if (headerRow === -1) {
+    console.log('No header row found, trying to extract from first 5 rows');
+    // If no clear header, assume first few rows contain transaction data
+    headerRow = 0;
+  }
   
-  const headers = rawData[headerRow].map(h => String(h || '').toLowerCase().trim());
-  const dateCol = findColumnIndex(headers, ['date', 'transaction date', 'value date']);
-  const descCol = findColumnIndex(headers, ['description', 'narration', 'details', 'transaction details']);
-  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out']);
-  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in']);
-  const balanceCol = findColumnIndex(headers, ['balance', 'running balance', 'available balance']);
+  const headers = rawData[headerRow] ? rawData[headerRow].map(h => String(h || '').toLowerCase().trim()) : [];
+  console.log('Found headers:', headers);
+  
+  const dateCol = findColumnIndex(headers, ['date', 'transaction date', 'value date', 'trans date', 'posting date']);
+  const descCol = findColumnIndex(headers, ['description', 'narration', 'details', 'transaction details', 'particulars', 'remark']);
+  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out', 'dr', 'debits']);
+  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in', 'cr', 'credits']);
+  const amountCol = findColumnIndex(headers, ['amount', 'transaction amount', 'value']);
+  const balanceCol = findColumnIndex(headers, ['balance', 'running balance', 'available balance', 'book balance']);
+  
+  console.log('Column mappings:', { dateCol, descCol, debitCol, creditCol, amountCol, balanceCol });
   
   // Process data rows
   for (let i = headerRow + 1; i < rawData.length; i++) {
@@ -76,23 +88,44 @@ const processExcelData = (rawData: any[][]): any[] => {
     const description = row[descCol];
     const debitAmount = parseAmount(row[debitCol]);
     const creditAmount = parseAmount(row[creditCol]);
+    const singleAmount = parseAmount(row[amountCol]);
     const balance = parseAmount(row[balanceCol]);
     
-    if (dateStr && description && (debitAmount > 0 || creditAmount > 0)) {
-      const amount = debitAmount > 0 ? debitAmount : creditAmount;
-      const type = debitAmount > 0 ? 'expense' : 'income';
-      
+    // Skip empty rows
+    if (!dateStr && !description && debitAmount === 0 && creditAmount === 0 && singleAmount === 0) continue;
+    
+    let amount = 0;
+    let type = 'expense';
+    
+    if (singleAmount > 0) {
+      amount = singleAmount;
+      // Try to determine type from description or context
+      const upperDescription = String(description || '').toUpperCase();
+      if (upperDescription.includes('CREDIT') || upperDescription.includes('DEPOSIT') || 
+          upperDescription.includes('SALARY') || upperDescription.includes('TRANSFER IN')) {
+        type = 'income';
+      }
+    } else if (debitAmount > 0) {
+      amount = debitAmount;
+      type = 'expense';
+    } else if (creditAmount > 0) {
+      amount = creditAmount;
+      type = 'income';
+    }
+    
+    if (amount > 0 && (dateStr || description)) {
       transactions.push({
         date: formatDate(dateStr),
-        description: String(description).trim(),
+        description: String(description || 'Transaction').trim(),
         amount: amount,
         type: type,
         balance: balance,
-        category: categorizeTransaction(String(description))
+        category: categorizeTransaction(String(description || ''))
       });
     }
   }
   
+  console.log(`Extracted ${transactions.length} transactions from Excel`);
   return transactions;
 };
 
@@ -106,13 +139,13 @@ const findColumnIndex = (headers: string[], possibleNames: string[]): number => 
 
 const parseAmount = (value: any): number => {
   if (!value) return 0;
-  const str = String(value).replace(/[₦,\s]/g, '');
+  const str = String(value).replace(/[₦,\s$£€]/g, '');
   const num = parseFloat(str);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 0 : Math.abs(num);
 };
 
 const formatDate = (dateValue: any): string => {
-  if (!dateValue) return '';
+  if (!dateValue) return new Date().toISOString().split('T')[0];
   
   // Handle Excel serial dates
   if (typeof dateValue === 'number' && dateValue > 1000) {
@@ -120,20 +153,48 @@ const formatDate = (dateValue: any): string => {
     return date.toISOString().split('T')[0];
   }
   
-  // Handle string dates
+  // Handle string dates with multiple formats
   const dateStr = String(dateValue);
-  const datePattern = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/;
-  const match = dateStr.match(datePattern);
   
-  if (match) {
-    let [, day, month, year] = match;
-    if (year.length === 2) {
-      year = '20' + year;
+  // Try different date patterns
+  const patterns = [
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/,
+    /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/,
+    /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{2,4})/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = dateStr.match(pattern);
+    if (match) {
+      let day, month, year;
+      
+      if (pattern.source.includes('Jan|Feb')) {
+        // Month name pattern
+        day = match[1];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        month = (monthNames.indexOf(match[2]) + 1).toString();
+        year = match[3];
+      } else if (match[1].length === 4) {
+        // YYYY-MM-DD format
+        year = match[1];
+        month = match[2];
+        day = match[3];
+      } else {
+        // DD-MM-YYYY format
+        day = match[1];
+        month = match[2];
+        year = match[3];
+      }
+      
+      if (year.length === 2) {
+        year = '20' + year;
+      }
+      
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   
-  return dateStr;
+  return new Date().toISOString().split('T')[0];
 };
 
 export const parsePDF = (file: File): Promise<any[]> => {
@@ -143,31 +204,51 @@ export const parsePDF = (file: File): Promise<any[]> => {
     reader.onload = async (e: any) => {
       try {
         const arrayBuffer = e.target.result;
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        // Load PDF with better error handling
+        const loadingTask = pdfjsLib.getDocument({ 
+          data: arrayBuffer,
+          standardFontDataUrl: null,
+          useWorkerFetch: false,
+          isEvalSupported: false,
+          useSystemFonts: true
+        });
+        
+        const pdf = await loadingTask.promise;
         let fullText = '';
+
+        console.log(`Processing PDF with ${pdf.numPages} pages`);
 
         // Extract text from all pages
         for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          fullText += pageText + '\n';
+          try {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += pageText + '\n';
+          } catch (pageError) {
+            console.warn(`Error processing page ${i}:`, pageError);
+          }
         }
         
-        console.log('Extracted PDF text:', fullText.substring(0, 500) + '...');
+        console.log('Extracted PDF text length:', fullText.length);
+        
+        if (fullText.length < 100) {
+          throw new Error('PDF appears to be empty or text extraction failed. Please ensure the PDF contains readable text.');
+        }
         
         // Parse Nigerian bank statement text format
         const transactions = parseNigerianBankStatement(fullText);
-        console.log('Parsed transactions:', transactions);
+        console.log('Parsed transactions:', transactions.length);
         resolve(transactions);
       } catch (error) {
         console.error('PDF parsing error:', error);
-        reject(error);
+        reject(new Error(`Failed to process PDF: ${error.message}. Please ensure the file is a valid PDF with readable text.`));
       }
     };
 
     reader.onerror = (error) => {
-      reject(error);
+      reject(new Error('Failed to read PDF file'));
     };
 
     reader.readAsArrayBuffer(file);
@@ -178,16 +259,17 @@ const parseNigerianBankStatement = (text: string): any[] => {
   const lines = text.split('\n').filter(line => line.trim());
   const transactions: any[] = [];
   
-  // Enhanced patterns for Nigerian banks
+  // Enhanced patterns for Nigerian banks and international formats
   const datePatterns = [
-    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
-    /(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4})/i,
-    /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
+    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/g,
+    /(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4})/gi,
+    /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/g
   ];
   
-  const amountPattern = /₦?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g;
+  // More comprehensive amount pattern
+  const amountPattern = /(?:₦|NGN|USD|\$|£|€)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g;
   
-  // Skip header and account info lines
+  // Skip header and footer lines
   const relevantLines = lines.filter(line => {
     const lower = line.toLowerCase();
     return !lower.includes('account number') && 
@@ -195,10 +277,12 @@ const parseNigerianBankStatement = (text: string): any[] => {
            !lower.includes('opening balance') && 
            !lower.includes('closing balance') &&
            !lower.includes('page ') &&
-           line.trim().length > 15; // Skip very short lines
+           !lower.includes('continued') &&
+           !lower.includes('brought forward') &&
+           line.trim().length > 20; // Increased minimum length
   });
   
-  console.log('Relevant lines:', relevantLines.slice(0, 10));
+  console.log(`Processing ${relevantLines.length} relevant lines from PDF`);
   
   for (let i = 0; i < relevantLines.length; i++) {
     const line = relevantLines[i].trim();
@@ -208,7 +292,8 @@ const parseNigerianBankStatement = (text: string): any[] => {
     let matchedPattern = null;
     
     for (const pattern of datePatterns) {
-      dateMatch = line.match(pattern);
+      pattern.lastIndex = 0; // Reset regex
+      dateMatch = pattern.exec(line);
       if (dateMatch) {
         matchedPattern = pattern;
         break;
@@ -217,38 +302,48 @@ const parseNigerianBankStatement = (text: string): any[] => {
     
     if (dateMatch) {
       const dateStr = dateMatch[1];
+      
+      // Reset and find all amounts in the line
+      amountPattern.lastIndex = 0;
       const amountMatches = Array.from(line.matchAll(amountPattern));
       
       if (amountMatches && amountMatches.length > 0) {
         // Remove date and amounts to get description
         let description = line
-          .replace(matchedPattern, '')
-          .replace(/₦?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g, '')
+          .replace(new RegExp(dateStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '')
+          .replace(/(?:₦|NGN|USD|\$|£|€)?\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g, '')
           .trim()
           .replace(/\s+/g, ' ');
         
-        // Clean up description
+        // Clean up description further
         description = description
           .replace(/^[\/\-\s]+|[\/\-\s]+$/g, '')
           .replace(/\s{2,}/g, ' ')
           .trim();
         
         if (description && amountMatches.length > 0) {
-          // Usually the transaction amount is the first or second amount
-          // The last amount is typically the balance
-          const transactionAmount = parseFloat(
-            amountMatches[0][1].replace(/,/g, '')
-          );
+          // Extract transaction amount (usually the first significant amount)
+          const amounts = amountMatches.map(match => parseFloat(match[1].replace(/,/g, '')));
+          let transactionAmount = amounts[0];
           
-          const balance = amountMatches.length > 1 ? 
-            parseFloat(amountMatches[amountMatches.length - 1][1].replace(/,/g, '')) : 
-            null;
+          // If multiple amounts, the larger one is usually the transaction amount
+          if (amounts.length > 1) {
+            transactionAmount = Math.max(...amounts.slice(0, -1)); // Exclude last (usually balance)
+          }
           
-          // Determine transaction type
+          const balance = amounts.length > 1 ? amounts[amounts.length - 1] : null;
+          
+          // Enhanced transaction type detection
           let type = 'expense';
           const upperDescription = description.toUpperCase();
-          const creditKeywords = ['CREDIT', 'SALARY', 'TRANSFER IN', 'DEPOSIT', 'PAYMENT RECEIVED', 'INWARD'];
-          const debitKeywords = ['DEBIT', 'WITHDRAWAL', 'TRANSFER OUT', 'PAYMENT', 'CHARGE', 'FEE'];
+          const creditKeywords = [
+            'CREDIT', 'SALARY', 'TRANSFER IN', 'DEPOSIT', 'PAYMENT RECEIVED', 
+            'INWARD', 'REVERSAL', 'REFUND', 'DIVIDEND', 'INTEREST', 'BONUS'
+          ];
+          const debitKeywords = [
+            'DEBIT', 'WITHDRAWAL', 'TRANSFER OUT', 'PAYMENT', 'CHARGE', 
+            'FEE', 'PURCHASE', 'ATM', 'POS', 'OUTWARD'
+          ];
           
           if (creditKeywords.some(keyword => upperDescription.includes(keyword))) {
             type = 'income';
@@ -269,28 +364,41 @@ const parseNigerianBankStatement = (text: string): any[] => {
     }
   }
   
-  // Sort by date
-  transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Sort by date and remove duplicates
+  const uniqueTransactions = transactions
+    .filter((t, index, self) => 
+      index === self.findIndex(other => 
+        other.date === t.date && 
+        other.description === t.description && 
+        other.amount === t.amount
+      )
+    )
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  return transactions;
+  console.log(`Extracted ${uniqueTransactions.length} unique transactions from PDF`);
+  return uniqueTransactions;
 };
 
 const categorizeTransaction = (description: string): string => {
   const desc = description.toUpperCase();
   
   // Income categories
-  if (desc.includes('SALARY') || desc.includes('PAY')) return 'Salary';
-  if (desc.includes('TRANSFER IN') || desc.includes('PAYMENT RECEIVED')) return 'Business Income';
+  if (desc.includes('SALARY') || desc.includes('PAY') || desc.includes('WAGE')) return 'Salary';
+  if (desc.includes('TRANSFER IN') || desc.includes('PAYMENT RECEIVED') || desc.includes('CREDIT TRANSFER')) return 'Business Income';
+  if (desc.includes('DIVIDEND') || desc.includes('INTEREST') || desc.includes('INVESTMENT')) return 'Investment Income';
   
   // Expense categories
-  if (desc.includes('GROCERY') || desc.includes('SUPERMARKET') || desc.includes('FOOD')) return 'Food & Groceries';
-  if (desc.includes('FUEL') || desc.includes('TRANSPORT') || desc.includes('UBER') || desc.includes('TAXI')) return 'Transportation';
-  if (desc.includes('ELECTRIC') || desc.includes('WATER') || desc.includes('UTILITY')) return 'Utilities';
-  if (desc.includes('RENT') || desc.includes('MORTGAGE')) return 'Housing';
-  if (desc.includes('HOSPITAL') || desc.includes('MEDICAL') || desc.includes('PHARMACY')) return 'Healthcare';
-  if (desc.includes('SCHOOL') || desc.includes('EDUCATION') || desc.includes('TUITION')) return 'Education';
-  if (desc.includes('BANK CHARGE') || desc.includes('FEE') || desc.includes('COMMISSION')) return 'Bank Charges';
-  if (desc.includes('SAVINGS') || desc.includes('INVESTMENT')) return 'Savings & Investment';
+  if (desc.includes('GROCERY') || desc.includes('SUPERMARKET') || desc.includes('FOOD') || desc.includes('RESTAURANT')) return 'Food & Groceries';
+  if (desc.includes('FUEL') || desc.includes('TRANSPORT') || desc.includes('UBER') || desc.includes('TAXI') || desc.includes('BUS')) return 'Transportation';
+  if (desc.includes('ELECTRIC') || desc.includes('WATER') || desc.includes('UTILITY') || desc.includes('BILL')) return 'Utilities';
+  if (desc.includes('RENT') || desc.includes('MORTGAGE') || desc.includes('ACCOMMODATION')) return 'Housing';
+  if (desc.includes('HOSPITAL') || desc.includes('MEDICAL') || desc.includes('PHARMACY') || desc.includes('HEALTH')) return 'Healthcare';
+  if (desc.includes('SCHOOL') || desc.includes('EDUCATION') || desc.includes('TUITION') || desc.includes('COURSE')) return 'Education';
+  if (desc.includes('BANK CHARGE') || desc.includes('FEE') || desc.includes('COMMISSION') || desc.includes('SERVICE CHARGE')) return 'Bank Charges';
+  if (desc.includes('SAVINGS') || desc.includes('INVESTMENT') || desc.includes('FIXED DEPOSIT')) return 'Savings & Investment';
+  if (desc.includes('ENTERTAINMENT') || desc.includes('MOVIE') || desc.includes('GAME') || desc.includes('LEISURE')) return 'Entertainment';
+  if (desc.includes('SHOPPING') || desc.includes('STORE') || desc.includes('PURCHASE')) return 'Shopping';
+  if (desc.includes('ATM') || desc.includes('WITHDRAWAL') || desc.includes('CASH')) return 'Cash Withdrawal';
   
   return 'Uncategorized';
 };
@@ -298,7 +406,15 @@ const categorizeTransaction = (description: string): string => {
 export const parseFile = async (file: File): Promise<any[]> => {
   const fileExtension = file.name.split('.').pop()?.toLowerCase();
   
-  console.log('Parsing file:', file.name, 'Extension:', fileExtension);
+  console.log('Parsing file:', file.name, 'Extension:', fileExtension, 'Size:', file.size);
+  
+  if (file.size === 0) {
+    throw new Error('File is empty. Please select a valid file.');
+  }
+  
+  if (file.size > 50 * 1024 * 1024) { // 50MB limit
+    throw new Error('File is too large. Please select a file smaller than 50MB.');
+  }
   
   switch (fileExtension) {
     case 'pdf':

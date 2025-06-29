@@ -101,7 +101,7 @@ export interface Transaction {
 // Enhanced transaction categories
 const TRANSACTION_CATEGORIES = {
   income: {
-    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus', 'transfer from', 'interest earned', 'deposit', 'credit alert'],
+    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus', 'transfer from', 'interest earned', 'deposit', 'credit alert', 'credit', 'received', 'incoming'],
     categories: {
       'salary': 'Salary',
       'transfer in': 'Business Income', 
@@ -114,7 +114,7 @@ const TRANSACTION_CATEGORIES = {
     }
   },
   expenses: {
-    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'airtime', 'data', 'electricity', 'fuel', 'transport', 'grocery', 'bill'],
+    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'airtime', 'data', 'electricity', 'fuel', 'transport', 'grocery', 'bill', 'shopping', 'store', 'commission', 'levy'],
     categories: {
       'grocery': 'Food & Groceries',
       'supermarket': 'Food & Groceries',
@@ -156,41 +156,69 @@ const TRANSACTION_CATEGORIES = {
   }
 };
 
-// Enhanced bank statement parser with multiple patterns
+// Enhanced bank statement parser with comprehensive patterns
 function parseBankStatement(text: string): Transaction[] {
   const transactions: Transaction[] = [];
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   
-  console.log(`Processing ${lines.length} lines for transaction extraction`);
+  console.log(`Processing ${lines.length} lines for comprehensive transaction extraction`);
   
-  // Multiple regex patterns to catch different bank statement formats
+  // Comprehensive regex patterns for different bank statement formats
   const patterns = [
-    // Pattern 1: Full format with timestamp, value date, description, amount, balance, channel, reference
+    // Pattern 1: Nigerian bank format with timestamp, value date, description, amount, balance, channel, reference
     /(\d{4}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(\S+)\s+(\S+)/,
     
-    // Pattern 2: Date, description, debit, credit, balance
+    // Pattern 2: Standard format with date, description, debit, credit, balance
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/,
     
     // Pattern 3: Simple date, description, amount format
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})/,
     
-    // Pattern 4: Date with description and amount (more flexible)
+    // Pattern 4: Extended format with more flexible spacing
     /(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})\s+(.*?)(?:\s+)([-+]?[\d,]+(?:\.\d{2})?)/,
     
-    // Pattern 5: Nigerian bank format with NGN
+    // Pattern 5: Nigerian bank format with NGN currency
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s+(.*?)\s+(?:NGN|₦)?\s*([-+]?[\d,]+\.\d{2})/,
     
     // Pattern 6: Transaction with balance at end
-    /((?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})|(?:\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}))\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})$/
+    /((?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})|(?:\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}))\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})$/,
+    
+    // Pattern 7: Multiple space separated values with flexible date formats
+    /(\d{1,2}[\s\/\-\.]\w{3}[\s\/\-\.]\d{2,4})\s+(.*?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/,
+    
+    // Pattern 8: Compact format without explicit separators
+    /(\d{8}|\d{1,2}\/\d{1,2}\/\d{4})\s*([A-Za-z].*?)\s+([\d,]+\.\d{2})/,
+    
+    // Pattern 9: Tab-separated values
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\t+(.*?)\t+([-+]?[\d,]+\.\d{2})/,
+    
+    // Pattern 10: Multi-line transaction format
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})[\s\n]+(.*?)[\s\n]+([-+]?[\d,]+\.\d{2})/
   ];
 
   let extractedCount = 0;
   
+  // First pass: Try to identify header patterns to skip
+  const headerPatterns = [
+    /date.*description.*amount/i,
+    /transaction.*date.*details/i,
+    /posting.*date.*narration/i,
+    /value.*date.*description/i,
+    /trans.*date.*particulars/i
+  ];
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const lowerLine = line.toLowerCase();
     
     // Skip obvious header lines
-    if (line.toLowerCase().includes('date') && line.toLowerCase().includes('description')) {
+    if (headerPatterns.some(pattern => pattern.test(lowerLine))) {
+      console.log(`Skipping header line: ${line}`);
+      continue;
+    }
+    
+    // Skip lines that are too short or contain only numbers/symbols
+    if (line.length < 10 || /^[\d\s\-\+\.,]+$/.test(line)) {
       continue;
     }
     
@@ -204,13 +232,13 @@ function parseBankStatement(text: string): Transaction[] {
           let transaction: Transaction;
           
           switch (patternIndex) {
-            case 0: // Full format
+            case 0: // Full Nigerian bank format
               const amount1 = parseFloat(match[4].replace(/[,+]/g, ''));
               transaction = {
                 timestamp: match[1],
                 valueDate: match[2],
                 date: formatDate(match[2]),
-                description: match[3].trim(),
+                description: cleanDescription(match[3]),
                 originalDescription: match[3].trim(),
                 amount: Math.abs(amount1),
                 balance: parseFloat(match[5].replace(/,/g, '')),
@@ -229,7 +257,7 @@ function parseBankStatement(text: string): Transaction[] {
               if (debit > 0 || credit > 0) {
                 transaction = {
                   date: formatDate(match[1]),
-                  description: match[2].trim(),
+                  description: cleanDescription(match[2]),
                   originalDescription: match[2].trim(),
                   amount: Math.abs(amount2),
                   balance: match[5] ? parseFloat(match[5].replace(/,/g, '')) : undefined,
@@ -242,16 +270,20 @@ function parseBankStatement(text: string): Transaction[] {
               break;
               
             default: // Other patterns
-              const amount3 = parseFloat(match[3].replace(/[,+-]/g, ''));
+              const amountStr = match[3] || match[4] || match[5];
+              if (!amountStr) continue;
+              
+              const amount3 = parseFloat(amountStr.replace(/[,+-]/g, ''));
               if (!isNaN(amount3) && amount3 > 0) {
+                const description = match[2] || match[1];
                 transaction = {
                   date: formatDate(match[1]),
-                  description: match[2].trim(),
-                  originalDescription: match[2].trim(),
+                  description: cleanDescription(description),
+                  originalDescription: description.trim(),
                   amount: amount3,
-                  balance: match[4] ? parseFloat(match[4].replace(/,/g, '')) : undefined,
-                  type: determineTransactionType(match[2], match[3]),
-                  category: categorizeTransaction(match[2])
+                  balance: match[4] && patternIndex === 5 ? parseFloat(match[4].replace(/,/g, '')) : undefined,
+                  type: determineTransactionType(description, amountStr),
+                  category: categorizeTransaction(description)
                 };
               } else {
                 continue;
@@ -259,11 +291,15 @@ function parseBankStatement(text: string): Transaction[] {
               break;
           }
           
-          // Validate transaction before adding
-          if (transaction && transaction.amount > 0 && transaction.description && transaction.description.length > 2) {
+          // Enhanced validation before adding transaction
+          if (transaction && 
+              transaction.amount > 0 && 
+              transaction.description && 
+              transaction.description.length > 2 &&
+              !isDuplicateTransaction(transactions, transaction)) {
             transactions.push(transaction);
             extractedCount++;
-            console.log(`Extracted transaction ${extractedCount}: ${transaction.description} - ${transaction.amount}`);
+            console.log(`Extracted transaction ${extractedCount}: ${transaction.description} - ₦${transaction.amount}`);
           }
           
           break; // Found a match, no need to try other patterns
@@ -275,8 +311,66 @@ function parseBankStatement(text: string): Transaction[] {
     }
   }
   
+  // Second pass: Try to catch any missed transactions with looser patterns
+  if (extractedCount < 10) {
+    console.log('Low extraction count, trying looser patterns...');
+    const loosePatterns = [
+      // Very loose pattern for any line with date and amount
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}).*?([\d,]+\.\d{2})/g,
+      // Pattern for lines with month names
+      /(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}).*?([\d,]+\.\d{2})/g
+    ];
+    
+    for (const line of lines) {
+      if (headerPatterns.some(pattern => pattern.test(line.toLowerCase()))) continue;
+      
+      for (const loosePattern of loosePatterns) {
+        const matches = [...line.matchAll(loosePattern)];
+        for (const match of matches) {
+          const amount = parseFloat(match[2].replace(/,/g, ''));
+          if (amount > 0) {
+            const description = line.replace(match[0], '').trim() || 'Transaction';
+            if (description.length > 3 && !isDuplicateTransaction(transactions, { 
+              date: formatDate(match[1]), 
+              description: cleanDescription(description),
+              amount: amount 
+            } as Transaction)) {
+              transactions.push({
+                date: formatDate(match[1]),
+                description: cleanDescription(description),
+                originalDescription: description,
+                amount: amount,
+                type: determineTransactionType(description, match[2]),
+                category: categorizeTransaction(description)
+              });
+              extractedCount++;
+            }
+          }
+        }
+      }
+    }
+  }
+  
   console.log(`Total transactions extracted: ${extractedCount}`);
-  return transactions;
+  return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+// Helper function to clean description text
+function cleanDescription(description: string): string {
+  return description
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-\.]/g, ' ')
+    .trim()
+    .substring(0, 100); // Limit length
+}
+
+// Helper function to check for duplicate transactions
+function isDuplicateTransaction(existingTransactions: Transaction[], newTransaction: Transaction): boolean {
+  return existingTransactions.some(existing => 
+    existing.date === newTransaction.date &&
+    existing.amount === newTransaction.amount &&
+    existing.description === newTransaction.description
+  );
 }
 
 function categorizeTransactions(transactions: Transaction[]): Transaction[] {
@@ -559,7 +653,8 @@ const formatDate = (dateValue: any): string => {
   const patterns = [
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/g,
     /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/g,
-    /(\d{1,2}(st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/gi
+    /(\d{1,2}(st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/gi,
+    /(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/gi
   ];
   
   for (const pattern of patterns) {

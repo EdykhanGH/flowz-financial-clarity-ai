@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
   },
   worker: {
     format: 'es',
-    plugins: [react()]
+    plugins: () => [react()]
   },
   define: {
     // Help with PDF.js worker detection

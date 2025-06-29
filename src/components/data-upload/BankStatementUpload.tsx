@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator } from 'lucide-react';
+import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator, Database } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 import { parseFile, Transaction, calculateSummary, exportToCSV } from './FileProcessor';
@@ -31,6 +31,7 @@ interface FinancialSummary {
 const BankStatementUpload: React.FC = () => {
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -66,17 +67,17 @@ const BankStatementUpload: React.FC = () => {
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setProcessingStage('Loading and parsing document with enhanced regex...');
+      setProcessingStage('Extracting text with enhanced algorithms...');
       setProcessingProgress(35);
       
       const parsedTransactions = await parseFile(selectedFile);
       
-      setProcessingStage('Extracting and categorizing transactions...');
+      setProcessingStage('Analyzing and categorizing all transactions...');
       setProcessingProgress(65);
       
       await new Promise(resolve => setTimeout(resolve, 400));
       
-      setProcessingStage('Calculating financial summary...');
+      setProcessingStage('Calculating comprehensive financial summary...');
       setProcessingProgress(85);
       
       console.log('Successfully parsed transactions:', parsedTransactions.length);
@@ -91,7 +92,6 @@ const BankStatementUpload: React.FC = () => {
         isEditing: false
       }));
 
-      // Calculate enhanced financial summary
       const summary = calculateSummary(bankTransactions);
       
       setTransactions(bankTransactions);
@@ -100,8 +100,8 @@ const BankStatementUpload: React.FC = () => {
       setProcessingProgress(100);
       
       toast({
-        title: "Success!",
-        description: `Successfully extracted ${bankTransactions.length} transactions with enhanced categorization`,
+        title: "Enhanced Extraction Successful!",
+        description: `Successfully extracted ${bankTransactions.length} transactions with smart categorization and financial analysis`,
       });
     } catch (error: any) {
       console.error('Enhanced file processing error:', error);
@@ -124,7 +124,7 @@ const BankStatementUpload: React.FC = () => {
       
       toast({
         title: "Processing Failed",
-        description: "Check the error details below and try a different file format if needed.",
+        description: "Check the error details and try a different approach if needed.",
         variant: "destructive",
       });
     } finally {
@@ -172,38 +172,59 @@ const BankStatementUpload: React.FC = () => {
   const handleSaveAll = async () => {
     if (transactions.length === 0) return;
     
-    setIsProcessing(true);
+    setIsSaving(true);
     
     try {
       let savedCount = 0;
-      for (const transaction of transactions) {
-        await addTransaction({
-          date: transaction.date,
-          description: transaction.userDescription || transaction.description,
-          amount: transaction.amount,
-          type: transaction.type,
-          category: transaction.category || 'Uncategorized'
-        });
-        savedCount++;
+      let failedCount = 0;
+      
+      // Save transactions in batches to avoid overwhelming the database
+      const batchSize = 10;
+      for (let i = 0; i < transactions.length; i += batchSize) {
+        const batch = transactions.slice(i, i + batchSize);
+        
+        for (const transaction of batch) {
+          try {
+            await addTransaction({
+              date: transaction.date,
+              description: transaction.userDescription || transaction.description,
+              amount: transaction.amount,
+              type: transaction.type,
+              category: transaction.category || 'Uncategorized'
+            });
+            savedCount++;
+          } catch (error) {
+            console.error('Failed to save transaction:', error);
+            failedCount++;
+          }
+        }
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      toast({
-        title: "Success!",
-        description: `${savedCount} transactions saved successfully to your account`,
-      });
-      
-      setTransactions([]);
-      setSelectedFile(null);
-      setFinancialSummary(null);
+      if (savedCount > 0) {
+        toast({
+          title: "Database Save Successful!",
+          description: `${savedCount} transactions saved to your account${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+        });
+        
+        // Clear the form after successful save
+        setTransactions([]);
+        setSelectedFile(null);
+        setFinancialSummary(null);
+      } else {
+        throw new Error('No transactions were saved successfully');
+      }
     } catch (error) {
       console.error('Save error:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save transactions. Please try again.",
+        description: "Failed to save transactions to database. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsSaving(false);
     }
   };
 
@@ -215,7 +236,7 @@ const BankStatementUpload: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `bank-statement-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `enhanced-bank-statement-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -223,7 +244,7 @@ const BankStatementUpload: React.FC = () => {
     
     toast({
       title: "Export Successful",
-      description: "Your transactions have been exported to CSV format",
+      description: "Your enhanced transaction data has been exported to CSV format",
     });
   };
 
@@ -232,10 +253,10 @@ const BankStatementUpload: React.FC = () => {
       <CardHeader>
         <CardTitle className="text-white flex items-center">
           <FileText className="w-5 h-5 mr-2 text-blue-400" />
-          Enhanced Bank Statement Processing
+          Enhanced Bank Statement Processing & Database Storage
         </CardTitle>
         <p className="text-gray-400 text-sm">
-          Advanced PDF processing with improved transaction extraction and automatic categorization
+          Advanced transaction extraction with comprehensive analysis and automatic database storage
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -246,22 +267,24 @@ const BankStatementUpload: React.FC = () => {
             <div className="flex items-start">
               <Info className="w-5 h-5 text-blue-400 mr-3 mt-0.5" />
               <div className="text-sm text-blue-300">
-                <p className="font-medium mb-2">Supported Formats & Requirements:</p>
+                <p className="font-medium mb-2">Enhanced Processing Capabilities:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-200">
                   <div>
-                    <p className="font-medium text-blue-300 mb-1">✅ Best Results:</p>
+                    <p className="font-medium text-blue-300 mb-1">✅ Advanced Features:</p>
                     <ul className="space-y-1">
-                      <li>• Text-based PDF statements</li>
-                      <li>• CSV files from your bank</li>
-                      <li>• Excel files (.xlsx, .xls)</li>
+                      <li>• Multiple transaction pattern recognition</li>
+                      <li>• Smart categorization algorithms</li>
+                      <li>• Comprehensive financial analysis</li>
+                      <li>• Automatic database storage</li>
                     </ul>
                   </div>
                   <div>
-                    <p className="font-medium text-blue-300 mb-1">❌ Not Supported:</p>
+                    <p className="font-medium text-blue-300 mb-1">📊 Supported Formats:</p>
                     <ul className="space-y-1">
-                      <li>• Scanned PDF images</li>
-                      <li>• Password-protected files</li>
-                      <li>• Corrupted documents</li>
+                      <li>• Text-based PDF statements</li>
+                      <li>• CSV files from banks</li>
+                      <li>• Excel files (.xlsx, .xls)</li>
+                      <li>• Multiple Nigerian bank formats</li>
                     </ul>
                   </div>
                 </div>
@@ -271,7 +294,7 @@ const BankStatementUpload: React.FC = () => {
 
           <div>
             <Label htmlFor="bank-statement" className="text-gray-300 font-medium">
-              Select Bank Statement File
+              Select Bank Statement File for Enhanced Processing
             </Label>
             <Input
               id="bank-statement"
@@ -304,7 +327,7 @@ const BankStatementUpload: React.FC = () => {
             className="bg-blue-600 hover:bg-blue-700 w-full py-3 font-medium"
           >
             <Upload className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Processing Statement...' : 'Process Bank Statement'}
+            {isProcessing ? 'Processing with Enhanced Algorithms...' : 'Process Bank Statement (Enhanced)'}
           </Button>
 
           {/* Enhanced Processing Progress */}
@@ -338,17 +361,18 @@ const BankStatementUpload: React.FC = () => {
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-red-500 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-400 font-medium mb-2">Processing Failed</p>
+                  <p className="text-red-400 font-medium mb-2">Enhanced Processing Failed</p>
                   <pre className="text-red-300 text-sm whitespace-pre-wrap font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
                     {uploadError}
                   </pre>
                   <div className="mt-3 text-xs text-red-200">
-                    <p className="font-medium mb-1">Troubleshooting tips:</p>
+                    <p className="font-medium mb-1">Enhanced troubleshooting suggestions:</p>
                     <ul className="space-y-1">
                       <li>• Try exporting your statement as CSV or Excel format</li>
-                      <li>• Ensure the PDF is text-based (you can select text in it)</li>
+                      <li>• Ensure the PDF contains selectable text (not scanned images)</li>
                       <li>• Check that the file is not password protected</li>
                       <li>• Try refreshing the page and uploading again</li>
+                      <li>• Contact support if the issue persists</li>
                     </ul>
                   </div>
                 </div>
@@ -363,27 +387,37 @@ const BankStatementUpload: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center">
                 <Calculator className="w-5 h-5 mr-2 text-green-400" />
-                Financial Summary
+                Comprehensive Financial Analysis
               </h3>
-              <Button
-                onClick={handleExportCSV}
-                variant="outline"
-                size="sm"
-                className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleExportCSV}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button
+                  onClick={handleSaveAll}
+                  disabled={isSaving}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  {isSaving ? 'Saving...' : 'Save to Database'}
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div className="bg-green-900/20 p-3 rounded border border-green-500/30">
-                <p className="text-xs text-green-400 mb-1">Total Profit</p>
+                <p className="text-xs text-green-400 mb-1">Total Income</p>
                 <p className="text-lg font-bold text-green-300">
                   ₦{financialSummary.profit.toLocaleString()}
                 </p>
               </div>
               <div className="bg-red-900/20 p-3 rounded border border-red-500/30">
-                <p className="text-xs text-red-400 mb-1">Total Cost</p>
+                <p className="text-xs text-red-400 mb-1">Total Expenses</p>
                 <p className="text-lg font-bold text-red-300">
                   ₦{financialSummary.cost.toLocaleString()}
                 </p>
@@ -395,7 +429,7 @@ const BankStatementUpload: React.FC = () => {
                 </p>
               </div>
               <div className="bg-gray-600/20 p-3 rounded border border-gray-500/30">
-                <p className="text-xs text-gray-400 mb-1">Transactions</p>
+                <p className="text-xs text-gray-400 mb-1">Total Transactions</p>
                 <p className="text-lg font-bold text-gray-300">
                   {financialSummary.totalTransactions}
                 </p>
@@ -404,25 +438,25 @@ const BankStatementUpload: React.FC = () => {
           </div>
         )}
 
-        {/* Results Section */}
+        {/* Enhanced Results Section */}
         {transactions.length > 0 && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  Extracted Transactions ({transactions.length})
+                  Enhanced Transaction Extraction ({transactions.length})
                 </h3>
                 <p className="text-sm text-gray-400">
-                  Review and edit the extracted information before saving
+                  All transactions extracted, categorized, and ready for database storage
                 </p>
               </div>
               <Button 
                 onClick={handleSaveAll}
-                disabled={isProcessing}
+                disabled={isSaving}
                 className="bg-green-600 hover:bg-green-700"
               >
-                <Save className="w-4 h-4 mr-2" />
-                Save All Transactions
+                <Database className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving to Database...' : 'Save All to Database'}
               </Button>
             </div>
 

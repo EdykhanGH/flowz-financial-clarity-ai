@@ -98,21 +98,23 @@ export interface Transaction {
   originalDescription?: string;
 }
 
-// Enhanced transaction categories based on Nigerian banking patterns
+// Enhanced transaction categories
 const TRANSACTION_CATEGORIES = {
   income: {
-    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus', 'transfer from', 'interest earned'],
+    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus', 'transfer from', 'interest earned', 'deposit', 'credit alert'],
     categories: {
       'salary': 'Salary',
       'transfer in': 'Business Income', 
       'transfer from': 'Business Income',
       'dividend': 'Investment Income',
       'interest': 'Investment Income',
-      'interest earned': 'Investment Income'
+      'interest earned': 'Investment Income',
+      'deposit': 'Business Income',
+      'credit': 'Business Income'
     }
   },
   expenses: {
-    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'airtime', 'data', 'electricity'],
+    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'airtime', 'data', 'electricity', 'fuel', 'transport', 'grocery', 'bill'],
     categories: {
       'grocery': 'Food & Groceries',
       'supermarket': 'Food & Groceries',
@@ -154,62 +156,126 @@ const TRANSACTION_CATEGORIES = {
   }
 };
 
-// Enhanced bank statement parser
+// Enhanced bank statement parser with multiple patterns
 function parseBankStatement(text: string): Transaction[] {
   const transactions: Transaction[] = [];
-  const lines = text.split('\n');
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   
-  // Enhanced regex pattern for more accurate extraction
-  const transactionRegex = /(\d{4} [A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2})\s+(\d{1,2} [A-Za-z]{3} \d{4})\s+(.*?)\s+([-+][\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(\S+)\s+(\S+)/;
+  console.log(`Processing ${lines.length} lines for transaction extraction`);
   
-  // Alternative patterns for different bank formats
-  const alternativePatterns = [
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})/,
-    /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})/
+  // Multiple regex patterns to catch different bank statement formats
+  const patterns = [
+    // Pattern 1: Full format with timestamp, value date, description, amount, balance, channel, reference
+    /(\d{4}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(\S+)\s+(\S+)/,
+    
+    // Pattern 2: Date, description, debit, credit, balance
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/,
+    
+    // Pattern 3: Simple date, description, amount format
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})/,
+    
+    // Pattern 4: Date with description and amount (more flexible)
+    /(\d{1,2}[\/\-\s]\d{1,2}[\/\-\s]\d{2,4})\s+(.*?)(?:\s+)([-+]?[\d,]+(?:\.\d{2})?)/,
+    
+    // Pattern 5: Nigerian bank format with NGN
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s+(.*?)\s+(?:NGN|₦)?\s*([-+]?[\d,]+\.\d{2})/,
+    
+    // Pattern 6: Transaction with balance at end
+    /((?:\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})|(?:\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}))\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})$/
   ];
 
-  for (const line of lines) {
-    // Try enhanced regex first
-    let match = line.match(transactionRegex);
+  let extractedCount = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    if (match) {
-      const amount = parseFloat(match[4].replace(/[,+]/g, ''));
-      transactions.push({
-        timestamp: match[1],
-        valueDate: match[2],
-        date: formatDate(match[2]),
-        description: match[3].trim(),
-        originalDescription: match[3].trim(),
-        amount: Math.abs(amount),
-        balance: parseFloat(match[5].replace(/,/g, '')),
-        channel: match[6],
-        reference: match[7],
-        type: amount >= 0 ? 'income' : 'expense',
-        category: categorizeTransaction(match[3])
-      });
-    } else {
-      // Try alternative patterns
-      for (const pattern of alternativePatterns) {
-        match = line.match(pattern);
-        if (match) {
-          const amount = parseFloat(match[3].replace(/[,+-]/g, ''));
-          if (!isNaN(amount) && amount > 0) {
-            transactions.push({
-              date: formatDate(match[1]),
-              description: match[2].trim(),
-              originalDescription: match[2].trim(),
-              amount: amount,
-              balance: match[4] ? parseFloat(match[4].replace(/,/g, '')) : undefined,
-              type: determineTransactionType(match[2], amount),
-              category: categorizeTransaction(match[2])
-            });
+    // Skip obvious header lines
+    if (line.toLowerCase().includes('date') && line.toLowerCase().includes('description')) {
+      continue;
+    }
+    
+    // Try each pattern
+    for (let patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
+      const pattern = patterns[patternIndex];
+      const match = line.match(pattern);
+      
+      if (match) {
+        try {
+          let transaction: Transaction;
+          
+          switch (patternIndex) {
+            case 0: // Full format
+              const amount1 = parseFloat(match[4].replace(/[,+]/g, ''));
+              transaction = {
+                timestamp: match[1],
+                valueDate: match[2],
+                date: formatDate(match[2]),
+                description: match[3].trim(),
+                originalDescription: match[3].trim(),
+                amount: Math.abs(amount1),
+                balance: parseFloat(match[5].replace(/,/g, '')),
+                channel: match[6],
+                reference: match[7],
+                type: amount1 >= 0 ? 'income' : 'expense',
+                category: categorizeTransaction(match[3])
+              };
+              break;
+              
+            case 1: // Date, description, debit, credit, balance
+              const debit = match[3] ? parseFloat(match[3].replace(/,/g, '')) : 0;
+              const credit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+              const amount2 = credit > 0 ? credit : -debit;
+              
+              if (debit > 0 || credit > 0) {
+                transaction = {
+                  date: formatDate(match[1]),
+                  description: match[2].trim(),
+                  originalDescription: match[2].trim(),
+                  amount: Math.abs(amount2),
+                  balance: match[5] ? parseFloat(match[5].replace(/,/g, '')) : undefined,
+                  type: amount2 >= 0 ? 'income' : 'expense',
+                  category: categorizeTransaction(match[2])
+                };
+              } else {
+                continue;
+              }
+              break;
+              
+            default: // Other patterns
+              const amount3 = parseFloat(match[3].replace(/[,+-]/g, ''));
+              if (!isNaN(amount3) && amount3 > 0) {
+                transaction = {
+                  date: formatDate(match[1]),
+                  description: match[2].trim(),
+                  originalDescription: match[2].trim(),
+                  amount: amount3,
+                  balance: match[4] ? parseFloat(match[4].replace(/,/g, '')) : undefined,
+                  type: determineTransactionType(match[2], match[3]),
+                  category: categorizeTransaction(match[2])
+                };
+              } else {
+                continue;
+              }
+              break;
           }
-          break;
+          
+          // Validate transaction before adding
+          if (transaction && transaction.amount > 0 && transaction.description && transaction.description.length > 2) {
+            transactions.push(transaction);
+            extractedCount++;
+            console.log(`Extracted transaction ${extractedCount}: ${transaction.description} - ${transaction.amount}`);
+          }
+          
+          break; // Found a match, no need to try other patterns
+        } catch (error) {
+          console.warn(`Error parsing line with pattern ${patternIndex}:`, error);
+          continue;
         }
       }
     }
   }
   
+  console.log(`Total transactions extracted: ${extractedCount}`);
   return transactions;
 }
 
@@ -222,7 +288,9 @@ function categorizeTransactions(transactions: Transaction[]): Transaction[] {
     if (description.includes('transfer from') || 
         description.includes('interest earned') ||
         description.includes('salary') ||
-        description.includes('dividend')) {
+        description.includes('dividend') ||
+        description.includes('deposit') ||
+        description.includes('credit alert')) {
       autoCategory = 'Investment Income';
       tx.type = 'income';
     } else if (description.includes('airtime') || 
@@ -231,7 +299,8 @@ function categorizeTransactions(transactions: Transaction[]): Transaction[] {
                description.includes('electricity') ||
                description.includes('data') ||
                description.includes('withdrawal') ||
-               description.includes('transfer out')) {
+               description.includes('transfer out') ||
+               description.includes('debit alert')) {
       autoCategory = categorizeTransaction(description);
       tx.type = 'expense';
     }
@@ -241,30 +310,29 @@ function categorizeTransactions(transactions: Transaction[]): Transaction[] {
 }
 
 function calculateTotals(transactions: Transaction[]) {
-  const profit = transactions
+  const income = transactions
     .filter(tx => tx.type === 'income')
     .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   
-  const cost = transactions
+  const expenses = transactions
     .filter(tx => tx.type === 'expense')
     .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   
   return { 
-    profit, 
-    cost,
+    profit: income,
+    cost: expenses,
     totalTransactions: transactions.length,
-    totalRevenue: profit,
-    totalExpenses: cost,
-    netIncome: profit - cost
+    totalRevenue: income,
+    totalExpenses: expenses,
+    netIncome: income - expenses
   };
 }
 
-// Enhanced PDF text extraction with robust error handling
+// Enhanced PDF text extraction
 async function extractTextFromPDF(file: File): Promise<string> {
   try {
-    console.log('Starting PDF text extraction...');
+    console.log('Starting enhanced PDF text extraction...');
     
-    // Initialize worker using our robust strategy
     await PDFWorkerManager.initializeWorker();
     
     const arrayBuffer = await file.arrayBuffer();
@@ -273,34 +341,42 @@ async function extractTextFromPDF(file: File): Promise<string> {
       useWorkerFetch: false,
       isEvalSupported: false,
       useSystemFonts: true,
-      verbosity: 0 // Reduce console noise
+      verbosity: 0
     }).promise;
     
-    let text = '';
+    let fullText = '';
     const numPages = pdf.numPages;
-    console.log(`Processing ${numPages} pages...`);
+    console.log(`Processing ${numPages} pages for enhanced extraction...`);
     
     for (let i = 1; i <= numPages; i++) {
       try {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
+        
+        // Enhanced text extraction with positioning
         const pageText = content.items
+          .sort((a: any, b: any) => {
+            // Sort by Y position first (top to bottom), then X position (left to right)
+            const yDiff = Math.abs(b.transform[5] - a.transform[5]);
+            if (yDiff > 2) return b.transform[5] - a.transform[5];
+            return a.transform[4] - b.transform[4];
+          })
           .map((item: any) => item.str)
           .join(' ')
           .replace(/\s+/g, ' ');
-        text += pageText + '\n';
+        
+        fullText += pageText + '\n';
         console.log(`Page ${i} processed, extracted ${pageText.length} characters`);
       } catch (pageError) {
         console.warn(`Failed to process page ${i}:`, pageError);
-        // Continue with other pages
       }
     }
     
     await pdf.destroy();
-    console.log(`PDF processing complete. Total text length: ${text.length}`);
-    return text;
+    console.log(`Enhanced PDF processing complete. Total text length: ${fullText.length}`);
+    return fullText;
   } catch (error) {
-    console.error('PDF text extraction failed:', error);
+    console.error('Enhanced PDF text extraction failed:', error);
     throw new Error(`Failed to extract text from PDF: ${error.message}`);
   }
 }
@@ -437,7 +513,6 @@ export const parsePDF = (file: File): Promise<any[]> => {
         throw new Error('PDF appears to be empty, scanned, or text extraction failed. Please ensure the PDF contains readable text (not a scanned image).');
       }
       
-      // Use enhanced parsing function
       const transactions = parseBankStatement(text);
       const categorizedTransactions = categorizeTransactions(transactions);
       
@@ -504,8 +579,16 @@ const formatDate = (dateValue: any): string => {
   return new Date().toISOString().split('T')[0];
 };
 
-const determineTransactionType = (description: string, amount: number): 'income' | 'expense' => {
+const determineTransactionType = (description: string, amountStr: string): 'income' | 'expense' => {
   const desc = description.toLowerCase();
+  
+  // Check for explicit signs in amount
+  if (amountStr.includes('+') || amountStr.includes('CR')) {
+    return 'income';
+  }
+  if (amountStr.includes('-') || amountStr.includes('DR')) {
+    return 'expense';
+  }
   
   if (TRANSACTION_CATEGORIES.income.keywords.some(keyword => desc.includes(keyword))) {
     return 'income';
@@ -515,18 +598,16 @@ const determineTransactionType = (description: string, amount: number): 'income'
     return 'expense';
   }
   
-  return amount >= 0 ? 'income' : 'expense';
+  return 'expense';
 };
 
 const categorizeTransaction = (description: string): string => {
   const desc = description.toUpperCase();
   
-  // Check income categories first
   for (const [keyword, category] of Object.entries(TRANSACTION_CATEGORIES.income.categories)) {
     if (desc.includes(keyword.toUpperCase())) return category;
   }
   
-  // Check expense categories
   for (const [keyword, category] of Object.entries(TRANSACTION_CATEGORIES.expenses.categories)) {
     if (desc.includes(keyword.toUpperCase())) return category;
   }
@@ -543,7 +624,7 @@ export const parseFile = async (file: File): Promise<any[]> => {
     throw new Error('File is empty. Please select a valid file.');
   }
   
-  if (file.size > 100 * 1024 * 1024) { // 100MB limit
+  if (file.size > 100 * 1024 * 1024) {
     throw new Error('File is too large. Please select a file smaller than 100MB.');
   }
   
@@ -585,7 +666,6 @@ export const mapTransactionType = (type: string): 'income' | 'expense' | 'transf
 
 export const calculateSummary = calculateTotals;
 
-// Export function for CSV download
 export const exportToCSV = (transactions: Transaction[]): string => {
   const headers = 'Date,Description,Amount,Category,Type,Balance';
   const rows = transactions.map(tx => 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,15 +7,25 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
-import { parseFile, Transaction } from './FileProcessor';
+import { parseFile, Transaction, calculateSummary, exportToCSV } from './FileProcessor';
 
 interface BankTransaction extends Transaction {
   id: string;
   isEditing?: boolean;
   userDescription?: string;
+}
+
+interface FinancialSummary {
+  profit: number;
+  cost: number;
+  totalTransactions: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netIncome: number;
 }
 
 const BankStatementUpload: React.FC = () => {
@@ -24,6 +35,7 @@ const BankStatementUpload: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStage, setProcessingStage] = useState('');
+  const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const { addTransaction } = useTransactions();
   const { toast } = useToast();
 
@@ -33,6 +45,7 @@ const BankStatementUpload: React.FC = () => {
       setSelectedFile(file);
       setUploadError(null);
       setTransactions([]);
+      setFinancialSummary(null);
       setProcessingProgress(0);
       setProcessingStage('');
       console.log('Selected file:', file.name, 'Size:', file.size, 'Type:', file.type);
@@ -47,24 +60,24 @@ const BankStatementUpload: React.FC = () => {
     setProcessingProgress(0);
     
     try {
-      console.log('Starting file processing:', selectedFile.name);
-      setProcessingStage('Initializing PDF processor...');
-      setProcessingProgress(10);
+      console.log('Starting enhanced file processing:', selectedFile.name);
+      setProcessingStage('Initializing enhanced PDF processor...');
+      setProcessingProgress(15);
       
-      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UI feedback
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      setProcessingStage('Loading and parsing document...');
-      setProcessingProgress(30);
+      setProcessingStage('Loading and parsing document with enhanced regex...');
+      setProcessingProgress(35);
       
       const parsedTransactions = await parseFile(selectedFile);
       
-      setProcessingStage('Extracting transaction data...');
-      setProcessingProgress(60);
+      setProcessingStage('Extracting and categorizing transactions...');
+      setProcessingProgress(65);
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 400));
       
-      setProcessingStage('Categorizing transactions...');
-      setProcessingProgress(80);
+      setProcessingStage('Calculating financial summary...');
+      setProcessingProgress(85);
       
       console.log('Successfully parsed transactions:', parsedTransactions.length);
       
@@ -78,16 +91,20 @@ const BankStatementUpload: React.FC = () => {
         isEditing: false
       }));
 
+      // Calculate enhanced financial summary
+      const summary = calculateSummary(bankTransactions);
+      
       setTransactions(bankTransactions);
+      setFinancialSummary(summary);
       setProcessingStage('Processing complete!');
       setProcessingProgress(100);
       
       toast({
         title: "Success!",
-        description: `Successfully extracted ${bankTransactions.length} transactions from your bank statement`,
+        description: `Successfully extracted ${bankTransactions.length} transactions with enhanced categorization`,
       });
     } catch (error: any) {
-      console.error('File processing error:', error);
+      console.error('Enhanced file processing error:', error);
       let errorMessage = 'Failed to process bank statement';
       
       if (error.message.includes('PDF')) {
@@ -119,6 +136,18 @@ const BankStatementUpload: React.FC = () => {
     }
   };
 
+  const updateTransaction = (id: string, field: keyof BankTransaction, value: any) => {
+    setTransactions(prev => {
+      const updated = prev.map(t => t.id === id ? { ...t, [field]: value } : t);
+      
+      // Recalculate summary when transactions change
+      const newSummary = calculateSummary(updated);
+      setFinancialSummary(newSummary);
+      
+      return updated;
+    });
+  };
+
   const handleEditTransaction = (id: string) => {
     setTransactions(prev => 
       prev.map(t => t.id === id ? { ...t, isEditing: true } : t)
@@ -131,26 +160,13 @@ const BankStatementUpload: React.FC = () => {
     );
   };
 
-  const handleDescriptionChange = (id: string, description: string) => {
-    setTransactions(prev => 
-      prev.map(t => t.id === id ? { ...t, userDescription: description } : t)
-    );
-  };
-
-  const handleCategoryChange = (id: string, category: string) => {
-    setTransactions(prev => 
-      prev.map(t => t.id === id ? { ...t, category } : t)
-    );
-  };
-
-  const handleTypeChange = (id: string, type: 'income' | 'expense') => {
-    setTransactions(prev => 
-      prev.map(t => t.id === id ? { ...t, type } : t)
-    );
-  };
-
   const handleDeleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    setTransactions(prev => {
+      const filtered = prev.filter(t => t.id !== id);
+      const newSummary = calculateSummary(filtered);
+      setFinancialSummary(newSummary);
+      return filtered;
+    });
   };
 
   const handleSaveAll = async () => {
@@ -178,6 +194,7 @@ const BankStatementUpload: React.FC = () => {
       
       setTransactions([]);
       setSelectedFile(null);
+      setFinancialSummary(null);
     } catch (error) {
       console.error('Save error:', error);
       toast({
@@ -188,6 +205,26 @@ const BankStatementUpload: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    if (transactions.length === 0) return;
+    
+    const csvContent = exportToCSV(transactions);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bank-statement-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export Successful",
+      description: "Your transactions have been exported to CSV format",
+    });
   };
 
   return (
@@ -320,6 +357,53 @@ const BankStatementUpload: React.FC = () => {
           )}
         </div>
 
+        {/* Enhanced Financial Summary */}
+        {financialSummary && (
+          <div className="bg-gray-700 p-6 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <Calculator className="w-5 h-5 mr-2 text-green-400" />
+                Financial Summary
+              </h3>
+              <Button
+                onClick={handleExportCSV}
+                variant="outline"
+                size="sm"
+                className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="bg-green-900/20 p-3 rounded border border-green-500/30">
+                <p className="text-xs text-green-400 mb-1">Total Profit</p>
+                <p className="text-lg font-bold text-green-300">
+                  ₦{financialSummary.profit.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-red-900/20 p-3 rounded border border-red-500/30">
+                <p className="text-xs text-red-400 mb-1">Total Cost</p>
+                <p className="text-lg font-bold text-red-300">
+                  ₦{financialSummary.cost.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-blue-900/20 p-3 rounded border border-blue-500/30">
+                <p className="text-xs text-blue-400 mb-1">Net Balance</p>
+                <p className={`text-lg font-bold ${financialSummary.netIncome >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                  ₦{financialSummary.netIncome.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-gray-600/20 p-3 rounded border border-gray-500/30">
+                <p className="text-xs text-gray-400 mb-1">Transactions</p>
+                <p className="text-lg font-bold text-gray-300">
+                  {financialSummary.totalTransactions}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Results Section */}
         {transactions.length > 0 && (
           <div className="space-y-6">
@@ -342,136 +426,131 @@ const BankStatementUpload: React.FC = () => {
               </Button>
             </div>
 
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {transactions.map((transaction) => (
-                <div key={transaction.id} className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
-                        {transaction.type === 'income' ? 'Income' : 'Expense'}
-                      </Badge>
-                      <span className="text-sm text-gray-400">{transaction.date}</span>
-                      {transaction.balance && (
-                        <span className="text-xs text-gray-500">
-                          Balance: ₦{transaction.balance.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-white">
+            <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-600">
+                    <TableHead className="text-gray-300">Date</TableHead>
+                    <TableHead className="text-gray-300">Description</TableHead>
+                    <TableHead className="text-gray-300">Amount (₦)</TableHead>
+                    <TableHead className="text-gray-300">Type</TableHead>
+                    <TableHead className="text-gray-300">Category</TableHead>
+                    <TableHead className="text-gray-300">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction) => (
+                    <TableRow key={transaction.id} className="border-gray-600">
+                      <TableCell className="text-gray-300">
+                        {transaction.date}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {transaction.isEditing ? (
+                          <Textarea
+                            value={transaction.userDescription || transaction.description}
+                            onChange={(e) => updateTransaction(transaction.id, 'userDescription', e.target.value)}
+                            className="min-h-[60px]"
+                          />
+                        ) : (
+                          <div>
+                            <p className="font-medium">{transaction.userDescription || transaction.description}</p>
+                            {transaction.originalDescription && transaction.originalDescription !== (transaction.userDescription || transaction.description) && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Original: {transaction.originalDescription}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
                         ₦{transaction.amount.toLocaleString()}
-                      </span>
-                      
-                      {transaction.isEditing ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveEdit(transaction.id)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Save className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditTransaction(transaction.id)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.isEditing ? (
+                          <Select 
+                            value={transaction.type} 
+                            onValueChange={(value: 'income' | 'expense') => updateTransaction(transaction.id, 'type', value)}
                           >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteTransaction(transaction.id)}
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="income">Income</SelectItem>
+                              <SelectItem value="expense">Expense</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
+                            {transaction.type === 'income' ? 'Income' : 'Expense'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {transaction.isEditing ? (
+                          <Select 
+                            value={transaction.category} 
+                            onValueChange={(value) => updateTransaction(transaction.id, 'category', value)}
                           >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label className="text-xs text-gray-400">Original Description</Label>
-                      <p className="text-sm text-gray-300 break-words">{transaction.description}</p>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-xs text-gray-400">Custom Description</Label>
-                      {transaction.isEditing ? (
-                        <Textarea
-                          value={transaction.userDescription || ''}
-                          onChange={(e) => handleDescriptionChange(transaction.id, e.target.value)}
-                          placeholder="Add custom description..."
-                          className="mt-1 h-20"
-                        />
-                      ) : (
-                        <p className="text-sm text-white">
-                          {transaction.userDescription || 'No custom description'}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label className="text-xs text-gray-400">Category</Label>
-                      {transaction.isEditing ? (
-                        <Select 
-                          value={transaction.category} 
-                          onValueChange={(value) => handleCategoryChange(transaction.id, value)}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
-                            <SelectItem value="Transportation">Transportation</SelectItem>
-                            <SelectItem value="Utilities">Utilities</SelectItem>
-                            <SelectItem value="Housing">Housing</SelectItem>
-                            <SelectItem value="Healthcare">Healthcare</SelectItem>
-                            <SelectItem value="Education">Education</SelectItem>
-                            <SelectItem value="Entertainment">Entertainment</SelectItem>
-                            <SelectItem value="Bank Charges">Bank Charges</SelectItem>
-                            <SelectItem value="Salary">Salary</SelectItem>
-                            <SelectItem value="Business Income">Business Income</SelectItem>
-                            <SelectItem value="Investment Income">Investment Income</SelectItem>
-                            <SelectItem value="Savings & Investment">Savings & Investment</SelectItem>
-                            <SelectItem value="Shopping">Shopping</SelectItem>
-                            <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
-                            <SelectItem value="Card Payments">Card Payments</SelectItem>
-                            <SelectItem value="Uncategorized">Uncategorized</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="text-sm text-white">{transaction.category}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label className="text-xs text-gray-400">Transaction Type</Label>
-                      {transaction.isEditing ? (
-                        <Select 
-                          value={transaction.type} 
-                          onValueChange={(value: 'income' | 'expense') => handleTypeChange(transaction.id, value)}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="income">Income</SelectItem>
-                            <SelectItem value="expense">Expense</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
-                          {transaction.type === 'income' ? 'Income' : 'Expense'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
+                              <SelectItem value="Transportation">Transportation</SelectItem>
+                              <SelectItem value="Utilities">Utilities</SelectItem>
+                              <SelectItem value="Housing">Housing</SelectItem>
+                              <SelectItem value="Healthcare">Healthcare</SelectItem>
+                              <SelectItem value="Education">Education</SelectItem>
+                              <SelectItem value="Entertainment">Entertainment</SelectItem>
+                              <SelectItem value="Bank Charges">Bank Charges</SelectItem>
+                              <SelectItem value="Salary">Salary</SelectItem>
+                              <SelectItem value="Business Income">Business Income</SelectItem>
+                              <SelectItem value="Investment Income">Investment Income</SelectItem>
+                              <SelectItem value="Savings & Investment">Savings & Investment</SelectItem>
+                              <SelectItem value="Shopping">Shopping</SelectItem>
+                              <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
+                              <SelectItem value="Card Payments">Card Payments</SelectItem>
+                              <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span>{transaction.category}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.isEditing ? (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveEdit(transaction.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditTransaction(transaction.id)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}

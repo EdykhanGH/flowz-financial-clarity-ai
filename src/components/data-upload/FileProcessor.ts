@@ -3,7 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Set up PDF.js worker using CDN (most reliable approach)
 if (typeof window !== 'undefined') {
-  // Use CDN worker for better reliability and compatibility
+  // Use unpkg CDN for the worker
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 }
 
@@ -14,21 +14,28 @@ export interface Transaction {
   type: string;
   category?: string;
   balance?: number;
+  channel?: string;
+  reference?: string;
+  timestamp?: string;
+  valueDate?: string;
+  originalDescription?: string;
 }
 
-// Enhanced transaction categories based on your research
+// Enhanced transaction categories based on Nigerian banking patterns
 const TRANSACTION_CATEGORIES = {
   income: {
-    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus'],
+    keywords: ['salary', 'pay', 'wage', 'transfer in', 'payment received', 'credit transfer', 'inward', 'reversal', 'refund', 'dividend', 'interest', 'bonus', 'transfer from', 'interest earned'],
     categories: {
       'salary': 'Salary',
       'transfer in': 'Business Income', 
+      'transfer from': 'Business Income',
       'dividend': 'Investment Income',
-      'interest': 'Investment Income'
+      'interest': 'Investment Income',
+      'interest earned': 'Investment Income'
     }
   },
   expenses: {
-    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward'],
+    keywords: ['debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'airtime', 'data', 'electricity'],
     categories: {
       'grocery': 'Food & Groceries',
       'supermarket': 'Food & Groceries',
@@ -39,12 +46,14 @@ const TRANSACTION_CATEGORIES = {
       'uber': 'Transportation',
       'taxi': 'Transportation',
       'electric': 'Utilities',
+      'electricity': 'Utilities',
       'water': 'Utilities',
       'utility': 'Utilities',
       'bill': 'Utilities',
       'internet': 'Utilities',
       'mobile': 'Utilities',
       'airtime': 'Utilities',
+      'data': 'Utilities',
       'rent': 'Housing',
       'mortgage': 'Housing',
       'hospital': 'Healthcare',
@@ -57,6 +66,8 @@ const TRANSACTION_CATEGORIES = {
       'transfer levy': 'Bank Charges',
       'ussd': 'Bank Charges',
       'commission': 'Bank Charges',
+      'fee': 'Bank Charges',
+      'charge': 'Bank Charges',
       'atm': 'Cash Withdrawal',
       'withdrawal': 'Cash Withdrawal',
       'pos': 'Card Payments',
@@ -65,6 +76,141 @@ const TRANSACTION_CATEGORIES = {
     }
   }
 };
+
+// Enhanced bank statement parser with your improved regex
+function parseBankStatement(text: string): Transaction[] {
+  const transactions: Transaction[] = [];
+  const lines = text.split('\n');
+  
+  // Your enhanced regex pattern for more accurate extraction
+  const transactionRegex = /(\d{4} [A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2})\s+(\d{1,2} [A-Za-z]{3} \d{4})\s+(.*?)\s+([-+][\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(\S+)\s+(\S+)/;
+  
+  // Alternative patterns for different bank formats
+  const alternativePatterns = [
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})\s+([\d,]+\.\d{2})/,
+    /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\s+(.*?)\s+([-+]?[\d,]+\.\d{2})/
+  ];
+
+  for (const line of lines) {
+    // Try your enhanced regex first
+    let match = line.match(transactionRegex);
+    
+    if (match) {
+      const amount = parseFloat(match[4].replace(/[,+]/g, ''));
+      transactions.push({
+        timestamp: match[1],
+        valueDate: match[2],
+        date: formatDate(match[2]),
+        description: match[3].trim(),
+        originalDescription: match[3].trim(),
+        amount: Math.abs(amount),
+        balance: parseFloat(match[5].replace(/,/g, '')),
+        channel: match[6],
+        reference: match[7],
+        type: amount >= 0 ? 'income' : 'expense',
+        category: categorizeTransaction(match[3])
+      });
+    } else {
+      // Try alternative patterns
+      for (const pattern of alternativePatterns) {
+        match = line.match(pattern);
+        if (match) {
+          const amount = parseFloat(match[3].replace(/[,+-]/g, ''));
+          if (!isNaN(amount) && amount > 0) {
+            transactions.push({
+              date: formatDate(match[1]),
+              description: match[2].trim(),
+              originalDescription: match[2].trim(),
+              amount: amount,
+              balance: match[4] ? parseFloat(match[4].replace(/,/g, '')) : undefined,
+              type: determineTransactionType(match[2], amount),
+              category: categorizeTransaction(match[2])
+            });
+          }
+          break;
+        }
+      }
+    }
+  }
+  
+  return transactions;
+}
+
+function categorizeTransactions(transactions: Transaction[]): Transaction[] {
+  return transactions.map(tx => {
+    const description = tx.description.toLowerCase();
+    let autoCategory = tx.category;
+    
+    // Enhanced auto-categorization logic from your code
+    if (description.includes('transfer from') || 
+        description.includes('interest earned') ||
+        description.includes('salary') ||
+        description.includes('dividend')) {
+      autoCategory = 'Investment Income';
+      tx.type = 'income';
+    } else if (description.includes('airtime') || 
+               description.includes('fee') || 
+               description.includes('charge') ||
+               description.includes('electricity') ||
+               description.includes('data') ||
+               description.includes('withdrawal') ||
+               description.includes('transfer out')) {
+      autoCategory = categorizeTransaction(description);
+      tx.type = 'expense';
+    }
+    
+    return { ...tx, category: autoCategory };
+  });
+}
+
+function calculateTotals(transactions: Transaction[]) {
+  const profit = transactions
+    .filter(tx => tx.type === 'income')
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  
+  const cost = transactions
+    .filter(tx => tx.type === 'expense')
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  
+  return { 
+    profit, 
+    cost,
+    totalTransactions: transactions.length,
+    totalRevenue: profit,
+    totalExpenses: cost,
+    netIncome: profit - cost
+  };
+}
+
+// Extract text from PDF with enhanced error handling
+async function extractTextFromPDF(file: File): Promise<string> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ 
+      data: arrayBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    }).promise;
+    
+    let text = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item: any) => item.str)
+        .join(' ')
+        .replace(/\s+/g, ' ');
+      text += pageText + '\n';
+    }
+    
+    return text;
+  } catch (error) {
+    console.error('PDF text extraction failed:', error);
+    throw new Error(`Failed to extract text from PDF: ${error.message}`);
+  }
+}
 
 export const parseExcel = (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
@@ -173,6 +319,7 @@ const processExcelData = (rawData: any[][]): any[] => {
       transactions.push({
         date: formatDate(dateStr),
         description: String(description || 'Transaction').trim(),
+        originalDescription: String(description || 'Transaction').trim(),
         amount: amount,
         type: type,
         balance: balance,
@@ -185,6 +332,37 @@ const processExcelData = (rawData: any[][]): any[] => {
   return transactions;
 };
 
+export const parsePDF = (file: File): Promise<any[]> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      console.log('Starting enhanced PDF processing...');
+      
+      const text = await extractTextFromPDF(file);
+      console.log('PDF text extracted, length:', text.length);
+      
+      if (text.length < 50) {
+        throw new Error('PDF appears to be empty, scanned, or text extraction failed. Please ensure the PDF contains readable text (not a scanned image).');
+      }
+      
+      // Use your enhanced parsing function
+      const transactions = parseBankStatement(text);
+      const categorizedTransactions = categorizeTransactions(transactions);
+      
+      console.log('Enhanced parsing completed:', categorizedTransactions.length, 'transactions found');
+      
+      if (categorizedTransactions.length === 0) {
+        throw new Error('No transactions found in the PDF. This could mean:\n• The PDF is a scanned image rather than text-based\n• The statement format is not recognized\n• The file may be corrupted or password-protected');
+      }
+      
+      resolve(categorizedTransactions);
+    } catch (error) {
+      console.error('Enhanced PDF parsing error:', error);
+      reject(new Error(`Failed to process PDF: ${error.message}`));
+    }
+  });
+};
+
+// Helper functions
 const findColumnIndex = (headers: string[], possibleNames: string[]): number => {
   for (const name of possibleNames) {
     const index = headers.findIndex(h => h.includes(name));
@@ -195,7 +373,7 @@ const findColumnIndex = (headers: string[], possibleNames: string[]): number => 
 
 const parseAmount = (value: any): number => {
   if (!value) return 0;
-  const str = String(value).replace(/[₦,\s$£€]/g, '');
+  const str = String(value).replace(/[₦,\s$£€+-]/g, '');
   const num = parseFloat(str);
   return isNaN(num) ? 0 : Math.abs(num);
 };
@@ -219,216 +397,32 @@ const formatDate = (dateValue: any): string => {
   for (const pattern of patterns) {
     const match = dateStr.match(pattern);
     if (match) {
-      let day, month, year;
-      
-      if (pattern.source.includes('Jan|Feb')) {
-        day = match[1];
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        month = (monthNames.indexOf(match[2]) + 1).toString();
-        year = match[3];
-      } else if (match[1].length === 4) {
-        year = match[1];
-        month = match[2];
-        day = match[3];
-      } else {
-        day = match[1];
-        month = match[2];
-        year = match[3];
+      try {
+        const parsedDate = new Date(match[0]);
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        continue;
       }
-      
-      if (year.length === 2) {
-        year = '20' + year;
-      }
-      
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
   }
   
   return new Date().toISOString().split('T')[0];
 };
 
-export const parsePDF = (file: File): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = async (e: any) => {
-      try {
-        const arrayBuffer = e.target.result;
-        
-        console.log('Loading PDF with enhanced configuration...');
-        
-        const loadingTask = pdfjsLib.getDocument({ 
-          data: arrayBuffer,
-          standardFontDataUrl: null,
-          useWorkerFetch: false,
-          isEvalSupported: false,
-          useSystemFonts: true,
-          disableFontFace: false,
-          disableRange: false,
-          disableStream: false,
-          disableAutoFetch: false
-        });
-        
-        const pdf = await loadingTask.promise;
-        let fullText = '';
-
-        console.log(`Processing PDF with ${pdf.numPages} pages`);
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          try {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items
-              .map((item: any) => item.str)
-              .join(' ')
-              .replace(/\s+/g, ' ');
-            fullText += pageText + '\n';
-            
-            console.log(`Page ${i} processed, text length: ${pageText.length}`);
-          } catch (pageError) {
-            console.warn(`Error processing page ${i}:`, pageError);
-          }
-        }
-        
-        console.log('Total extracted PDF text length:', fullText.length);
-        
-        if (fullText.length < 50) {
-          throw new Error('PDF appears to be empty, scanned, or text extraction failed. Please ensure the PDF contains readable text (not a scanned image).');
-        }
-        
-        const transactions = parseNigerianBankStatement(fullText);
-        console.log('Final parsed transactions:', transactions.length);
-        
-        if (transactions.length === 0) {
-          throw new Error('No transactions found in the PDF. This could mean:\n• The PDF is a scanned image rather than text-based\n• The statement format is not recognized\n• The file may be corrupted or password-protected');
-        }
-        
-        resolve(transactions);
-      } catch (error) {
-        console.error('PDF parsing error:', error);
-        reject(new Error(`Failed to process PDF: ${error.message}`));
-      }
-    };
-
-    reader.onerror = (error) => {
-      reject(new Error('Failed to read PDF file. Please ensure the file is not corrupted.'));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-};
-
-const parseNigerianBankStatement = (text: string): any[] => {
-  const lines = text.split('\n').filter(line => line.trim());
-  const transactions: any[] = [];
+const determineTransactionType = (description: string, amount: number): 'income' | 'expense' => {
+  const desc = description.toLowerCase();
   
-  // Enhanced date patterns for better recognition
-  const datePatterns = [
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/g,
-    /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/g,
-    /(\d{1,2}(st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/gi
-  ];
-  
-  // Enhanced amount pattern with various currency symbols and formats
-  const amountPattern = /(?:₦|NGN|USD|\$|£|€)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)|(\d+\.\d{2})/g;
-  
-  // Enhanced line filtering
-  const relevantLines = lines.filter(line => {
-    const lower = line.toLowerCase().trim();
-    const excludePatterns = [
-      'account number', 'statement period', 'opening balance', 'closing balance',
-      'page ', 'continued', 'brought forward', 'carried forward', 'total',
-      'customer service', 'terms and conditions', 'generated on'
-    ];
-    
-    return !excludePatterns.some(pattern => lower.includes(pattern)) && 
-           line.trim().length > 15 &&
-           /\d/.test(line); // Must contain at least one digit
-  });
-  
-  console.log(`Processing ${relevantLines.length} relevant lines from PDF`);
-  
-  for (let i = 0; i < relevantLines.length; i++) {
-    const line = relevantLines[i].trim();
-    
-    // Try to find date in the line
-    let dateMatch = null;
-    
-    for (const pattern of datePatterns) {
-      pattern.lastIndex = 0;
-      dateMatch = pattern.exec(line);
-      if (dateMatch) break;
-    }
-    
-    if (dateMatch) {
-      const dateStr = dateMatch[1];
-      
-      // Find all amounts in the line
-      amountPattern.lastIndex = 0;
-      const amountMatches = Array.from(line.matchAll(amountPattern));
-      
-      if (amountMatches && amountMatches.length > 0) {
-        // Extract description by removing date and amounts
-        let description = line
-          .replace(new RegExp(dateStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '')
-          .replace(/(?:₦|NGN|USD|\$|£|€)?\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g, '')
-          .replace(/\d+\.\d{2}/g, '')
-          .trim()
-          .replace(/\s+/g, ' ')
-          .replace(/^[\/\-\s]+|[\/\-\s]+$/g, '');
-        
-        if (description && amountMatches.length > 0) {
-          const amounts = amountMatches.map(match => {
-            const amount = match[1] || match[2];
-            return parseFloat(amount.replace(/,/g, ''));
-          }).filter(amount => !isNaN(amount) && amount > 0);
-          
-          if (amounts.length > 0) {
-            // The transaction amount is usually the first or largest amount
-            let transactionAmount = amounts[0];
-            if (amounts.length > 1) {
-              // If multiple amounts, use the one that's not likely a balance
-              transactionAmount = amounts.length > 1 ? amounts[0] : Math.max(...amounts);
-            }
-            
-            const balance = amounts.length > 1 ? amounts[amounts.length - 1] : null;
-            
-            // Enhanced transaction type detection
-            let type = 'expense';
-            const upperDescription = description.toUpperCase();
-            
-            if (TRANSACTION_CATEGORIES.income.keywords.some(keyword => 
-              upperDescription.includes(keyword.toUpperCase()))) {
-              type = 'income';
-            }
-            
-            transactions.push({
-              date: formatDate(dateStr),
-              description: description,
-              amount: transactionAmount,
-              type: type,
-              balance: balance,
-              category: categorizeTransaction(description)
-            });
-          }
-        }
-      }
-    }
+  if (TRANSACTION_CATEGORIES.income.keywords.some(keyword => desc.includes(keyword))) {
+    return 'income';
   }
   
-  // Remove duplicates and sort by date
-  const uniqueTransactions = transactions
-    .filter((t, index, self) => 
-      index === self.findIndex(other => 
-        other.date === t.date && 
-        other.description === t.description && 
-        Math.abs(other.amount - t.amount) < 0.01
-      )
-    )
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  if (TRANSACTION_CATEGORIES.expenses.keywords.some(keyword => desc.includes(keyword))) {
+    return 'expense';
+  }
   
-  console.log(`Extracted ${uniqueTransactions.length} unique transactions from PDF`);
-  return uniqueTransactions;
+  return amount >= 0 ? 'income' : 'expense';
 };
 
 const categorizeTransaction = (description: string): string => {
@@ -479,6 +473,7 @@ export const mapTransactionType = (type: string): 'income' | 'expense' | 'transf
     case 'income':
     case 'revenue':
     case 'earning':
+    case 'profit':
       return 'income';
     case 'expense':
     case 'spending':
@@ -495,21 +490,13 @@ export const mapTransactionType = (type: string): 'income' | 'expense' | 'transf
   }
 };
 
-export const calculateSummary = (transactions: Transaction[]) => {
-  const totalRevenue = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+export const calculateSummary = calculateTotals;
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const netIncome = totalRevenue - totalExpenses;
-
-  return {
-    totalTransactions: transactions.length,
-    totalRevenue,
-    totalExpenses,
-    netIncome,
-  };
+// Export function for CSV download
+export const exportToCSV = (transactions: Transaction[]): string => {
+  const headers = 'Date,Description,Amount,Category,Type,Balance';
+  const rows = transactions.map(tx => 
+    `"${tx.date}","${tx.description}",${tx.amount},${tx.category},${tx.type},${tx.balance || ''}`
+  );
+  return [headers, ...rows].join('\n');
 };

@@ -1,10 +1,87 @@
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker using CDN (most reliable approach)
-if (typeof window !== 'undefined') {
-  // Use unpkg CDN for the worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+// PDF Worker Loading Algorithm with Multiple Fallbacks
+class PDFWorkerManager {
+  private static workerInitialized = false;
+  private static initializationPromise: Promise<void> | null = null;
+
+  static async initializeWorker(): Promise<void> {
+    if (this.workerInitialized) return;
+    if (this.initializationPromise) return this.initializationPromise;
+
+    this.initializationPromise = this.tryWorkerStrategies();
+    await this.initializationPromise;
+  }
+
+  private static async tryWorkerStrategies(): Promise<void> {
+    const strategies = [
+      // Strategy 1: Local worker import (most reliable)
+      () => this.tryLocalWorker(),
+      // Strategy 2: CDN with specific version
+      () => this.tryCDNWorker('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'),
+      // Strategy 3: unpkg CDN
+      () => this.tryCDNWorker(`https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js`),
+      // Strategy 4: jsdelivr CDN
+      () => this.tryCDNWorker('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js'),
+      // Strategy 5: Disable worker (fallback)
+      () => this.disableWorker()
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        await strategy();
+        console.log('PDF worker initialized successfully');
+        this.workerInitialized = true;
+        return;
+      } catch (error) {
+        console.warn('PDF worker strategy failed:', error.message);
+        continue;
+      }
+    }
+
+    throw new Error('All PDF worker initialization strategies failed');
+  }
+
+  private static async tryLocalWorker(): Promise<void> {
+    try {
+      // Try to import worker as a module
+      const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?worker');
+      pdfjsLib.GlobalWorkerOptions.workerPort = new worker.default();
+      await this.testWorker();
+    } catch (error) {
+      throw new Error('Local worker import failed');
+    }
+  }
+
+  private static async tryCDNWorker(url: string): Promise<void> {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = url;
+    await this.testWorker();
+  }
+
+  private static async disableWorker(): Promise<void> {
+    // Last resort: disable worker entirely
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    console.warn('PDF worker disabled - processing may be slower');
+  }
+
+  private static async testWorker(): Promise<void> {
+    // Test the worker with a minimal PDF
+    const testPDF = new Uint8Array([
+      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, // %PDF-1.4
+      0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a
+    ]);
+    
+    try {
+      const doc = await pdfjsLib.getDocument({ 
+        data: testPDF,
+        verbosity: 0 
+      }).promise;
+      await doc.destroy();
+    } catch (error) {
+      throw new Error('Worker test failed');
+    }
+  }
 }
 
 export interface Transaction {
@@ -77,12 +154,12 @@ const TRANSACTION_CATEGORIES = {
   }
 };
 
-// Enhanced bank statement parser with your improved regex
+// Enhanced bank statement parser
 function parseBankStatement(text: string): Transaction[] {
   const transactions: Transaction[] = [];
   const lines = text.split('\n');
   
-  // Your enhanced regex pattern for more accurate extraction
+  // Enhanced regex pattern for more accurate extraction
   const transactionRegex = /(\d{4} [A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2})\s+(\d{1,2} [A-Za-z]{3} \d{4})\s+(.*?)\s+([-+][\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(\S+)\s+(\S+)/;
   
   // Alternative patterns for different bank formats
@@ -92,7 +169,7 @@ function parseBankStatement(text: string): Transaction[] {
   ];
 
   for (const line of lines) {
-    // Try your enhanced regex first
+    // Try enhanced regex first
     let match = line.match(transactionRegex);
     
     if (match) {
@@ -141,7 +218,7 @@ function categorizeTransactions(transactions: Transaction[]): Transaction[] {
     const description = tx.description.toLowerCase();
     let autoCategory = tx.category;
     
-    // Enhanced auto-categorization logic from your code
+    // Enhanced auto-categorization logic
     if (description.includes('transfer from') || 
         description.includes('interest earned') ||
         description.includes('salary') ||
@@ -182,29 +259,45 @@ function calculateTotals(transactions: Transaction[]) {
   };
 }
 
-// Extract text from PDF with enhanced error handling
+// Enhanced PDF text extraction with robust error handling
 async function extractTextFromPDF(file: File): Promise<string> {
   try {
+    console.log('Starting PDF text extraction...');
+    
+    // Initialize worker using our robust strategy
+    await PDFWorkerManager.initializeWorker();
+    
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ 
       data: arrayBuffer,
       useWorkerFetch: false,
       isEvalSupported: false,
-      useSystemFonts: true
+      useSystemFonts: true,
+      verbosity: 0 // Reduce console noise
     }).promise;
     
     let text = '';
+    const numPages = pdf.numPages;
+    console.log(`Processing ${numPages} pages...`);
     
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => item.str)
-        .join(' ')
-        .replace(/\s+/g, ' ');
-      text += pageText + '\n';
+    for (let i = 1; i <= numPages; i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item: any) => item.str)
+          .join(' ')
+          .replace(/\s+/g, ' ');
+        text += pageText + '\n';
+        console.log(`Page ${i} processed, extracted ${pageText.length} characters`);
+      } catch (pageError) {
+        console.warn(`Failed to process page ${i}:`, pageError);
+        // Continue with other pages
+      }
     }
     
+    await pdf.destroy();
+    console.log(`PDF processing complete. Total text length: ${text.length}`);
     return text;
   } catch (error) {
     console.error('PDF text extraction failed:', error);
@@ -344,7 +437,7 @@ export const parsePDF = (file: File): Promise<any[]> => {
         throw new Error('PDF appears to be empty, scanned, or text extraction failed. Please ensure the PDF contains readable text (not a scanned image).');
       }
       
-      // Use your enhanced parsing function
+      // Use enhanced parsing function
       const transactions = parseBankStatement(text);
       const categorizedTransactions = categorizeTransactions(transactions);
       

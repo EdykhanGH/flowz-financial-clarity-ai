@@ -1,4 +1,3 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Enhanced type definitions for better PDF processing
@@ -8,6 +7,8 @@ interface TextItem {
   width?: number;
   height?: number;
   fontName?: string;
+  dir?: string;
+  hasEOL?: boolean;
 }
 
 interface TextMarkedContent {
@@ -136,13 +137,13 @@ export class BankStatementExtractor {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           
-          // Enhanced filtering with proper type guards
-          const validTextItems = textContent.items.filter((item): item is TextItem => {
-            return isTextItem(item) && item.str.trim().length > 0;
-          });
+          // Enhanced filtering with proper type guards - filter first, then assert type
+          const validTextItems: TextItem[] = textContent.items
+            .filter(isTextItem)
+            .filter((item: TextItem) => item.str.trim().length > 0);
           
           // Sort by position (top to bottom, left to right)
-          const sortedItems = validTextItems.sort((a, b) => {
+          const sortedItems = validTextItems.sort((a: TextItem, b: TextItem) => {
             const yDiff = Math.abs(b.transform[5] - a.transform[5]);
             if (yDiff > 5) return b.transform[5] - a.transform[5];
             return a.transform[4] - b.transform[4];

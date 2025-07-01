@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,7 +64,7 @@ const BankStatementUpload: React.FC = () => {
     
     try {
       console.log('Starting enhanced bank statement processing:', selectedFile.name);
-      setProcessingStage('Initializing advanced extraction algorithms...');
+      setProcessingStage('Initializing PDF worker and extraction algorithms...');
       setProcessingProgress(10);
       
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -73,7 +74,7 @@ const BankStatementUpload: React.FC = () => {
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setProcessingStage('Extracting all transaction data with multiple patterns...');
+      setProcessingStage('Extracting and cleaning transaction data...');
       setProcessingProgress(45);
       
       const parsedTransactions = await parseFile(selectedFile);
@@ -86,10 +87,10 @@ const BankStatementUpload: React.FC = () => {
       setProcessingStage('Calculating comprehensive financial summary...');
       setProcessingProgress(90);
       
-      console.log('Successfully extracted transactions:', parsedTransactions.length);
+      console.log('Successfully extracted clean transactions:', parsedTransactions.length);
       
       if (parsedTransactions.length === 0) {
-        throw new Error('No transactions found in the file. This could mean:\n\n• The PDF contains only scanned images (not text-based)\n• The statement format is not recognized\n• The file may be password protected or corrupted\n\nPlease try:\n• Exporting your statement as CSV/Excel format\n• Ensuring the PDF contains selectable text\n• Checking that the file is not password protected');
+        throw new Error('No valid transactions found in the file. Please check:\n\n• File contains transaction data\n• PDF has selectable text (not scanned images)\n• File is not password protected\n• Try CSV/Excel format if PDF fails');
       }
 
       const bankTransactions: BankTransaction[] = parsedTransactions.map((transaction, index) => ({
@@ -105,28 +106,16 @@ const BankStatementUpload: React.FC = () => {
       
       setTransactions(bankTransactions);
       setFinancialSummary(summary);
-      setProcessingStage('Extraction complete - All transactions captured!');
+      setProcessingStage('Extraction complete - All transactions cleaned and ready!');
       setProcessingProgress(100);
       
       toast({
-        title: "Complete Extraction Successful!",
-        description: `Successfully extracted ${bankTransactions.length} transactions with full categorization and analysis`,
+        title: "Clean Extraction Successful!",
+        description: `Successfully extracted ${bankTransactions.length} clean transactions ready for editing and saving`,
       });
     } catch (error: any) {
       console.error('Enhanced bank statement processing error:', error);
-      let errorMessage = 'Failed to process bank statement';
-      
-      if (error.message.includes('PDF')) {
-        errorMessage = error.message;
-      } else if (error.message.includes('worker')) {
-        errorMessage = 'PDF processing failed. This might be due to:\n• Network connectivity issues\n• Browser compatibility problems\n\nTry refreshing the page and uploading again.';
-      } else if (error.message.includes('fetch')) {
-        errorMessage = 'Network error occurred. Please check your internet connection and try again.';
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
-      
-      setUploadError(errorMessage);
+      setUploadError(error.message || 'Failed to process bank statement');
       setProcessingStage('Processing failed');
       
       toast({
@@ -201,7 +190,7 @@ const BankStatementUpload: React.FC = () => {
       let savedCount = 0;
       let failedCount = 0;
       
-      // Save transactions in batches to avoid overwhelming the database
+      // Save transactions in batches
       const batchSize = 10;
       for (let i = 0; i < transactions.length; i += batchSize) {
         const batch = transactions.slice(i, i + batchSize);
@@ -222,14 +211,13 @@ const BankStatementUpload: React.FC = () => {
           }
         }
         
-        // Small delay between batches
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       if (savedCount > 0) {
         toast({
-          title: "Database Save Successful!",
-          description: `${savedCount} transactions saved to your account and will appear in your dashboard${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+          title: "Successfully Saved to Dashboard!",
+          description: `${savedCount} transactions saved and will appear in your dashboard${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
         });
         
         // Clear the form after successful save
@@ -259,7 +247,7 @@ const BankStatementUpload: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `enhanced-bank-statement-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `clean-bank-statement-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -267,7 +255,7 @@ const BankStatementUpload: React.FC = () => {
     
     toast({
       title: "Export Successful",
-      description: "Your enhanced transaction data has been exported to CSV format",
+      description: "Your clean transaction data has been exported to CSV format",
     });
   };
 
@@ -276,40 +264,39 @@ const BankStatementUpload: React.FC = () => {
       <CardHeader>
         <CardTitle className="text-white flex items-center">
           <FileText className="w-5 h-5 mr-2 text-blue-400" />
-          Advanced Bank Statement Processing & Complete Data Extraction
+          Enhanced Bank Statement Processing - Clean Data Extraction
         </CardTitle>
         <p className="text-gray-400 text-sm">
-          Enhanced algorithm to extract ALL transactions from any bank statement format with comprehensive analysis
+          Advanced algorithm that extracts and cleans transaction data into proper columns for easy editing and saving
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* File Upload Section */}
         <div className="space-y-4">
-          {/* Enhanced File Format Info */}
           <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
             <div className="flex items-start">
               <Info className="w-5 h-5 text-blue-400 mr-3 mt-0.5" />
               <div className="text-sm text-blue-300">
-                <p className="font-medium mb-2">Advanced Extraction Capabilities:</p>
+                <p className="font-medium mb-2">Clean Data Extraction Features:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-200">
                   <div>
-                    <p className="font-medium text-blue-300 mb-1">🚀 New Features:</p>
+                    <p className="font-medium text-blue-300 mb-1">✨ Enhanced Features:</p>
                     <ul className="space-y-1">
-                      <li>• Advanced multi-pattern recognition</li>
-                      <li>• Complete transaction capture</li>
-                      <li>• Enhanced PDF text extraction</li>
-                      <li>• Intelligent duplicate detection</li>
-                      <li>• Comprehensive financial analysis</li>
+                      <li>• Clean column-based data extraction</li>
+                      <li>• Accurate transaction categorization</li>
+                      <li>• Fixed PDF worker errors</li>
+                      <li>• Proper income/expense detection</li>
+                      <li>• Real-time editing capabilities</li>
                     </ul>
                   </div>
                   <div>
-                    <p className="font-medium text-blue-300 mb-1">📄 Supported Formats:</p>
+                    <p className="font-medium text-blue-300 mb-1">📊 Data Quality:</p>
                     <ul className="space-y-1">
-                      <li>• All Nigerian bank PDF statements</li>
-                      <li>• International bank formats</li>
-                      <li>• CSV/Excel files</li>
-                      <li>• Multi-page statements</li>
-                      <li>• Various date formats</li>
+                      <li>• Clean Date format (YYYY-MM-DD)</li>
+                      <li>• Readable descriptions</li>
+                      <li>• Accurate amounts</li>
+                      <li>• Smart categorization</li>
+                      <li>• Dashboard integration</li>
                     </ul>
                   </div>
                 </div>
@@ -319,7 +306,7 @@ const BankStatementUpload: React.FC = () => {
 
           <div>
             <Label htmlFor="bank-statement" className="text-gray-300 font-medium">
-              Upload Bank Statement for Complete Transaction Extraction
+              Upload Bank Statement for Clean Data Extraction
             </Label>
             <Input
               id="bank-statement"
@@ -338,7 +325,7 @@ const BankStatementUpload: React.FC = () => {
                       {selectedFile.name}
                     </p>
                     <p className="text-xs text-green-300">
-                      Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready for advanced processing
+                      Ready for clean data extraction
                     </p>
                   </div>
                 </div>
@@ -352,10 +339,10 @@ const BankStatementUpload: React.FC = () => {
             className="bg-blue-600 hover:bg-blue-700 w-full py-3 font-medium"
           >
             <Upload className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Processing with Advanced Algorithms...' : 'Extract ALL Transactions (Advanced)'}
+            {isProcessing ? 'Extracting Clean Data...' : 'Extract Clean Transaction Data'}
           </Button>
 
-          {/* Enhanced Processing Progress */}
+          {/* Processing Progress */}
           {isProcessing && (
             <div className="space-y-3">
               <div className="w-full bg-gray-700 rounded-full h-3">
@@ -386,33 +373,23 @@ const BankStatementUpload: React.FC = () => {
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-red-500 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-400 font-medium mb-2">Advanced Processing Failed</p>
+                  <p className="text-red-400 font-medium mb-2">Processing Failed</p>
                   <pre className="text-red-300 text-sm whitespace-pre-wrap font-mono bg-red-900/20 p-2 rounded border border-red-500/30">
                     {uploadError}
                   </pre>
-                  <div className="mt-3 text-xs text-red-200">
-                    <p className="font-medium mb-1">Advanced troubleshooting suggestions:</p>
-                    <ul className="space-y-1">
-                      <li>• Try exporting your statement as CSV or Excel format</li>
-                      <li>• Ensure the PDF contains selectable text (not scanned images)</li>
-                      <li>• Check that the file is not password protected</li>
-                      <li>• Try refreshing the page and uploading again</li>
-                      <li>• Contact support for assistance with specific formats</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Enhanced Financial Summary */}
+        {/* Financial Summary */}
         {financialSummary && (
           <div className="bg-gray-700 p-6 rounded-lg border border-gray-600">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center">
                 <Calculator className="w-5 h-5 mr-2 text-green-400" />
-                Comprehensive Financial Analysis
+                Financial Summary - Clean Data
               </h3>
               <div className="flex gap-2">
                 <Button
@@ -430,7 +407,7 @@ const BankStatementUpload: React.FC = () => {
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Saving...' : 'Save to Database'}
+                  {isSaving ? 'Saving...' : 'Save All to Dashboard'}
                 </Button>
               </div>
             </div>
@@ -463,16 +440,16 @@ const BankStatementUpload: React.FC = () => {
           </div>
         )}
 
-        {/* Enhanced Results Section */}
+        {/* Clean Transaction Table */}
         {transactions.length > 0 && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  Enhanced Transaction Extraction ({transactions.length})
+                  Clean Transaction Data ({transactions.length})
                 </h3>
                 <p className="text-sm text-gray-400">
-                  All transactions extracted, categorized, and ready for database storage
+                  Extracted data organized in clean columns - Date | Description | Amount | Type | Category | Actions
                 </p>
               </div>
               <Button 
@@ -481,137 +458,141 @@ const BankStatementUpload: React.FC = () => {
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Database className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving to Database...' : 'Save All to Database'}
+                {isSaving ? 'Saving to Dashboard...' : 'Save All to Dashboard'}
               </Button>
             </div>
 
-            <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-600">
-                    <TableHead className="text-gray-300">Date</TableHead>
-                    <TableHead className="text-gray-300">Description</TableHead>
-                    <TableHead className="text-gray-300">Amount (₦)</TableHead>
-                    <TableHead className="text-gray-300">Type</TableHead>
-                    <TableHead className="text-gray-300">Category</TableHead>
-                    <TableHead className="text-gray-300">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow key={transaction.id} className="border-gray-600">
-                      <TableCell className="text-gray-300">
-                        {transaction.date}
-                      </TableCell>
-                      <TableCell className="text-gray-300">
-                        {transaction.isEditing ? (
-                          <Textarea
-                            value={transaction.userDescription || transaction.description}
-                            onChange={(e) => updateTransaction(transaction.id, 'userDescription', e.target.value)}
-                            className="min-h-[60px]"
-                          />
-                        ) : (
-                          <div>
-                            <p className="font-medium">{transaction.userDescription || transaction.description}</p>
-                            {transaction.originalDescription && transaction.originalDescription !== (transaction.userDescription || transaction.description) && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Original: {transaction.originalDescription}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className={`font-bold ${(transaction.userType || transaction.type) === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                        ₦{transaction.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.isEditing ? (
-                          <Select 
-                            value={transaction.userType || transaction.type} 
-                            onValueChange={(value: 'income' | 'expense') => updateTransaction(transaction.id, 'userType', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="income">Income</SelectItem>
-                              <SelectItem value="expense">Expense</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant={(transaction.userType || transaction.type) === 'income' ? 'default' : 'destructive'}>
-                            {(transaction.userType || transaction.type) === 'income' ? 'Income' : 'Expense'}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-300">
-                        {transaction.isEditing ? (
-                          <Select 
-                            value={transaction.userCategory || transaction.category} 
-                            onValueChange={(value) => updateTransaction(transaction.id, 'userCategory', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Salary">Salary</SelectItem>
-                              <SelectItem value="Business Income">Business Income</SelectItem>
-                              <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
-                              <SelectItem value="Transportation">Transportation</SelectItem>
-                              <SelectItem value="Utilities">Utilities</SelectItem>
-                              <SelectItem value="Housing">Housing</SelectItem>
-                              <SelectItem value="Healthcare">Healthcare</SelectItem>
-                              <SelectItem value="Education">Education</SelectItem>
-                              <SelectItem value="Entertainment">Entertainment</SelectItem>
-                              <SelectItem value="Bank Charges">Bank Charges</SelectItem>
-                              <SelectItem value="Investment Income">Investment Income</SelectItem>
-                              <SelectItem value="Savings & Investment">Savings & Investment</SelectItem>
-                              <SelectItem value="Shopping">Shopping</SelectItem>
-                              <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
-                              <SelectItem value="Card Payments">Card Payments</SelectItem>
-                              <SelectItem value="Insurance">Insurance</SelectItem>
-                              <SelectItem value="Loan & Credit">Loan & Credit</SelectItem>
-                              <SelectItem value="Uncategorized">Uncategorized</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <span>{transaction.userCategory || transaction.category}</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.isEditing ? (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSaveEdit(transaction.id)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditTransaction(transaction.id)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteTransaction(transaction.id)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
+            <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+              <div className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-gray-700 z-10">
+                    <TableRow className="border-gray-600">
+                      <TableHead className="text-gray-300 font-semibold">Date</TableHead>
+                      <TableHead className="text-gray-300 font-semibold">Description</TableHead>
+                      <TableHead className="text-gray-300 font-semibold">Amount (₦)</TableHead>
+                      <TableHead className="text-gray-300 font-semibold">Type</TableHead>
+                      <TableHead className="text-gray-300 font-semibold">Category</TableHead>
+                      <TableHead className="text-gray-300 font-semibold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((transaction) => (
+                      <TableRow key={transaction.id} className="border-gray-600 hover:bg-gray-600/30">
+                        <TableCell className="text-gray-300 font-mono text-sm">
+                          {transaction.date}
+                        </TableCell>
+                        <TableCell className="text-gray-300 max-w-xs">
+                          {transaction.isEditing ? (
+                            <Textarea
+                              value={transaction.userDescription || transaction.description}
+                              onChange={(e) => updateTransaction(transaction.id, 'userDescription', e.target.value)}
+                              className="min-h-[60px] text-sm"
+                            />
+                          ) : (
+                            <div className="space-y-1">
+                              <p className="text-sm">{transaction.userDescription || transaction.description}</p>
+                              {transaction.originalDescription && transaction.originalDescription !== (transaction.userDescription || transaction.description) && (
+                                <p className="text-xs text-gray-500">
+                                  Original: {transaction.originalDescription}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className={`font-bold text-right ${(transaction.userType || transaction.type) === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                          ₦{transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {transaction.isEditing ? (
+                            <Select 
+                              value={transaction.userType || transaction.type} 
+                              onValueChange={(value: 'income' | 'expense') => updateTransaction(transaction.id, 'userType', value)}
+                            >
+                              <SelectTrigger className="w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="income">Income</SelectItem>
+                                <SelectItem value="expense">Expense</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant={(transaction.userType || transaction.type) === 'income' ? 'default' : 'destructive'} className="text-xs">
+                              {(transaction.userType || transaction.type) === 'income' ? 'Income' : 'Expense'}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          {transaction.isEditing ? (
+                            <Select 
+                              value={transaction.userCategory || transaction.category} 
+                              onValueChange={(value) => updateTransaction(transaction.id, 'userCategory', value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Salary">Salary</SelectItem>
+                                <SelectItem value="Business Income">Business Income</SelectItem>
+                                <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
+                                <SelectItem value="Transportation">Transportation</SelectItem>
+                                <SelectItem value="Utilities">Utilities</SelectItem>
+                                <SelectItem value="Housing">Housing</SelectItem>
+                                <SelectItem value="Healthcare">Healthcare</SelectItem>
+                                <SelectItem value="Education">Education</SelectItem>
+                                <SelectItem value="Entertainment">Entertainment</SelectItem>
+                                <SelectItem value="Bank Charges">Bank Charges</SelectItem>
+                                <SelectItem value="Investment Income">Investment Income</SelectItem>
+                                <SelectItem value="Shopping">Shopping</SelectItem>
+                                <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
+                                <SelectItem value="Insurance">Insurance</SelectItem>
+                                <SelectItem value="Loan & Credit">Loan & Credit</SelectItem>
+                                <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-xs bg-gray-600 px-2 py-1 rounded">
+                              {transaction.userCategory || transaction.category}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {transaction.isEditing ? (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveEdit(transaction.id)}
+                                className="bg-green-600 hover:bg-green-700 h-8 w-8 p-0"
+                              >
+                                <Check className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditTransaction(transaction.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         )}

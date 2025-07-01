@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { BankStatementExtractor } from './PDFExtractor';
 import { TransactionSummaryCalculator } from './TransactionSummaryCalculator';
@@ -31,16 +30,69 @@ export const parseFile = async (file: File): Promise<Transaction[]> => {
     throw new Error('File is too large. Please select a file smaller than 100MB.');
   }
   
+  let transactions: Transaction[] = [];
+  
   switch (fileExtension) {
     case 'pdf':
-      return BankStatementExtractor.extractFromPDF(file);
+      transactions = await BankStatementExtractor.extractFromPDF(file);
+      break;
     case 'csv':
     case 'xls':
     case 'xlsx':
-      return parseExcel(file);
+      transactions = await parseExcel(file);
+      break;
     default:
       throw new Error('Unsupported file format. Please upload PDF, CSV, XLS, or XLSX files.');
   }
+  
+  // Clean and validate all transactions
+  const cleanedTransactions = transactions
+    .filter(t => t && t.date && t.description && t.amount > 0)
+    .map(t => ({
+      ...t,
+      description: cleanDescription(t.description),
+      amount: Math.abs(t.amount),
+      type: t.type || determineTransactionType(t.description, t.amount)
+    }));
+  
+  console.log(`Successfully processed ${cleanedTransactions.length} clean transactions`);
+  return cleanedTransactions;
+};
+
+const cleanDescription = (description: string): string => {
+  if (!description) return 'Transaction';
+  
+  return description
+    .replace(/[^\w\s\-\.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 80);
+};
+
+const determineTransactionType = (description: string, amount: number): 'income' | 'expense' => {
+  const desc = description.toLowerCase();
+  
+  const incomeKeywords = [
+    'transfer from', 'credit', 'deposit', 'salary', 'payment received',
+    'interest', 'dividend', 'bonus', 'refund', 'reversal', 'inward',
+    'received', 'incoming', 'credit alert', 'pay', 'wage', 'receipt'
+  ];
+  
+  const expenseKeywords = [
+    'airtime', 'electricity', 'debit', 'withdrawal', 'transfer to', 'payment',
+    'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'bill', 'fuel',
+    'grocery', 'shopping', 'commission', 'levy', 'debit alert'
+  ];
+  
+  if (incomeKeywords.some(keyword => desc.includes(keyword))) {
+    return 'income';
+  }
+  
+  if (expenseKeywords.some(keyword => desc.includes(keyword))) {
+    return 'expense';
+  }
+  
+  return 'expense';
 };
 
 export const parseExcel = (file: File): Promise<Transaction[]> => {
@@ -94,7 +146,7 @@ const processExcelData = (rawData: any[][]): Transaction[] => {
       
       for (const pattern of headerPatterns) {
         const matchCount = pattern.filter(term => rowStr.includes(term)).length;
-        if (matchCount >= 2) { // At least 2 out of 3 pattern terms match
+        if (matchCount >= 2) {
           headerRow = i;
           break;
         }
@@ -240,39 +292,6 @@ const formatDate = (dateValue: any): string => {
   }
   
   return new Date().toISOString().split('T')[0];
-};
-
-const determineTransactionType = (description: string, amount: number): 'income' | 'expense' => {
-  const desc = description.toLowerCase();
-  
-  // Income indicators
-  const incomeKeywords = [
-    'credit', 'deposit', 'salary', 'payment received', 'transfer in',
-    'interest', 'dividend', 'bonus', 'refund', 'reversal', 'inward',
-    'received', 'incoming', 'credit alert', 'pay', 'wage', 'receipt',
-    'loan disbursement', 'commission received'
-  ];
-  
-  // Expense indicators
-  const expenseKeywords = [
-    'debit', 'withdrawal', 'payment', 'charge', 'fee', 'purchase',
-    'atm', 'pos', 'outward', 'airtime', 'bill', 'fuel', 'grocery',
-    'shopping', 'commission', 'levy', 'debit alert', 'transfer out',
-    'loan repayment', 'insurance', 'rent'
-  ];
-  
-  // Check income keywords first
-  if (incomeKeywords.some(keyword => desc.includes(keyword))) {
-    return 'income';
-  }
-  
-  // Check expense keywords
-  if (expenseKeywords.some(keyword => desc.includes(keyword))) {
-    return 'expense';
-  }
-  
-  // Default to expense for unknown transactions
-  return 'expense';
 };
 
 const categorizeTransaction = (description: string): string => {

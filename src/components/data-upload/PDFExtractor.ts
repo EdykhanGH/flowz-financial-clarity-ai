@@ -16,99 +16,56 @@ class EnhancedPDFWorkerManager {
 
   private static async setupWorker(): Promise<void> {
     try {
-      // Try local worker first
+      // Use the bundled worker from pdfjs-dist
       const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url);
       pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl.toString();
       
-      // Test with a simple PDF
-      await this.testWorker();
-      console.log('PDF worker initialized successfully');
+      console.log('PDF worker initialized successfully with bundled worker');
       this.workerInitialized = true;
     } catch (error) {
-      console.warn('Local worker failed, trying CDN fallback');
+      console.warn('Bundled worker failed, using inline worker');
       
-      // Fallback to CDN
-      const cdnUrls = [
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js',
-        'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
-      ];
+      // Create inline worker as fallback
+      const workerCode = `
+        importScripts('https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js');
+      `;
       
-      for (const url of cdnUrls) {
-        try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = url;
-          await this.testWorker();
-          console.log(`PDF worker initialized with CDN: ${url}`);
-          this.workerInitialized = true;
-          return;
-        } catch (cdnError) {
-          console.warn(`CDN ${url} failed:`, cdnError);
-        }
-      }
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
       
-      throw new Error('All PDF worker initialization methods failed');
+      console.log('PDF worker initialized with inline worker');
+      this.workerInitialized = true;
     }
-  }
-
-  private static async testWorker(): Promise<void> {
-    const testPDF = new Uint8Array([
-      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34,
-      0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a
-    ]);
-    
-    const doc = await pdfjsLib.getDocument({ 
-      data: testPDF,
-      verbosity: 0 
-    }).promise;
-    await doc.destroy();
   }
 }
 
-// Enhanced transaction extraction patterns
+// Enhanced transaction extraction with better parsing
 export class BankStatementExtractor {
+  // More specific patterns for Nigerian bank statements
   private static readonly TRANSACTION_PATTERNS = [
-    // Pattern 1: DD/MM/YYYY format with description and amount
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+([^\d\-\+]{3,50}?)\s+([-+]?[\d,]+\.?\d*)/g,
+    // Pattern 1: Full Nigerian bank format with timestamp
+    /(\d{4}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{1,2}:\d{2}:\d{2})\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+([^+-]+?)\s+([-+]?[\d,]+\.?\d*)\s+([\d,]+\.?\d*)\s+([A-Za-z-]+)\s+(\d+)/g,
     
-    // Pattern 2: YYYY-MM-DD format
-    /(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\s+([^\d\-\+]{3,50}?)\s+([-+]?[\d,]+\.?\d*)/g,
+    // Pattern 2: Date with description and amount
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+([^+-\d]+?)\s+([-+]?[\d,]+\.?\d*)/g,
     
-    // Pattern 3: With time stamps
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+(\d{1,2}:\d{2}:\d{2})?\s*([^\d\-\+]{3,50}?)\s+([-+]?[\d,]+\.?\d*)/g,
+    // Pattern 3: Nigerian format with transfer details
+    /(\d{4}\s+[A-Za-z]{3}\s+\d{1,2})\s+.*?([A-Za-z][^+-]+?)\s+([-+][\d,]+\.?\d*)\s+([\d,]+\.?\d*)/g,
     
-    // Pattern 4: Month name format (01 Jan 2024)
-    /(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+([^\d\-\+]{3,50}?)\s+([-+]?[\d,]+\.?\d*)/g,
-    
-    // Pattern 5: With debit/credit columns
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+([^\d\-\+]{3,80}?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)/g,
-    
-    // Pattern 6: Nigerian bank format with reference
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s+([^\d\-\+]{5,100}?)\s+([-+]?[\d,]+\.?\d*)\s+([\d,]+\.?\d*)\s+([A-Z0-9]{6,20})/g,
-    
-    // Pattern 7: Table format with pipes or tabs
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})[\s\|]+([^\d\-\+\|]{3,50}?)[\s\|]+([-+]?[\d,]+\.?\d*)[\s\|]*([\d,]+\.?\d*)?/g,
-    
-    // Pattern 8: Loose pattern for missed transactions
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})[\s\S]{1,150}?([\d,]+\.\d{2})/g
-  ];
-
-  private static readonly HEADER_PATTERNS = [
-    /date.*description.*amount/i,
-    /trans.*date.*details/i,
-    /posting.*date.*narration/i,
-    /value.*date.*particulars/i,
-    /date.*transaction.*balance/i,
-    /serial.*date.*description/i
+    // Pattern 4: Simple date amount pattern
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})[\s\S]*?([-+]?[\d,]+\.\d{2})/g
   ];
 
   private static readonly INCOME_KEYWORDS = [
-    'credit', 'deposit', 'transfer in', 'salary', 'payment received',
+    'transfer from', 'credit', 'deposit', 'salary', 'payment received',
     'interest', 'dividend', 'bonus', 'refund', 'reversal', 'inward',
-    'received', 'incoming', 'credit alert', 'pay', 'wage'
+    'received', 'incoming', 'credit alert', 'pay', 'wage', 'receipt'
   ];
 
   private static readonly EXPENSE_KEYWORDS = [
-    'debit', 'withdrawal', 'transfer out', 'payment', 'charge', 'fee',
-    'purchase', 'atm', 'pos', 'outward', 'airtime', 'bill', 'fuel',
+    'airtime', 'electricity', 'debit', 'withdrawal', 'transfer to', 'payment',
+    'charge', 'fee', 'purchase', 'atm', 'pos', 'outward', 'bill', 'fuel',
     'grocery', 'shopping', 'commission', 'levy', 'debit alert'
   ];
 
@@ -130,33 +87,48 @@ export class BankStatementExtractor {
       console.log(`PDF loaded: ${pdf.numPages} pages`);
       
       let allText = '';
-      const pageTexts: string[] = [];
       
-      // Extract text from all pages
+      // Extract text from all pages with better structure preservation
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         try {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           
-          // Enhanced text extraction with positioning
+          // Sort text items by position to maintain order
           const textItems = textContent.items
             .filter((item: any) => item.str && item.str.trim().length > 0)
             .sort((a: any, b: any) => {
-              // Sort by Y position (top to bottom), then X position (left to right)
               const yDiff = Math.abs(b.transform[5] - a.transform[5]);
-              if (yDiff > 2) return b.transform[5] - a.transform[5];
+              if (yDiff > 5) return b.transform[5] - a.transform[5];
               return a.transform[4] - b.transform[4];
             });
           
-          const pageText = textItems
-            .map((item: any) => item.str.trim())
-            .join(' ')
-            .replace(/\s+/g, ' ');
+          // Group text items by lines based on Y position
+          const lines: string[] = [];
+          let currentLine = '';
+          let lastY = -1;
           
-          pageTexts.push(pageText);
-          allText += pageText + '\n';
+          for (const item of textItems) {
+            const y = Math.round(item.transform[5]);
+            const text = item.str.trim();
+            
+            if (lastY !== -1 && Math.abs(y - lastY) > 5) {
+              if (currentLine.trim()) {
+                lines.push(currentLine.trim());
+              }
+              currentLine = text;
+            } else {
+              currentLine += (currentLine ? ' ' : '') + text;
+            }
+            lastY = y;
+          }
           
-          console.log(`Page ${pageNum} extracted: ${pageText.length} characters`);
+          if (currentLine.trim()) {
+            lines.push(currentLine.trim());
+          }
+          
+          allText += lines.join('\n') + '\n';
+          console.log(`Page ${pageNum} extracted: ${lines.length} lines`);
         } catch (pageError) {
           console.warn(`Failed to extract page ${pageNum}:`, pageError);
         }
@@ -164,26 +136,17 @@ export class BankStatementExtractor {
       
       await pdf.destroy();
       
-      if (allText.length < 100) {
+      if (allText.length < 50) {
         throw new Error('PDF appears to be empty or contains only scanned images. Please ensure the PDF contains selectable text.');
       }
       
       console.log(`Total text extracted: ${allText.length} characters`);
       
-      // Process extracted text
-      const transactions = this.parseTransactions(allText);
+      // Parse transactions with enhanced cleaning
+      const transactions = this.parseAndCleanTransactions(allText);
       
-      if (transactions.length === 0) {
-        // Try processing each page separately
-        console.log('No transactions found in combined text, trying page-by-page extraction');
-        for (const pageText of pageTexts) {
-          const pageTransactions = this.parseTransactions(pageText);
-          transactions.push(...pageTransactions);
-        }
-      }
-      
-      console.log(`Successfully extracted ${transactions.length} transactions`);
-      return this.deduplicateAndSort(transactions);
+      console.log(`Successfully extracted ${transactions.length} clean transactions`);
+      return transactions;
       
     } catch (error) {
       console.error('PDF extraction failed:', error);
@@ -191,137 +154,97 @@ export class BankStatementExtractor {
     }
   }
 
-  private static parseTransactions(text: string): any[] {
+  private static parseAndCleanTransactions(text: string): any[] {
     const transactions: any[] = [];
-    const lines = text.split('\n').filter(line => line.trim().length > 5);
+    const lines = text.split('\n').filter(line => line.trim().length > 10);
     
-    console.log(`Processing ${lines.length} lines for transactions`);
+    console.log(`Processing ${lines.length} lines for clean transaction extraction`);
     
-    // Skip header lines
-    const filteredLines = lines.filter(line => {
-      const lowerLine = line.toLowerCase();
-      return !this.HEADER_PATTERNS.some(pattern => pattern.test(lowerLine));
-    });
-    
-    // Try each pattern on the full text
-    for (let patternIndex = 0; patternIndex < this.TRANSACTION_PATTERNS.length; patternIndex++) {
-      const pattern = this.TRANSACTION_PATTERNS[patternIndex];
-      const matches = [...text.matchAll(pattern)];
+    for (const line of lines) {
+      const cleanLine = line.trim();
       
-      console.log(`Pattern ${patternIndex + 1} found ${matches.length} matches`);
+      // Skip header lines and irrelevant content
+      if (this.isHeaderOrIrrelevant(cleanLine)) {
+        continue;
+      }
       
-      for (const match of matches) {
-        try {
-          const transaction = this.parseTransactionMatch(match, patternIndex);
-          if (transaction && this.validateTransaction(transaction)) {
-            transactions.push(transaction);
-          }
-        } catch (error) {
-          console.warn('Failed to parse match:', error);
-        }
+      // Try to extract transaction from line
+      const transaction = this.extractCleanTransaction(cleanLine);
+      if (transaction && this.validateTransaction(transaction)) {
+        transactions.push(transaction);
       }
     }
     
-    // Line-by-line processing for missed transactions
-    for (const line of filteredLines) {
-      if (line.length < 15) continue;
-      
-      for (let patternIndex = 0; patternIndex < this.TRANSACTION_PATTERNS.length; patternIndex++) {
-        const pattern = this.TRANSACTION_PATTERNS[patternIndex];
-        const match = line.match(pattern);
-        
-        if (match) {
-          try {
-            const transaction = this.parseTransactionMatch(match, patternIndex);
-            if (transaction && this.validateTransaction(transaction)) {
-              transactions.push(transaction);
-            }
-            break; // Found a match, no need to try other patterns
-          } catch (error) {
-            continue;
-          }
-        }
-      }
-    }
-    
-    return transactions;
+    // Remove duplicates and sort
+    return this.deduplicateAndSort(transactions);
   }
 
-  private static parseTransactionMatch(match: RegExpMatchArray, patternIndex: number): any | null {
+  private static extractCleanTransaction(line: string): any | null {
     try {
-      let date = '';
-      let description = '';
-      let amount = 0;
-      let balance = 0;
-      let reference = '';
+      // Pattern for Nigerian bank statement format
+      // Example: "2025 Jun 12 14:25:32 12 Jun 2025 Airtime -100.00 12,220.40 E-Channel 250612100100217741337727"
+      const nigerianPattern = /(\d{4}\s+[A-Za-z]{3}\s+\d{1,2})\s+\d{1,2}:\d{2}:\d{2}\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+([^+-\d]+?)\s+([-+]?[\d,]+\.?\d*)\s+([\d,]+\.?\d*)\s+([A-Za-z-]+)\s+(\d+)/;
       
-      switch (patternIndex) {
-        case 0: // DD/MM/YYYY format
-        case 1: // YYYY-MM-DD format
-        case 3: // Month name format
-          date = this.formatDate(match[1]);
-          description = this.cleanDescription(match[2]);
-          amount = this.parseAmount(match[3]);
-          break;
-          
-        case 2: // With timestamps
-          date = this.formatDate(match[1]);
-          description = this.cleanDescription(match[3]);
-          amount = this.parseAmount(match[4]);
-          break;
-          
-        case 4: // Debit/Credit columns
-          date = this.formatDate(match[1]);
-          description = this.cleanDescription(match[2]);
-          const debit = this.parseAmount(match[3]);
-          const credit = this.parseAmount(match[4]);
-          amount = credit > 0 ? credit : debit;
-          break;
-          
-        case 5: // Nigerian format with reference
-          date = this.formatDate(match[1]);
-          description = this.cleanDescription(match[2]);
-          amount = this.parseAmount(match[3]);
-          balance = this.parseAmount(match[4]);
-          reference = match[5];
-          break;
-          
-        case 6: // Table format
-          date = this.formatDate(match[1]);
-          description = this.cleanDescription(match[2]);
-          amount = this.parseAmount(match[3]);
-          if (match[4]) balance = this.parseAmount(match[4]);
-          break;
-          
-        case 7: // Loose pattern
-          date = this.formatDate(match[1]);
-          description = 'Transaction';
-          amount = this.parseAmount(match[2]);
-          break;
-          
-        default:
-          return null;
+      let match = line.match(nigerianPattern);
+      
+      if (match) {
+        const [, dateStr1, dateStr2, description, amountStr, balanceStr, channel, reference] = match;
+        
+        return {
+          date: this.formatDate(dateStr2 || dateStr1),
+          description: this.cleanDescription(description),
+          amount: Math.abs(this.parseAmount(amountStr)),
+          type: this.determineTransactionType(description, amountStr),
+          category: this.categorizeTransaction(description),
+          balance: this.parseAmount(balanceStr),
+          channel: channel,
+          reference: reference
+        };
       }
       
-      if (!date || !amount || amount <= 0) return null;
+      // Try simpler patterns
+      const simplePatterns = [
+        /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s+([^+-\d]+?)\s+([-+]?[\d,]+\.?\d*)/,
+        /([A-Za-z]{3}\s+\d{1,2})\s+([^+-\d]+?)\s+([-+]?[\d,]+\.?\d*)/
+      ];
       
-      const type = this.determineTransactionType(description);
-      const category = this.categorizeTransaction(description);
+      for (const pattern of simplePatterns) {
+        match = line.match(pattern);
+        if (match) {
+          const [, dateStr, description, amountStr] = match;
+          
+          return {
+            date: this.formatDate(dateStr),
+            description: this.cleanDescription(description),
+            amount: Math.abs(this.parseAmount(amountStr)),
+            type: this.determineTransactionType(description, amountStr),
+            category: this.categorizeTransaction(description),
+            balance: 0,
+            channel: 'Unknown',
+            reference: ''
+          };
+        }
+      }
       
-      return {
-        date,
-        description,
-        originalDescription: match[2] || description,
-        amount,
-        balance,
-        reference,
-        type,
-        category
-      };
+      return null;
     } catch (error) {
-      console.warn('Error parsing transaction match:', error);
+      console.warn('Error parsing transaction line:', error);
       return null;
     }
+  }
+
+  private static isHeaderOrIrrelevant(line: string): boolean {
+    const lowerLine = line.toLowerCase();
+    const irrelevantPatterns = [
+      'statement', 'account', 'balance', 'period', 'opening', 'closing',
+      'total', 'summary', 'page', 'continued', 'bank', 'address', 'phone',
+      'email', 'website', 'branch', 'sort code', 'bvn', 'customer'
+    ];
+    
+    return irrelevantPatterns.some(pattern => lowerLine.includes(pattern)) ||
+           line.length < 20 ||
+           !/\d/.test(line) ||
+           line.split(' ').length < 3;
   }
 
   private static validateTransaction(transaction: any): boolean {
@@ -329,32 +252,52 @@ export class BankStatementExtractor {
            transaction.description && 
            transaction.description.length > 2 &&
            transaction.amount > 0 &&
-           transaction.description !== 'Transaction';
+           !transaction.description.toLowerCase().includes('balance') &&
+           !transaction.description.toLowerCase().includes('total');
   }
 
   private static formatDate(dateStr: string): string {
     if (!dateStr) return new Date().toISOString().split('T')[0];
     
     try {
-      // Handle different date formats
-      const cleanDate = dateStr.replace(/[^\d\/\-\.\s\w]/g, '');
-      const date = new Date(cleanDate);
-      
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+      // Handle "12 Jun 2025" format
+      if (dateStr.includes(' ')) {
+        const parts = dateStr.split(' ');
+        if (parts.length === 3) {
+          const day = parts[0];
+          const month = parts[1];
+          const year = parts[2];
+          
+          const monthMap: { [key: string]: string } = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+          };
+          
+          const monthNum = monthMap[month];
+          if (monthNum) {
+            return `${year}-${monthNum}-${day.padStart(2, '0')}`;
+          }
+        }
       }
       
-      // Try parsing DD/MM/YYYY format
-      const parts = cleanDate.split(/[\/\-\.]/);
+      // Handle DD/MM/YYYY format
+      const parts = dateStr.split(/[\/\-\.]/);
       if (parts.length === 3) {
         const day = parseInt(parts[0]);
         const month = parseInt(parts[1]);
         const year = parseInt(parts[2]);
         
         if (year > 1900 && month <= 12 && day <= 31) {
-          const parsedDate = new Date(year, month - 1, day);
-          return parsedDate.toISOString().split('T')[0];
+          const fullYear = year < 100 ? 2000 + year : year;
+          return `${fullYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         }
+      }
+      
+      // Try direct parsing
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
       }
     } catch (error) {
       console.warn('Date parsing error:', error);
@@ -370,7 +313,7 @@ export class BankStatementExtractor {
       .replace(/[^\w\s\-\.]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .substring(0, 100);
+      .substring(0, 50);
   }
 
   private static parseAmount(amountStr: string): number {
@@ -382,32 +325,36 @@ export class BankStatementExtractor {
     return isNaN(amount) ? 0 : Math.abs(amount);
   }
 
-  private static determineTransactionType(description: string): 'income' | 'expense' {
+  private static determineTransactionType(description: string, amountStr: string): 'income' | 'expense' {
     const desc = description.toLowerCase();
+    const isNegative = amountStr.includes('-');
     
+    // Check for income keywords
     if (this.INCOME_KEYWORDS.some(keyword => desc.includes(keyword))) {
       return 'income';
     }
     
+    // Check for expense keywords
     if (this.EXPENSE_KEYWORDS.some(keyword => desc.includes(keyword))) {
       return 'expense';
     }
     
-    return 'expense'; // Default to expense
+    // Use sign as fallback (negative usually means expense in bank statements)
+    return isNegative ? 'expense' : 'income';
   }
 
   private static categorizeTransaction(description: string): string {
     const desc = description.toLowerCase();
     
-    // Category mapping
     const categories = {
-      'Food & Groceries': ['grocery', 'food', 'restaurant', 'supermarket'],
+      'Utilities': ['airtime', 'electricity', 'internet', 'phone', 'data', 'water'],
       'Transportation': ['fuel', 'transport', 'uber', 'taxi', 'bus'],
-      'Utilities': ['electric', 'water', 'internet', 'phone', 'airtime', 'data'],
+      'Food & Groceries': ['grocery', 'food', 'restaurant', 'supermarket'],
       'Bank Charges': ['charge', 'fee', 'commission', 'levy', 'service'],
       'Cash Withdrawal': ['atm', 'withdrawal', 'cash'],
       'Salary': ['salary', 'wage', 'pay'],
-      'Business Income': ['transfer', 'payment received', 'deposit']
+      'Business Income': ['transfer from', 'payment received', 'deposit'],
+      'Shopping': ['shopping', 'store', 'purchase']
     };
     
     for (const [category, keywords] of Object.entries(categories)) {
@@ -424,8 +371,8 @@ export class BankStatementExtractor {
     const unique = transactions.filter((transaction, index, self) => {
       return index === self.findIndex(t => 
         t.date === transaction.date &&
-        t.amount === transaction.amount &&
-        t.description === transaction.description
+        Math.abs(t.amount - transaction.amount) < 0.01 &&
+        t.description.toLowerCase() === transaction.description.toLowerCase()
       );
     });
     

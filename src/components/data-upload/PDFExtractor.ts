@@ -1,6 +1,16 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 
+// Type guard to check if an item is a TextItem
+interface TextItem {
+  str: string;
+  transform: number[];
+}
+
+function isTextItem(item: any): item is TextItem {
+  return item && typeof item.str === 'string' && Array.isArray(item.transform);
+}
+
 // Enhanced PDF Worker Manager with better error handling
 class EnhancedPDFWorkerManager {
   private static workerInitialized = false;
@@ -87,10 +97,7 @@ export class BankStatementExtractor {
           
           // Filter and sort text items with proper type checking
           const textItems = textContent.items
-            .filter((item: any) => {
-              // Type guard to check if item is TextItem
-              return 'str' in item && item.str && item.str.trim().length > 0;
-            })
+            .filter((item: any) => isTextItem(item) && item.str && item.str.trim().length > 0)
             .sort((a: any, b: any) => {
               // Sort by Y position (top to bottom) then X position (left to right)
               const yDiff = Math.abs(b.transform[5] - a.transform[5]);

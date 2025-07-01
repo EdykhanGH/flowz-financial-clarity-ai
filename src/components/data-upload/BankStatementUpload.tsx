@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,8 @@ interface BankTransaction extends Transaction {
   id: string;
   isEditing?: boolean;
   userDescription?: string;
+  userCategory?: string;
+  userType?: 'income' | 'expense';
 }
 
 interface FinancialSummary {
@@ -94,7 +95,10 @@ const BankStatementUpload: React.FC = () => {
       const bankTransactions: BankTransaction[] = parsedTransactions.map((transaction, index) => ({
         ...transaction,
         id: `${Date.now()}-${index}`,
-        isEditing: false
+        isEditing: false,
+        userDescription: transaction.description,
+        userCategory: transaction.category,
+        userType: transaction.type
       }));
 
       const summary = calculateSummary(bankTransactions);
@@ -141,7 +145,23 @@ const BankStatementUpload: React.FC = () => {
 
   const updateTransaction = (id: string, field: keyof BankTransaction, value: any) => {
     setTransactions(prev => {
-      const updated = prev.map(t => t.id === id ? { ...t, [field]: value } : t);
+      const updated = prev.map(t => {
+        if (t.id === id) {
+          const updatedTransaction = { ...t, [field]: value };
+          
+          // Update the main transaction fields when user fields change
+          if (field === 'userDescription') {
+            updatedTransaction.description = value;
+          } else if (field === 'userCategory') {
+            updatedTransaction.category = value;
+          } else if (field === 'userType') {
+            updatedTransaction.type = value;
+          }
+          
+          return updatedTransaction;
+        }
+        return t;
+      });
       
       // Recalculate summary when transactions change
       const newSummary = calculateSummary(updated);
@@ -192,8 +212,8 @@ const BankStatementUpload: React.FC = () => {
               date: transaction.date,
               description: transaction.userDescription || transaction.description,
               amount: transaction.amount,
-              type: transaction.type,
-              category: transaction.category || 'Uncategorized'
+              type: transaction.userType || transaction.type,
+              category: transaction.userCategory || transaction.category || 'Uncategorized'
             });
             savedCount++;
           } catch (error) {
@@ -209,7 +229,7 @@ const BankStatementUpload: React.FC = () => {
       if (savedCount > 0) {
         toast({
           title: "Database Save Successful!",
-          description: `${savedCount} transactions saved to your account${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+          description: `${savedCount} transactions saved to your account and will appear in your dashboard${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
         });
         
         // Clear the form after successful save
@@ -418,13 +438,13 @@ const BankStatementUpload: React.FC = () => {
               <div className="bg-green-900/20 p-3 rounded border border-green-500/30">
                 <p className="text-xs text-green-400 mb-1">Total Income</p>
                 <p className="text-lg font-bold text-green-300">
-                  ₦{financialSummary.profit.toLocaleString()}
+                  ₦{financialSummary.totalRevenue.toLocaleString()}
                 </p>
               </div>
               <div className="bg-red-900/20 p-3 rounded border border-red-500/30">
                 <p className="text-xs text-red-400 mb-1">Total Expenses</p>
                 <p className="text-lg font-bold text-red-300">
-                  ₦{financialSummary.cost.toLocaleString()}
+                  ₦{financialSummary.totalExpenses.toLocaleString()}
                 </p>
               </div>
               <div className="bg-blue-900/20 p-3 rounded border border-blue-500/30">
@@ -465,7 +485,7 @@ const BankStatementUpload: React.FC = () => {
               </Button>
             </div>
 
-            <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+            <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden max-h-96 overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-gray-600">
@@ -501,14 +521,14 @@ const BankStatementUpload: React.FC = () => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                      <TableCell className={`font-bold ${(transaction.userType || transaction.type) === 'income' ? 'text-green-400' : 'text-red-400'}`}>
                         ₦{transaction.amount.toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {transaction.isEditing ? (
                           <Select 
-                            value={transaction.type} 
-                            onValueChange={(value: 'income' | 'expense') => updateTransaction(transaction.id, 'type', value)}
+                            value={transaction.userType || transaction.type} 
+                            onValueChange={(value: 'income' | 'expense') => updateTransaction(transaction.id, 'userType', value)}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -519,21 +539,23 @@ const BankStatementUpload: React.FC = () => {
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
-                            {transaction.type === 'income' ? 'Income' : 'Expense'}
+                          <Badge variant={(transaction.userType || transaction.type) === 'income' ? 'default' : 'destructive'}>
+                            {(transaction.userType || transaction.type) === 'income' ? 'Income' : 'Expense'}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-gray-300">
                         {transaction.isEditing ? (
                           <Select 
-                            value={transaction.category} 
-                            onValueChange={(value) => updateTransaction(transaction.id, 'category', value)}
+                            value={transaction.userCategory || transaction.category} 
+                            onValueChange={(value) => updateTransaction(transaction.id, 'userCategory', value)}
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="Salary">Salary</SelectItem>
+                              <SelectItem value="Business Income">Business Income</SelectItem>
                               <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
                               <SelectItem value="Transportation">Transportation</SelectItem>
                               <SelectItem value="Utilities">Utilities</SelectItem>
@@ -542,18 +564,18 @@ const BankStatementUpload: React.FC = () => {
                               <SelectItem value="Education">Education</SelectItem>
                               <SelectItem value="Entertainment">Entertainment</SelectItem>
                               <SelectItem value="Bank Charges">Bank Charges</SelectItem>
-                              <SelectItem value="Salary">Salary</SelectItem>
-                              <SelectItem value="Business Income">Business Income</SelectItem>
                               <SelectItem value="Investment Income">Investment Income</SelectItem>
                               <SelectItem value="Savings & Investment">Savings & Investment</SelectItem>
                               <SelectItem value="Shopping">Shopping</SelectItem>
                               <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
                               <SelectItem value="Card Payments">Card Payments</SelectItem>
+                              <SelectItem value="Insurance">Insurance</SelectItem>
+                              <SelectItem value="Loan & Credit">Loan & Credit</SelectItem>
                               <SelectItem value="Uncategorized">Uncategorized</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
-                          <span>{transaction.category}</span>
+                          <span>{transaction.userCategory || transaction.category}</span>
                         )}
                       </TableCell>
                       <TableCell>

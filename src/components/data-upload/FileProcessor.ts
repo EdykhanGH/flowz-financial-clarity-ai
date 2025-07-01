@@ -4,10 +4,11 @@ import { BankStatementExtractor } from './PDFExtractor';
 import { TransactionSummaryCalculator } from './TransactionSummaryCalculator';
 
 export interface Transaction {
+  id?: string;
   date: string;
   description: string;
   amount: number;
-  type: string;
+  type: 'income' | 'expense';
   category?: string;
   balance?: number;
   channel?: string;
@@ -17,7 +18,7 @@ export interface Transaction {
   originalDescription?: string;
 }
 
-export const parseFile = async (file: File): Promise<any[]> => {
+export const parseFile = async (file: File): Promise<Transaction[]> => {
   const fileExtension = file.name.split('.').pop()?.toLowerCase();
   
   console.log('Parsing file:', file.name, 'Extension:', fileExtension, 'Size:', file.size);
@@ -42,7 +43,7 @@ export const parseFile = async (file: File): Promise<any[]> => {
   }
 };
 
-export const parseExcel = (file: File): Promise<any[]> => {
+export const parseExcel = (file: File): Promise<Transaction[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -69,26 +70,31 @@ export const parseExcel = (file: File): Promise<any[]> => {
   });
 };
 
-const processExcelData = (rawData: any[][]): any[] => {
-  const transactions: any[] = [];
+const processExcelData = (rawData: any[][]): Transaction[] => {
+  const transactions: Transaction[] = [];
   let headerRow = -1;
   
-  // Enhanced header detection
+  // Enhanced header detection with more patterns
   const headerPatterns = [
     ['date', 'description', 'amount'],
     ['date', 'narration', 'debit', 'credit'],
     ['transaction date', 'description', 'amount'],
     ['value date', 'transaction details', 'withdrawal', 'deposit'],
-    ['posting date', 'particulars', 'dr', 'cr']
+    ['posting date', 'particulars', 'dr', 'cr'],
+    ['trans date', 'details', 'debit', 'credit'],
+    ['date', 'reference', 'description', 'debit', 'credit'],
+    ['serial', 'date', 'description', 'amount']
   ];
   
-  for (let i = 0; i < Math.min(rawData.length, 20); i++) {
+  // Find header row more accurately
+  for (let i = 0; i < Math.min(rawData.length, 15); i++) {
     const row = rawData[i];
-    if (row && Array.isArray(row)) {
-      const rowStr = row.join('').toLowerCase().replace(/\s+/g, ' ');
+    if (row && Array.isArray(row) && row.length >= 3) {
+      const rowStr = row.join('|').toLowerCase().replace(/\s+/g, ' ');
       
       for (const pattern of headerPatterns) {
-        if (pattern.every(term => rowStr.includes(term))) {
+        const matchCount = pattern.filter(term => rowStr.includes(term)).length;
+        if (matchCount >= 2) { // At least 2 out of 3 pattern terms match
           headerRow = i;
           break;
         }
@@ -99,25 +105,28 @@ const processExcelData = (rawData: any[][]): any[] => {
   }
   
   if (headerRow === -1) {
-    console.log('No header row found, trying to extract from first 5 rows');
+    console.log('No clear header found, using first row as header');
     headerRow = 0;
   }
   
   const headers = rawData[headerRow] ? rawData[headerRow].map(h => String(h || '').toLowerCase().trim()) : [];
-  console.log('Found headers:', headers);
+  console.log('Detected headers:', headers);
   
-  const dateCol = findColumnIndex(headers, ['date', 'transaction date', 'value date', 'trans date', 'posting date']);
-  const descCol = findColumnIndex(headers, ['description', 'narration', 'details', 'transaction details', 'particulars', 'remark']);
-  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out', 'dr', 'debits']);
-  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in', 'cr', 'credits']);
-  const amountCol = findColumnIndex(headers, ['amount', 'transaction amount', 'value']);
-  const balanceCol = findColumnIndex(headers, ['balance', 'running balance', 'available balance', 'book balance']);
+  // Enhanced column mapping
+  const dateCol = findColumnIndex(headers, ['date', 'transaction date', 'value date', 'trans date', 'posting date', 'trans_date']);
+  const descCol = findColumnIndex(headers, ['description', 'narration', 'details', 'transaction details', 'particulars', 'remark', 'memo']);
+  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out', 'dr', 'debits', 'withdraw']);
+  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in', 'cr', 'credits', 'deposit']);
+  const amountCol = findColumnIndex(headers, ['amount', 'transaction amount', 'value', 'total']);
+  const balanceCol = findColumnIndex(headers, ['balance', 'running balance', 'available balance', 'book balance', 'current balance']);
+  const referenceCol = findColumnIndex(headers, ['reference', 'ref', 'transaction ref', 'txn ref']);
   
-  console.log('Column mappings:', { dateCol, descCol, debitCol, creditCol, amountCol, balanceCol });
+  console.log('Column mappings:', { dateCol, descCol, debitCol, creditCol, amountCol, balanceCol, referenceCol });
   
+  // Process data rows
   for (let i = headerRow + 1; i < rawData.length; i++) {
     const row = rawData[i];
-    if (!row || !Array.isArray(row)) continue;
+    if (!row || !Array.isArray(row) || row.length < 2) continue;
     
     const dateStr = row[dateCol];
     const description = row[descCol];
@@ -125,18 +134,18 @@ const processExcelData = (rawData: any[][]): any[] => {
     const creditAmount = parseAmount(row[creditCol]);
     const singleAmount = parseAmount(row[amountCol]);
     const balance = parseAmount(row[balanceCol]);
+    const reference = row[referenceCol];
     
+    // Skip empty rows
     if (!dateStr && !description && debitAmount === 0 && creditAmount === 0 && singleAmount === 0) continue;
     
     let amount = 0;
-    let type = 'expense';
+    let type: 'income' | 'expense' = 'expense';
     
+    // Enhanced amount and type determination
     if (singleAmount > 0) {
       amount = singleAmount;
-      const upperDescription = String(description || '').toUpperCase();
-      if (['CREDIT', 'DEPOSIT', 'TRANSFER IN', 'SALARY', 'PAYMENT RECEIVED'].some(keyword => upperDescription.includes(keyword))) {
-        type = 'income';
-      }
+      type = determineTransactionType(String(description || ''), amount);
     } else if (debitAmount > 0) {
       amount = debitAmount;
       type = 'expense';
@@ -145,20 +154,25 @@ const processExcelData = (rawData: any[][]): any[] => {
       type = 'income';
     }
     
+    // Only add valid transactions
     if (amount > 0 && (dateStr || description)) {
+      const formattedDate = formatDate(dateStr);
+      const cleanDescription = String(description || 'Transaction').trim();
+      
       transactions.push({
-        date: formatDate(dateStr),
-        description: String(description || 'Transaction').trim(),
-        originalDescription: String(description || 'Transaction').trim(),
+        date: formattedDate,
+        description: cleanDescription,
+        originalDescription: cleanDescription,
         amount: amount,
         type: type,
         balance: balance,
-        category: categorizeTransaction(String(description || ''))
+        category: categorizeTransaction(cleanDescription),
+        reference: reference ? String(reference) : undefined
       });
     }
   }
   
-  console.log(`Extracted ${transactions.length} transactions from Excel`);
+  console.log(`Successfully extracted ${transactions.length} transactions from Excel`);
   return transactions;
 };
 
@@ -173,7 +187,15 @@ const findColumnIndex = (headers: string[], possibleNames: string[]): number => 
 
 const parseAmount = (value: any): number => {
   if (!value) return 0;
-  const str = String(value).replace(/[₦,\s$£€+-]/g, '');
+  
+  // Handle different number formats
+  let str = String(value).replace(/[₦,\s$£€\(\)]/g, '');
+  
+  // Handle negative numbers in parentheses
+  if (String(value).includes('(') && String(value).includes(')')) {
+    str = '-' + str.replace(/[\(\)]/g, '');
+  }
+  
   const num = parseFloat(str);
   return isNaN(num) ? 0 : Math.abs(num);
 };
@@ -181,36 +203,96 @@ const parseAmount = (value: any): number => {
 const formatDate = (dateValue: any): string => {
   if (!dateValue) return new Date().toISOString().split('T')[0];
   
-  if (typeof dateValue === 'number' && dateValue > 1000) {
-    const date = new Date((dateValue - 25569) * 86400 * 1000);
-    return date.toISOString().split('T')[0];
-  }
-  
-  const dateStr = String(dateValue);
-  
   try {
+    // Handle Excel serial dates
+    if (typeof dateValue === 'number' && dateValue > 1000) {
+      const date = new Date((dateValue - 25569) * 86400 * 1000);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    }
+    
+    // Handle string dates
+    const dateStr = String(dateValue).trim();
+    
+    // Try direct parsing first
     const parsedDate = new Date(dateStr);
     if (!isNaN(parsedDate.getTime())) {
       return parsedDate.toISOString().split('T')[0];
     }
+    
+    // Try DD/MM/YYYY format
+    const parts = dateStr.split(/[\/\-\.]/);
+    if (parts.length === 3) {
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      const year = parseInt(parts[2]);
+      
+      if (year > 1900 && month <= 12 && day <= 31) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      }
+    }
   } catch (e) {
-    // Continue with other parsing methods
+    console.warn('Date parsing error:', e);
   }
   
   return new Date().toISOString().split('T')[0];
+};
+
+const determineTransactionType = (description: string, amount: number): 'income' | 'expense' => {
+  const desc = description.toLowerCase();
+  
+  // Income indicators
+  const incomeKeywords = [
+    'credit', 'deposit', 'salary', 'payment received', 'transfer in',
+    'interest', 'dividend', 'bonus', 'refund', 'reversal', 'inward',
+    'received', 'incoming', 'credit alert', 'pay', 'wage', 'receipt',
+    'loan disbursement', 'commission received'
+  ];
+  
+  // Expense indicators
+  const expenseKeywords = [
+    'debit', 'withdrawal', 'payment', 'charge', 'fee', 'purchase',
+    'atm', 'pos', 'outward', 'airtime', 'bill', 'fuel', 'grocery',
+    'shopping', 'commission', 'levy', 'debit alert', 'transfer out',
+    'loan repayment', 'insurance', 'rent'
+  ];
+  
+  // Check income keywords first
+  if (incomeKeywords.some(keyword => desc.includes(keyword))) {
+    return 'income';
+  }
+  
+  // Check expense keywords
+  if (expenseKeywords.some(keyword => desc.includes(keyword))) {
+    return 'expense';
+  }
+  
+  // Default to expense for unknown transactions
+  return 'expense';
 };
 
 const categorizeTransaction = (description: string): string => {
   const desc = description.toLowerCase();
   
   const categories = {
-    'Food & Groceries': ['grocery', 'food', 'restaurant', 'supermarket'],
-    'Transportation': ['fuel', 'transport', 'uber', 'taxi', 'bus'],
-    'Utilities': ['electric', 'water', 'internet', 'phone', 'airtime', 'data'],
-    'Bank Charges': ['charge', 'fee', 'commission', 'levy', 'service'],
-    'Cash Withdrawal': ['atm', 'withdrawal', 'cash'],
-    'Salary': ['salary', 'wage', 'pay'],
-    'Business Income': ['transfer', 'payment received', 'deposit']
+    'Salary': ['salary', 'wage', 'pay', 'payroll', 'stipend'],
+    'Business Income': ['transfer in', 'payment received', 'deposit', 'receipt', 'commission received'],
+    'Food & Groceries': ['grocery', 'food', 'restaurant', 'supermarket', 'meal', 'dining'],
+    'Transportation': ['fuel', 'transport', 'uber', 'taxi', 'bus', 'fare', 'petrol', 'diesel'],
+    'Utilities': ['electric', 'electricity', 'water', 'internet', 'phone', 'airtime', 'data', 'cable'],
+    'Bank Charges': ['charge', 'fee', 'commission', 'levy', 'service', 'maintenance', 'sms'],
+    'Cash Withdrawal': ['atm', 'withdrawal', 'cash', 'withdraw'],
+    'Shopping': ['shopping', 'store', 'mall', 'purchase', 'buy'],
+    'Healthcare': ['hospital', 'medical', 'doctor', 'pharmacy', 'health'],
+    'Education': ['school', 'tuition', 'education', 'training', 'course'],
+    'Entertainment': ['entertainment', 'movie', 'cinema', 'game', 'fun'],
+    'Insurance': ['insurance', 'policy', 'premium', 'cover'],
+    'Loan & Credit': ['loan', 'credit', 'repayment', 'installment', 'emi'],
+    'Investment': ['investment', 'stock', 'bond', 'mutual fund', 'saving']
   };
   
   for (const [category, keywords] of Object.entries(categories)) {
@@ -222,36 +304,22 @@ const categorizeTransaction = (description: string): string => {
   return 'Uncategorized';
 };
 
-export const mapTransactionType = (type: string): 'income' | 'expense' | 'transfer' | 'investment' | 'refund' => {
+export const mapTransactionType = (type: string): 'income' | 'expense' => {
   const normalizedType = type.toLowerCase().trim();
   
-  switch (normalizedType) {
-    case 'income':
-    case 'revenue':
-    case 'earning':
-    case 'profit':
-      return 'income';
-    case 'expense':
-    case 'spending':
-    case 'cost':
-      return 'expense';
-    case 'transfer':
-      return 'transfer';
-    case 'investment':
-      return 'investment';
-    case 'refund':
-      return 'refund';
-    default:
-      return 'expense';
+  if (['income', 'revenue', 'earning', 'profit', 'credit'].includes(normalizedType)) {
+    return 'income';
   }
+  
+  return 'expense';
 };
 
 export const calculateSummary = TransactionSummaryCalculator.calculate;
 
 export const exportToCSV = (transactions: Transaction[]): string => {
-  const headers = 'Date,Description,Amount,Category,Type,Balance';
+  const headers = 'Date,Description,Amount,Category,Type,Balance,Reference';
   const rows = transactions.map(tx => 
-    `"${tx.date}","${tx.description}",${tx.amount},${tx.category},${tx.type},${tx.balance || ''}`
+    `"${tx.date}","${tx.description}",${tx.amount},"${tx.category}","${tx.type}",${tx.balance || ''},"${tx.reference || ''}"`
   );
   return [headers, ...rows].join('\n');
 };

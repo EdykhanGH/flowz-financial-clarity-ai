@@ -20,57 +20,111 @@ export class TransactionSummaryCalculator {
       return this.getEmptySummary();
     }
 
-    const income = transactions
-      .filter(tx => tx.type === 'income')
-      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    // Separate income and expense transactions more accurately
+    const incomeTransactions = transactions.filter(tx => {
+      const type = tx.type?.toLowerCase() || '';
+      const desc = (tx.description?.toLowerCase() || '').trim();
+      
+      // Check explicit type first
+      if (type === 'income') return true;
+      if (type === 'expense') return false;
+      
+      // Check description keywords for income indicators
+      const incomeKeywords = [
+        'credit', 'deposit', 'salary', 'payment received', 'transfer in',
+        'interest', 'dividend', 'bonus', 'refund', 'reversal', 'inward',
+        'received', 'incoming', 'credit alert', 'pay', 'wage', 'receipt'
+      ];
+      
+      return incomeKeywords.some(keyword => desc.includes(keyword));
+    });
 
-    const expenses = transactions
-      .filter(tx => tx.type === 'expense')
-      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    const expenseTransactions = transactions.filter(tx => {
+      const type = tx.type?.toLowerCase() || '';
+      const desc = (tx.description?.toLowerCase() || '').trim();
+      
+      // Check explicit type first
+      if (type === 'expense') return true;
+      if (type === 'income') return false;
+      
+      // Check description keywords for expense indicators
+      const expenseKeywords = [
+        'debit', 'withdrawal', 'payment', 'charge', 'fee', 'purchase',
+        'atm', 'pos', 'outward', 'airtime', 'bill', 'fuel', 'grocery',
+        'shopping', 'commission', 'levy', 'debit alert', 'transfer out'
+      ];
+      
+      return expenseKeywords.some(keyword => desc.includes(keyword));
+    });
 
-    const amounts = transactions.map(tx => Math.abs(tx.amount));
-    const avgAmount = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
+    // Calculate totals with proper absolute values
+    const totalIncome = incomeTransactions.reduce((sum, tx) => {
+      const amount = parseFloat(tx.amount) || 0;
+      return sum + Math.abs(amount);
+    }, 0);
 
-    // Category breakdown
+    const totalExpenses = expenseTransactions.reduce((sum, tx) => {
+      const amount = parseFloat(tx.amount) || 0;
+      return sum + Math.abs(amount);
+    }, 0);
+
+    // Calculate other metrics
+    const amounts = transactions.map(tx => Math.abs(parseFloat(tx.amount) || 0)).filter(amt => amt > 0);
+    const avgAmount = amounts.length > 0 ? amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length : 0;
+
+    // Enhanced category breakdown
     const categoryBreakdown: Record<string, number> = {};
     transactions.forEach(tx => {
       const category = tx.category || 'Uncategorized';
-      categoryBreakdown[category] = (categoryBreakdown[category] || 0) + Math.abs(tx.amount);
+      const amount = Math.abs(parseFloat(tx.amount) || 0);
+      categoryBreakdown[category] = (categoryBreakdown[category] || 0) + amount;
     });
 
-    // Type breakdown
+    // Enhanced type breakdown
     const typeBreakdown: Record<string, number> = {};
     transactions.forEach(tx => {
-      typeBreakdown[tx.type] = (typeBreakdown[tx.type] || 0) + Math.abs(tx.amount);
+      const type = tx.type || 'Unknown';
+      const amount = Math.abs(parseFloat(tx.amount) || 0);
+      typeBreakdown[type] = (typeBreakdown[type] || 0) + amount;
     });
 
-    // Monthly breakdown
+    // Monthly breakdown with proper date parsing
     const monthlyBreakdown: Record<string, { income: number; expenses: number; net: number }> = {};
     transactions.forEach(tx => {
-      const month = new Date(tx.date).toISOString().substring(0, 7); // YYYY-MM
-      if (!monthlyBreakdown[month]) {
-        monthlyBreakdown[month] = { income: 0, expenses: 0, net: 0 };
+      try {
+        const date = new Date(tx.date);
+        if (isNaN(date.getTime())) return;
+        
+        const month = date.toISOString().substring(0, 7); // YYYY-MM
+        if (!monthlyBreakdown[month]) {
+          monthlyBreakdown[month] = { income: 0, expenses: 0, net: 0 };
+        }
+        
+        const amount = Math.abs(parseFloat(tx.amount) || 0);
+        const type = tx.type?.toLowerCase() || '';
+        
+        if (type === 'income' || incomeTransactions.includes(tx)) {
+          monthlyBreakdown[month].income += amount;
+        } else {
+          monthlyBreakdown[month].expenses += amount;
+        }
+        
+        monthlyBreakdown[month].net = monthlyBreakdown[month].income - monthlyBreakdown[month].expenses;
+      } catch (error) {
+        console.warn('Error processing transaction date:', error);
       }
-      
-      if (tx.type === 'income') {
-        monthlyBreakdown[month].income += Math.abs(tx.amount);
-      } else {
-        monthlyBreakdown[month].expenses += Math.abs(tx.amount);
-      }
-      
-      monthlyBreakdown[month].net = monthlyBreakdown[month].income - monthlyBreakdown[month].expenses;
     });
 
     return {
       totalTransactions: transactions.length,
-      totalRevenue: income,
-      totalExpenses: expenses,
-      netIncome: income - expenses,
-      profit: income,
-      cost: expenses,
+      totalRevenue: totalIncome,
+      totalExpenses: totalExpenses,
+      netIncome: totalIncome - totalExpenses,
+      profit: totalIncome,
+      cost: totalExpenses,
       avgTransactionAmount: avgAmount,
-      largestTransaction: Math.max(...amounts),
-      smallestTransaction: Math.min(...amounts),
+      largestTransaction: amounts.length > 0 ? Math.max(...amounts) : 0,
+      smallestTransaction: amounts.length > 0 ? Math.min(...amounts) : 0,
       transactionsByCategory: categoryBreakdown,
       transactionsByType: typeBreakdown,
       monthlyBreakdown

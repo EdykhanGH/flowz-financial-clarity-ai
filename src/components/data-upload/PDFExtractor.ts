@@ -1,4 +1,3 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Type guard to check if an item is a TextItem
@@ -96,9 +95,9 @@ export class BankStatementExtractor {
           const textContent = await page.getTextContent();
           
           // Filter and sort text items with proper type checking
-          const textItems = textContent.items
-            .filter((item: any) => isTextItem(item) && item.str && item.str.trim().length > 0)
-            .sort((a: any, b: any) => {
+          const textItems: TextItem[] = textContent.items
+            .filter((item: any): item is TextItem => isTextItem(item) && item.str && item.str.trim().length > 0)
+            .sort((a: TextItem, b: TextItem) => {
               // Sort by Y position (top to bottom) then X position (left to right)
               const yDiff = Math.abs(b.transform[5] - a.transform[5]);
               if (yDiff > 5) return b.transform[5] - a.transform[5];

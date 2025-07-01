@@ -137,13 +137,15 @@ export class BankStatementExtractor {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           
-          // Enhanced filtering with proper type guards - filter first, then assert type
-          const validTextItems: TextItem[] = textContent.items
-            .filter(isTextItem)
-            .filter((item: TextItem) => item.str.trim().length > 0);
+          // Enhanced filtering with proper type guards - filter and cast properly
+          const validTextItems = textContent.items
+            .filter(isTextItem) as TextItem[];
+          
+          // Additional filtering for non-empty text
+          const nonEmptyTextItems = validTextItems.filter(item => item.str.trim().length > 0);
           
           // Sort by position (top to bottom, left to right)
-          const sortedItems = validTextItems.sort((a: TextItem, b: TextItem) => {
+          const sortedItems = nonEmptyTextItems.sort((a: TextItem, b: TextItem) => {
             const yDiff = Math.abs(b.transform[5] - a.transform[5]);
             if (yDiff > 5) return b.transform[5] - a.transform[5];
             return a.transform[4] - b.transform[4];

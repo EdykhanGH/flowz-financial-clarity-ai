@@ -31,12 +31,12 @@ import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSect
 import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
 
 const DashboardContent = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { signOut, user } = useAuth();
 
   const sidebarItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'data', label: 'Data Upload', icon: Database },
     { id: 'cost-analysis', label: 'Cost Analysis', icon: Calculator },
     { id: 'analysis', label: 'Financial Analysis', icon: BarChart3 },
@@ -53,7 +53,7 @@ const DashboardContent = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
+      case 'home':
         return <DashboardOverview setActiveTab={setActiveTab} />;
       case 'data':
         return (
@@ -154,7 +154,8 @@ const DashboardContent = () => {
             </Button>
             <h2 className="text-xl font-semibold capitalize text-gray-900">
               {activeTab === 'scenarios' ? 'What-If Scenarios' : 
-               activeTab === 'cost-analysis' ? 'Cost Analysis' : activeTab}
+               activeTab === 'cost-analysis' ? 'Cost Analysis' :
+               activeTab === 'home' ? 'Home' : activeTab}
             </h2>
           </div>
           

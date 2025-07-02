@@ -77,7 +77,13 @@ const BankStatementUpload: React.FC = () => {
       setProcessingStage('Extracting and cleaning transaction data...');
       setProcessingProgress(45);
       
-      const parsedTransactions = await parseFile(selectedFile);
+      let parsedTransactions;
+      try {
+        parsedTransactions = await parseFile(selectedFile);
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        throw new Error(`Failed to parse file: ${parseError.message}`);
+      }
       
       setProcessingStage('Validating and categorizing transactions...');
       setProcessingProgress(70);
@@ -90,10 +96,38 @@ const BankStatementUpload: React.FC = () => {
       console.log('Successfully extracted clean transactions:', parsedTransactions.length);
       
       if (parsedTransactions.length === 0) {
-        throw new Error('No valid transactions found in the file. Please check:\n\n• File contains transaction data\n• PDF has selectable text (not scanned images)\n• File is not password protected\n• Try CSV/Excel format if PDF fails');
+        throw new Error(`No valid transactions found in the file. Please check:
+
+• File contains transaction data with amounts
+• PDF has selectable text (not scanned images only)
+• File is not password protected or corrupted
+• File format is supported (PDF, CSV, Excel)
+
+Try these solutions:
+• Convert PDF to Excel/CSV if it's a scanned image
+• Check if the file opens correctly in other applications
+• Ensure transaction amounts are present in the data`);
       }
 
-      const bankTransactions: BankTransaction[] = parsedTransactions.map((transaction, index) => ({
+      // Enhanced validation
+      const validTransactions = parsedTransactions.filter(t => 
+        t && t.date && t.description && t.amount > 0
+      );
+
+      if (validTransactions.length === 0) {
+        throw new Error(`Transactions found but none are valid. Issues detected:
+
+• Missing dates, descriptions, or amounts
+• All amounts are zero or negative
+• Data format not recognized
+
+Please ensure your bank statement has:
+• Clear transaction dates
+• Transaction descriptions
+• Valid amounts (> 0)`);
+      }
+
+      const bankTransactions: BankTransaction[] = validTransactions.map((transaction, index) => ({
         ...transaction,
         id: `${Date.now()}-${index}`,
         isEditing: false,

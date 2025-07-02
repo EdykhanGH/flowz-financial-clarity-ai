@@ -90,18 +90,18 @@ const DataUpload: React.FC = () => {
     <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-white mb-2">Comprehensive Data Collection</h1>
-        <p className="text-gray-400">Multiple ways to capture your financial data - just like QuickBooks</p>
+        <p className="text-gray-400">Multiple ways to capture your financial data - Analytics Ready</p>
       </div>
 
-      <Tabs defaultValue="manual" className="w-full">
+      <Tabs defaultValue="bank" className="w-full">
         <TabsList className="grid w-full grid-cols-5 bg-gray-800">
-          <TabsTrigger value="manual" className="data-[state=active]:bg-orange-500">
-            <Edit className="w-4 h-4 mr-2" />
-            Manual Entry
-          </TabsTrigger>
           <TabsTrigger value="bank" className="data-[state=active]:bg-orange-500">
             <Banknote className="w-4 h-4 mr-2" />
             Bank Statements
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="data-[state=active]:bg-orange-500">
+            <Edit className="w-4 h-4 mr-2" />
+            Manual Entry
           </TabsTrigger>
           <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">
             <Upload className="w-4 h-4 mr-2" />
@@ -117,12 +117,12 @@ const DataUpload: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="manual" className="space-y-6">
-          <EnhancedManualEntry />
-        </TabsContent>
-
         <TabsContent value="bank" className="space-y-6">
           <BankStatementUpload />
+        </TabsContent>
+
+        <TabsContent value="manual" className="space-y-6">
+          <EnhancedManualEntry />
         </TabsContent>
 
         <TabsContent value="upload" className="space-y-6">

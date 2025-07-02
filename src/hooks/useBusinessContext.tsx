@@ -8,6 +8,8 @@ interface BusinessContext {
   businessModel: string;
   costCenters: string[];
   revenueStreams: string[];
+  businessName: string;
+  seasonalBusiness: boolean;
 }
 
 export const useBusinessContext = () => {
@@ -30,7 +32,9 @@ export const useBusinessContext = () => {
         description: data.description || '',
         businessModel: data.business_model || '',
         costCenters: data.cost_centers || [],
-        revenueStreams: data.revenue_streams || []
+        revenueStreams: data.revenue_streams || [],
+        businessName: data.business_name || '',
+        seasonalBusiness: data.seasonal_business || false
       };
     },
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes

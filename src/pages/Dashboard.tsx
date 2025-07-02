@@ -18,16 +18,11 @@ import {
   LogOut,
   Target
 } from 'lucide-react';
-import { AIAssistant } from '@/components/AIAssistant';
 import DataUpload from '@/components/DataUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
-import AnalysisSection from '@/components/dashboard/AnalysisSection';
-import ScenariosSection from '@/components/dashboard/ScenariosSection';
-import BudgetSection from '@/components/dashboard/BudgetSection';
-import CostClassificationManager from '@/components/CostClassificationManager';
-import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
-import ForecastingSection from '@/components/dashboard/ForecastingSection';
-import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
+import AnalyticsPage from '@/components/analytics/AnalyticsPage';
+import WhatIfAnalysisPage from '@/components/analytics/WhatIfAnalysisPage';
+import BudgetManagementPage from '@/components/budget/BudgetManagementPage';
 import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
 
 const DashboardContent = () => {
@@ -38,12 +33,9 @@ const DashboardContent = () => {
   const sidebarItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'data', label: 'Data Upload', icon: Database },
-    { id: 'cost-analysis', label: 'Cost Analysis', icon: Calculator },
-    { id: 'analysis', label: 'Financial Analysis', icon: BarChart3 },
-    { id: 'forecasting', label: 'Forecasting', icon: TrendingUp },
-    { id: 'variance', label: 'Variance Analysis', icon: Target },
-    { id: 'scenarios', label: 'What-If Scenarios', icon: TrendingUp },
-    { id: 'budgets', label: 'Budget Management', icon: Calculator },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'whatif', label: 'What-If Analysis', icon: TrendingUp },
+    { id: 'budget', label: 'Budget Management', icon: Calculator },
     { id: 'assistant', label: 'AI Assistant', icon: Bot }
   ];
 
@@ -61,18 +53,12 @@ const DashboardContent = () => {
             <DataUpload />
           </div>
         );
-      case 'cost-analysis':
-        return <CostAnalysisSection />;
-      case 'analysis':
-        return <AnalysisSection />;
-      case 'forecasting':
-        return <ForecastingSection />;
-      case 'variance':
-        return <VarianceAnalysisSection />;
-      case 'scenarios':
-        return <ScenariosSection />;
-      case 'budgets':
-        return <BudgetSection />;
+      case 'analytics':
+        return <AnalyticsPage />;
+      case 'whatif':
+        return <WhatIfAnalysisPage />;
+      case 'budget':
+        return <BudgetManagementPage />;
       case 'assistant':
         return <EnhancedAIAssistant />;
       default:
@@ -153,9 +139,12 @@ const DashboardContent = () => {
               <Menu className="w-4 h-4" />
             </Button>
             <h2 className="text-xl font-semibold capitalize text-gray-900">
-              {activeTab === 'scenarios' ? 'What-If Scenarios' : 
-               activeTab === 'cost-analysis' ? 'Cost Analysis' :
-               activeTab === 'home' ? 'Home' : activeTab}
+              {activeTab === 'whatif' ? 'What-If Analysis' : 
+               activeTab === 'home' ? 'Home' : 
+               activeTab === 'data' ? 'Data Upload' :
+               activeTab === 'analytics' ? 'Analytics' :
+               activeTab === 'budget' ? 'Budget Management' :
+               activeTab === 'assistant' ? 'AI Assistant' : activeTab}
             </h2>
           </div>
           

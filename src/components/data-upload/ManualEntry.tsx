@@ -51,6 +51,9 @@ const ManualEntry = () => {
         title: "Success",
         description: "Transaction added successfully",
       });
+      
+      // Force refresh of the page to ensure dashboard updates
+      window.location.reload();
     } catch (error) {
       console.error('Error adding transaction:', error);
       toast({

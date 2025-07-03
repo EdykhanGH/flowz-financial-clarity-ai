@@ -38,24 +38,10 @@ class EnhancedPDFWorkerManager {
   }
 
   private static async setupWorker(): Promise<void> {
-    try {
-      // Try to use the worker from the installed pdfjs-dist package first
-      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.js?url');
-      if (pdfjsWorker.default) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
-        console.log('PDF worker initialized using local package');
-        this.workerInitialized = true;
-        return;
-      }
-    } catch (error) {
-      console.log('Local worker import failed, trying CDN sources:', error);
-    }
-
     const workerSources = [
-      // Modern CDN with correct version matching
+      // Use CDN sources that work reliably with Vite
       'https://unpkg.com/pdfjs-dist@5.3.31/build/pdf.worker.min.js',
       'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js',
-      // Alternative stable versions
       'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.js',
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js'
     ];

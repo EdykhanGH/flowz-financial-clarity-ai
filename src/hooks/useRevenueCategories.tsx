@@ -25,13 +25,13 @@ export const useRevenueCategories = () => {
 
     try {
       const { data, error } = await supabase
-        .from('revenue_categories')
+        .from('revenue_categories' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('category_name');
 
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data as unknown as RevenueCategory[]) || []);
     } catch (error: any) {
       console.error('Error fetching revenue categories:', error);
     } finally {
@@ -51,7 +51,7 @@ export const useRevenueCategories = () => {
 
     try {
       const { data, error } = await supabase
-        .from('revenue_categories')
+        .from('revenue_categories' as any)
         .insert({ 
           category_name: categoryName,
           user_id: user.id 
@@ -61,7 +61,7 @@ export const useRevenueCategories = () => {
 
       if (error) throw error;
 
-      setCategories(prev => [...prev, data]);
+      setCategories(prev => [...prev, data as unknown as RevenueCategory]);
       toast({
         title: "Success",
         description: "Revenue category added successfully"
@@ -83,7 +83,7 @@ export const useRevenueCategories = () => {
 
     try {
       const { error } = await supabase
-        .from('revenue_categories')
+        .from('revenue_categories' as any)
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);

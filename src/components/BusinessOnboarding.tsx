@@ -5,15 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import CategoryManager from '@/components/CategoryManager';
-import RevenueStreamManager from '@/components/RevenueStreamManager';
-import CostCenterManager from '@/components/CostCenterManager';
+import { useExpenseCategories } from '@/hooks/useExpenseCategories';
+import { useRevenueCategories } from '@/hooks/useRevenueCategories';
 
 interface BusinessOnboardingProps {
   onComplete: () => void;
@@ -22,21 +19,24 @@ interface BusinessOnboardingProps {
 const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { addCategory: addExpenseCategory } = useExpenseCategories();
+  const { addCategory: addRevenueCategory } = useRevenueCategories();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [customActivity, setCustomActivity] = useState('');
+  const [newExpenseCategory, setNewExpenseCategory] = useState('');
+  const [newRevenueCategory, setNewRevenueCategory] = useState('');
+  
   const [formData, setFormData] = useState({
     businessName: '',
     category: '',
     description: '',
-    businessSizeEmployees: '',
-    businessSizeScale: '',
-    annualRevenueRange: '',
     businessModel: '',
-    coreActivities: [] as string[],
-    location: '',
+    businessScale: '',
     marketScope: '',
-    seasonalBusiness: false
+    expenseCategories: [] as string[],
+    revenueCategories: [] as string[],
+    city: '',
+    state: ''
   });
 
   const businessCategories = [
@@ -57,28 +57,20 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   ];
 
   const businessScales = ['Micro', 'Small', 'Medium', 'Large'];
-
   const businessModels = ['B2B', 'B2C', 'Hybrid', 'E-commerce', 'Marketplace', 'Subscription', 'Franchise'];
 
-  const coreActivitiesOptions = [
-    'Production', 'Sales', 'Customer Service', 'Logistics', 'R&D', 'Marketing', 'Quality Control', 'Administration'
+  const predefinedExpenseCategories = [
+    'Office Supplies', 'Marketing', 'Utilities', 'Transportation', 'Equipment', 
+    'Rent', 'Insurance', 'Legal & Professional', 'Raw Materials', 'Staff Salaries'
   ];
 
-  const getDescriptionTemplate = (category: string) => {
-    const categoryLower = category.toLowerCase();
-    if (categoryLower.includes('manufacturing')) {
-      return "We are a manufacturing company that specializes in [product type]. Our main activities include [production processes], [quality control], and [distribution]. What makes us unique is [unique selling proposition/competitive advantage].";
-    } else if (categoryLower.includes('services')) {
-      return "We provide [type of services] to [target customers]. Our core services include [main service offerings]. We differentiate ourselves through [unique value proposition/expertise].";
-    } else if (categoryLower.includes('retail') || categoryLower.includes('trade')) {
-      return "We are a [retail/wholesale] business that sells [product categories] to [target market]. Our operations include [buying/sourcing], [inventory management], and [sales channels]. Our competitive advantage is [what sets you apart].";
-    } else {
-      return "We are a [business type] company that [what you do]. Our main activities include [core business processes]. What makes us unique is [unique features/competitive advantages].";
-    }
-  };
+  const predefinedRevenueCategories = [
+    'Product Sales', 'Service Revenue', 'Subscription Revenue', 'Consulting Revenue',
+    'Commission', 'Licensing', 'Rental Income', 'Interest Income'
+  ];
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 9) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -103,22 +95,32 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.from("business_profiles").insert({
+      // Save business profile
+      const { error: profileError } = await supabase.from("business_profiles").insert({
         user_id: user.id,
         business_name: formData.businessName,
         category: formData.category,
         description: formData.description,
-        business_size_employees: formData.businessSizeEmployees,
-        business_size_scale: formData.businessSizeScale,
-        annual_revenue_range: formData.annualRevenueRange,
         business_model: formData.businessModel,
-        core_activities: formData.coreActivities,
-        location: formData.location,
+        business_size_scale: formData.businessScale,
         market_scope: formData.marketScope,
-        seasonal_business: formData.seasonalBusiness,
+        expense_categories: formData.expenseCategories,
+        revenue_categories: formData.revenueCategories,
+        city: formData.city,
+        state: formData.state,
       });
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Save expense categories to database
+      for (const category of formData.expenseCategories) {
+        await addExpenseCategory(category);
+      }
+
+      // Save revenue categories to database
+      for (const category of formData.revenueCategories) {
+        await addRevenueCategory(category);
+      }
 
       toast({
         title: "Setup Complete!",
@@ -136,38 +138,56 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     }
   };
 
-  const handleCheckboxChange = (field: 'coreActivities', value: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: checked 
-        ? [...prev[field], value]
-        : prev[field].filter(item => item !== value)
-    }));
-  };
-
-  const addCustomActivity = () => {
-    if (customActivity.trim() && !formData.coreActivities.includes(customActivity.trim())) {
+  const addExpenseCategoryToList = () => {
+    if (newExpenseCategory.trim() && !formData.expenseCategories.includes(newExpenseCategory.trim())) {
       setFormData(prev => ({
         ...prev,
-        coreActivities: [...prev.coreActivities, customActivity.trim()]
+        expenseCategories: [...prev.expenseCategories, newExpenseCategory.trim()]
       }));
-      setCustomActivity('');
-      toast({
-        title: "Activity Added",
-        description: `"${customActivity.trim()}" has been added to your core activities.`,
-      });
+      setNewExpenseCategory('');
     }
   };
 
-  const removeCustomActivity = (activity: string) => {
-    setFormData(prev => ({
-      ...prev,
-      coreActivities: prev.coreActivities.filter(item => item !== activity)
-    }));
+  const addRevenueCategoryToList = () => {
+    if (newRevenueCategory.trim() && !formData.revenueCategories.includes(newRevenueCategory.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        revenueCategories: [...prev.revenueCategories, newRevenueCategory.trim()]
+      }));
+      setNewRevenueCategory('');
+    }
   };
 
-  const renderStep1 = () => (
-    <div className="space-y-6">
+  const removeCategoryFromList = (category: string, type: 'expense' | 'revenue') => {
+    if (type === 'expense') {
+      setFormData(prev => ({
+        ...prev,
+        expenseCategories: prev.expenseCategories.filter(cat => cat !== category)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        revenueCategories: prev.revenueCategories.filter(cat => cat !== category)
+      }));
+    }
+  };
+
+  const addPredefinedCategory = (category: string, type: 'expense' | 'revenue') => {
+    if (type === 'expense' && !formData.expenseCategories.includes(category)) {
+      setFormData(prev => ({
+        ...prev,
+        expenseCategories: [...prev.expenseCategories, category]
+      }));
+    } else if (type === 'revenue' && !formData.revenueCategories.includes(category)) {
+      setFormData(prev => ({
+        ...prev,
+        revenueCategories: [...prev.revenueCategories, category]
+      }));
+    }
+  };
+
+  const renderBusinessName = () => (
+    <div className="space-y-4">
       <div>
         <Label htmlFor="businessName" className="text-white">Business Name *</Label>
         <Input
@@ -176,8 +196,14 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           onChange={(e) => setFormData({...formData, businessName: e.target.value})}
           placeholder="Enter your business name"
           className="mt-1"
+          required
         />
       </div>
+    </div>
+  );
+
+  const renderBusinessCategory = () => (
+    <div className="space-y-4">
       <div>
         <Label htmlFor="category" className="text-white">Business Category *</Label>
         <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
@@ -191,35 +217,28 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </SelectContent>
         </Select>
       </div>
+    </div>
+  );
+
+  const renderBusinessDescription = () => (
+    <div className="space-y-4">
       <div>
-        <Label htmlFor="location" className="text-white">Area/Location</Label>
-        <Input
-          id="location"
-          value={formData.location}
-          onChange={(e) => setFormData({...formData, location: e.target.value})}
-          placeholder="Enter your business location (city, state)"
+        <Label htmlFor="description" className="text-white">Business Description (Core Business Operations) *</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({...formData, description: e.target.value})}
+          placeholder="Describe what your business does, main activities, and core operations..."
           className="mt-1"
+          rows={4}
+          required
         />
       </div>
     </div>
   );
 
-  const renderStep2 = () => (
-    <div className="space-y-6">
-      <div>
-        <Label htmlFor="description" className="text-white">Business Description *</Label>
-        <div className="text-sm text-gray-400 mb-2">
-          Template: {getDescriptionTemplate(formData.category)}
-        </div>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          placeholder="Describe what your business does, main activities, and unique features..."
-          className="mt-1"
-          rows={4}
-        />
-      </div>
+  const renderBusinessModel = () => (
+    <div className="space-y-4">
       <div>
         <Label htmlFor="businessModel" className="text-white">Business Model *</Label>
         <Select value={formData.businessModel} onValueChange={(value) => setFormData({...formData, businessModel: value})}>
@@ -233,116 +252,31 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </SelectContent>
         </Select>
       </div>
+    </div>
+  );
+
+  const renderBusinessScale = () => (
+    <div className="space-y-4">
       <div>
-        <Label className="text-white">Core Activities/Operations</Label>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {coreActivitiesOptions.map((activity) => (
-            <div key={activity} className="flex items-center space-x-2">
-              <Checkbox
-                id={activity}
-                checked={formData.coreActivities.includes(activity)}
-                onCheckedChange={(checked) => handleCheckboxChange('coreActivities', activity, checked as boolean)}
-              />
-              <Label htmlFor={activity} className="text-sm text-gray-300">{activity}</Label>
-            </div>
-          ))}
-        </div>
-        
-        {/* Custom Activities Section */}
-        <div className="mt-4 space-y-3">
-          <div className="flex gap-2">
-            <Input
-              value={customActivity}
-              onChange={(e) => setCustomActivity(e.target.value)}
-              placeholder="Add a custom activity..."
-              className="flex-1"
-              onKeyPress={(e) => e.key === 'Enter' && addCustomActivity()}
-            />
-            <Button
-              type="button"
-              onClick={addCustomActivity}
-              size="sm"
-              className="px-3"
-              disabled={!customActivity.trim()}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {/* Display added custom activities */}
-          {formData.coreActivities.filter(activity => !coreActivitiesOptions.includes(activity)).length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm text-gray-400">Custom Activities:</Label>
-              <div className="flex flex-wrap gap-2">
-                {formData.coreActivities
-                  .filter(activity => !coreActivitiesOptions.includes(activity))
-                  .map((activity) => (
-                    <div key={activity} className="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded text-sm">
-                      <span className="text-gray-300">{activity}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 w-4 h-4 text-gray-400 hover:text-red-400"
-                        onClick={() => removeCustomActivity(activity)}
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <Label htmlFor="scale" className="text-white">Business Scale *</Label>
+        <Select value={formData.businessScale} onValueChange={(value) => setFormData({...formData, businessScale: value})}>
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Select business scale" />
+          </SelectTrigger>
+          <SelectContent>
+            {businessScales.map((scale) => (
+              <SelectItem key={scale} value={scale.toLowerCase()}>{scale}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
 
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="employees" className="text-white">Number of Employees</Label>
-          <Input
-            id="employees"
-            type="number"
-            value={formData.businessSizeEmployees}
-            onChange={(e) => setFormData({...formData, businessSizeEmployees: e.target.value})}
-            placeholder="e.g., 25"
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="scale" className="text-white">Business Scale</Label>
-          <Select value={formData.businessSizeScale} onValueChange={(value) => setFormData({...formData, businessSizeScale: value})}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select scale" />
-            </SelectTrigger>
-            <SelectContent>
-              {businessScales.map((scale) => (
-                <SelectItem key={scale} value={scale.toLowerCase()}>{scale}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="revenue" className="text-white">Annual Revenue Range (₹)</Label>
-          <Select value={formData.annualRevenueRange} onValueChange={(value) => setFormData({...formData, annualRevenueRange: value})}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0-1cr">₹0 - ₹1 Crore</SelectItem>
-              <SelectItem value="1-10cr">₹1 - ₹10 Crore</SelectItem>
-              <SelectItem value="10-50cr">₹10 - ₹50 Crore</SelectItem>
-              <SelectItem value="50-100cr">₹50 - ₹100 Crore</SelectItem>
-              <SelectItem value="100cr+">₹100+ Crore</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+  const renderMarketScope = () => (
+    <div className="space-y-4">
       <div>
-        <Label htmlFor="marketScope" className="text-white">Geographic Market Scope</Label>
+        <Label htmlFor="marketScope" className="text-white">Market Scope *</Label>
         <Select value={formData.marketScope} onValueChange={(value) => setFormData({...formData, marketScope: value})}>
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select market scope" />
@@ -355,33 +289,201 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </SelectContent>
         </Select>
       </div>
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="seasonal"
-          checked={formData.seasonalBusiness}
-          onCheckedChange={(checked) => setFormData({...formData, seasonalBusiness: checked})}
-        />
-        <Label htmlFor="seasonal" className="text-white">Seasonal Business Patterns</Label>
+    </div>
+  );
+
+  const renderExpenseCategories = () => (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-white">Expense Categories</Label>
+        <p className="text-sm text-gray-400 mb-4">Select categories where your business typically spends money</p>
+        
+        {/* Predefined categories */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {predefinedExpenseCategories.map((category) => (
+            <Button
+              key={category}
+              type="button"
+              variant={formData.expenseCategories.includes(category) ? "default" : "outline"}
+              size="sm"
+              onClick={() => addPredefinedCategory(category, 'expense')}
+              className="text-xs"
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+
+        {/* Add custom category */}
+        <div className="flex gap-2 mb-4">
+          <Input
+            value={newExpenseCategory}
+            onChange={(e) => setNewExpenseCategory(e.target.value)}
+            placeholder="Add custom expense category..."
+            className="flex-1"
+            onKeyPress={(e) => e.key === 'Enter' && addExpenseCategoryToList()}
+          />
+          <Button
+            type="button"
+            onClick={addExpenseCategoryToList}
+            size="sm"
+            disabled={!newExpenseCategory.trim()}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Selected categories */}
+        {formData.expenseCategories.length > 0 && (
+          <div>
+            <Label className="text-sm text-gray-400">Selected Categories:</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.expenseCategories.map((category) => (
+                <div key={category} className="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded text-sm">
+                  <span className="text-gray-300">{category}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 w-4 h-4 text-gray-400 hover:text-red-400"
+                    onClick={() => removeCategoryFromList(category, 'expense')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  const renderStep4 = () => (
-    <div className="space-y-6">
-      <RevenueStreamManager businessCategory={formData.category} />
-      <CostCenterManager businessCategory={formData.category} />
+  const renderRevenueCategories = () => (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-white">Revenue Categories</Label>
+        <p className="text-sm text-gray-400 mb-4">Select categories where your business generates income</p>
+        
+        {/* Predefined categories */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {predefinedRevenueCategories.map((category) => (
+            <Button
+              key={category}
+              type="button"
+              variant={formData.revenueCategories.includes(category) ? "default" : "outline"}
+              size="sm"
+              onClick={() => addPredefinedCategory(category, 'revenue')}
+              className="text-xs"
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+
+        {/* Add custom category */}
+        <div className="flex gap-2 mb-4">
+          <Input
+            value={newRevenueCategory}
+            onChange={(e) => setNewRevenueCategory(e.target.value)}
+            placeholder="Add custom revenue category..."
+            className="flex-1"
+            onKeyPress={(e) => e.key === 'Enter' && addRevenueCategoryToList()}
+          />
+          <Button
+            type="button"
+            onClick={addRevenueCategoryToList}
+            size="sm"
+            disabled={!newRevenueCategory.trim()}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Selected categories */}
+        {formData.revenueCategories.length > 0 && (
+          <div>
+            <Label className="text-sm text-gray-400">Selected Categories:</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.revenueCategories.map((category) => (
+                <div key={category} className="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded text-sm">
+                  <span className="text-gray-300">{category}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 w-4 h-4 text-gray-400 hover:text-red-400"
+                    onClick={() => removeCategoryFromList(category, 'revenue')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 
-  const renderStep5 = () => (
-    <div className="space-y-6">
-      <CategoryManager 
-        title="Transaction Categories"
-        description="Add categories that will be used for organizing your financial transactions. You can always add more categories later."
-        showTitle={true}
-      />
+  const renderLocation = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="city" className="text-white">City *</Label>
+          <Input
+            id="city"
+            value={formData.city}
+            onChange={(e) => setFormData({...formData, city: e.target.value})}
+            placeholder="Enter your city"
+            className="mt-1"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="state" className="text-white">State *</Label>
+          <Input
+            id="state"
+            value={formData.state}
+            onChange={(e) => setFormData({...formData, state: e.target.value})}
+            placeholder="Enter your state"
+            className="mt-1"
+            required
+          />
+        </div>
+      </div>
     </div>
   );
+
+  const getStepTitle = () => {
+    const titles = [
+      'Business Name',
+      'Business Category', 
+      'Business Description',
+      'Business Model',
+      'Business Scale',
+      'Market Scope',
+      'Expense Categories',
+      'Revenue Categories',
+      'Location'
+    ];
+    return titles[currentStep - 1];
+  };
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1: return renderBusinessName();
+      case 2: return renderBusinessCategory();
+      case 3: return renderBusinessDescription();
+      case 4: return renderBusinessModel();
+      case 5: return renderBusinessScale();
+      case 6: return renderMarketScope();
+      case 7: return renderExpenseCategories();
+      case 8: return renderRevenueCategories();
+      case 9: return renderLocation();
+      default: return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
@@ -391,17 +493,11 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             <div>
               <CardTitle className="text-white">Business Setup</CardTitle>
               <CardDescription className="text-gray-400">
-                Step {currentStep} of 5: {
-                  currentStep === 1 ? 'Basic Information' : 
-                  currentStep === 2 ? 'Business Details' : 
-                  currentStep === 3 ? 'Business Size & Scope' : 
-                  currentStep === 4 ? 'Revenue & Cost Structure' : 
-                  'Transaction Categories'
-                }
+                Step {currentStep} of 9: {getStepTitle()}
               </CardDescription>
             </div>
             <div className="flex space-x-1">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -413,11 +509,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-          {currentStep === 5 && renderStep5()}
+          {renderCurrentStep()}
           
           <div className="flex justify-between pt-6">
             <Button
@@ -434,8 +526,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               disabled={isLoading}
               className="bg-primary hover:bg-secondary flex items-center gap-2"
             >
-              {isLoading ? 'Saving...' : (currentStep === 5 ? 'Complete Setup' : 'Next')}
-              {currentStep < 5 && <ChevronRight className="h-4 w-4" />}
+              {isLoading ? 'Saving...' : (currentStep === 9 ? 'Complete Setup' : 'Next')}
+              {currentStep < 9 && <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>

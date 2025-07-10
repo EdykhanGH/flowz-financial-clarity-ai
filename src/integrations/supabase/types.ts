@@ -145,17 +145,21 @@ export type Database = {
           business_size_employees: string | null
           business_size_scale: string | null
           category: string | null
+          city: string | null
           core_activities: string[] | null
           cost_centers: string[] | null
           created_at: string | null
           description: string | null
           employees: string | null
+          expense_categories: string[] | null
           id: string
           location: string | null
           market_scope: string | null
+          revenue_categories: string[] | null
           revenue_frequency: string[] | null
           revenue_streams: string[] | null
           seasonal_business: boolean | null
+          state: string | null
           turnover: string | null
           updated_at: string | null
           user_id: string
@@ -167,17 +171,21 @@ export type Database = {
           business_size_employees?: string | null
           business_size_scale?: string | null
           category?: string | null
+          city?: string | null
           core_activities?: string[] | null
           cost_centers?: string[] | null
           created_at?: string | null
           description?: string | null
           employees?: string | null
+          expense_categories?: string[] | null
           id?: string
           location?: string | null
           market_scope?: string | null
+          revenue_categories?: string[] | null
           revenue_frequency?: string[] | null
           revenue_streams?: string[] | null
           seasonal_business?: boolean | null
+          state?: string | null
           turnover?: string | null
           updated_at?: string | null
           user_id: string
@@ -189,17 +197,21 @@ export type Database = {
           business_size_employees?: string | null
           business_size_scale?: string | null
           category?: string | null
+          city?: string | null
           core_activities?: string[] | null
           cost_centers?: string[] | null
           created_at?: string | null
           description?: string | null
           employees?: string | null
+          expense_categories?: string[] | null
           id?: string
           location?: string | null
           market_scope?: string | null
+          revenue_categories?: string[] | null
           revenue_frequency?: string[] | null
           revenue_streams?: string[] | null
           seasonal_business?: boolean | null
+          state?: string | null
           turnover?: string | null
           updated_at?: string | null
           user_id?: string
@@ -269,6 +281,30 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -293,6 +329,30 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      revenue_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

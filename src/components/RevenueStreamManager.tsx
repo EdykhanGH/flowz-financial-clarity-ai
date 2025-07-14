@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, X } from 'lucide-react';
-import { useRevenueStreams } from '@/hooks/useRevenueStreams';
+import { useProfitCenters } from '@/hooks/useProfitCenters';
 
 interface RevenueStreamManagerProps {
   businessCategory: string;
@@ -21,7 +21,7 @@ const RevenueStreamManager: React.FC<RevenueStreamManagerProps> = ({
   const [newStream, setNewStream] = useState('');
   const [newFrequency, setNewFrequency] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const { revenueStreams, loading, addRevenueStream, deleteRevenueStream } = useRevenueStreams();
+  const { profitCenters, loading, addProfitCenter, deleteProfitCenter } = useProfitCenters();
 
   const frequencyOptions = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'Per Sale'];
 
@@ -46,7 +46,7 @@ const RevenueStreamManager: React.FC<RevenueStreamManagerProps> = ({
 
     setIsAdding(true);
     try {
-      await addRevenueStream(newStream.trim(), newFrequency);
+      await addProfitCenter(newStream.trim(), 'service_revenue');
       setNewStream('');
       setNewFrequency('');
     } finally {
@@ -62,7 +62,7 @@ const RevenueStreamManager: React.FC<RevenueStreamManagerProps> = ({
     
     setIsAdding(true);
     try {
-      await addRevenueStream(stream, newFrequency);
+      await addProfitCenter(stream, 'service_revenue');
     } finally {
       setIsAdding(false);
     }
@@ -134,22 +134,22 @@ const RevenueStreamManager: React.FC<RevenueStreamManagerProps> = ({
           <p className="text-gray-400">Loading revenue streams...</p>
         ) : (
           <div className="space-y-2">
-            <Label className="text-white">Your Revenue Streams ({revenueStreams.length})</Label>
+            <Label className="text-white">Your Profit Centers ({profitCenters.length})</Label>
             <div className="space-y-2">
-              {revenueStreams.length === 0 ? (
-                <p className="text-gray-400 text-sm">No revenue streams added yet</p>
+              {profitCenters.length === 0 ? (
+                <p className="text-gray-400 text-sm">No profit centers added yet</p>
               ) : (
-                revenueStreams.map((stream) => (
+                profitCenters.map((center) => (
                   <div
-                    key={stream.id}
+                    key={center.id}
                     className="flex items-center justify-between bg-gray-800 p-3 rounded-lg"
                   >
                     <div>
-                      <span className="text-white font-medium">{stream.revenue_stream}</span>
-                      <span className="text-gray-400 text-sm ml-2">({stream.frequency})</span>
+                      <span className="text-white font-medium">{center.name}</span>
+                      <span className="text-gray-400 text-sm ml-2">({center.category_type})</span>
                     </div>
                     <button
-                      onClick={() => deleteRevenueStream(stream.id)}
+                      onClick={() => deleteProfitCenter(center.id)}
                       className="text-red-400 hover:text-red-300"
                     >
                       <X className="w-4 h-4" />

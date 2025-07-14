@@ -14,15 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          action_items: Json | null
+          confidence_score: number | null
+          content: string
+          created_at: string
+          id: string
+          insight_type: string
+          is_active: boolean | null
+          related_data: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_items?: Json | null
+          confidence_score?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          insight_type: string
+          is_active?: boolean | null
+          related_data?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_items?: Json | null
+          confidence_score?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          insight_type?: string
+          is_active?: boolean | null
+          related_data?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           allocated_amount: number
+          budget_type: string | null
           category: string
+          cost_center_id: string | null
           created_at: string | null
           end_date: string
           id: string
           name: string
           period: string | null
+          profit_center_id: string | null
           spent_amount: number | null
           start_date: string
           updated_at: string | null
@@ -30,12 +75,15 @@ export type Database = {
         }
         Insert: {
           allocated_amount: number
+          budget_type?: string | null
           category: string
+          cost_center_id?: string | null
           created_at?: string | null
           end_date: string
           id?: string
           name: string
           period?: string | null
+          profit_center_id?: string | null
           spent_amount?: number | null
           start_date: string
           updated_at?: string | null
@@ -43,18 +91,36 @@ export type Database = {
         }
         Update: {
           allocated_amount?: number
+          budget_type?: string | null
           category?: string
+          cost_center_id?: string | null
           created_at?: string | null
           end_date?: string
           id?: string
           name?: string
           period?: string | null
+          profit_center_id?: string | null
           spent_amount?: number | null
           start_date?: string
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budgets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_profit_center_id_fkey"
+            columns: ["profit_center_id"]
+            isOneToOne: false
+            referencedRelation: "profit_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_categories: {
         Row: {
@@ -73,30 +139,6 @@ export type Database = {
         }
         Update: {
           category_name?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      business_cost_centers: {
-        Row: {
-          cost_center: string
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          cost_center: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          cost_center?: string
           created_at?: string
           id?: string
           updated_at?: string
@@ -218,32 +260,46 @@ export type Database = {
         }
         Relationships: []
       }
-      business_revenue_streams: {
+      cost_centers: {
         Row: {
+          category_type: string
           created_at: string
-          frequency: string
           id: string
-          revenue_stream: string
+          name: string
+          parent_id: string | null
+          products: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          category_type: string
           created_at?: string
-          frequency: string
           id?: string
-          revenue_stream: string
+          name: string
+          parent_id?: string | null
+          products?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          category_type?: string
           created_at?: string
-          frequency?: string
           id?: string
-          revenue_stream?: string
+          name?: string
+          parent_id?: string | null
+          products?: Json | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cost_classification_rules: {
         Row: {
@@ -305,6 +361,63 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          category: string
+          cost_center_id: string | null
+          created_at: string
+          id: string
+          name: string
+          profit_center_id: string | null
+          standard_cost: number | null
+          standard_price: number | null
+          sub_category: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          cost_center_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          profit_center_id?: string | null
+          standard_cost?: number | null
+          standard_price?: number | null
+          sub_category?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          cost_center_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          profit_center_id?: string | null
+          standard_cost?: number | null
+          standard_price?: number | null
+          sub_category?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_profit_center_id_fkey"
+            columns: ["profit_center_id"]
+            isOneToOne: false
+            referencedRelation: "profit_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -332,6 +445,47 @@ export type Database = {
         }
         Relationships: []
       }
+      profit_centers: {
+        Row: {
+          category_type: string
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          products: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_type: string
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          products?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          products?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profit_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profit_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_categories: {
         Row: {
           category_name: string
@@ -351,6 +505,42 @@ export type Database = {
           category_name?: string
           created_at?: string
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scenarios: {
+        Row: {
+          assumptions: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          project_name: string
+          results: Json | null
+          scenario_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assumptions?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_name: string
+          results?: Json | null
+          scenario_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assumptions?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_name?: string
+          results?: Json | null
+          scenario_data?: Json
           updated_at?: string
           user_id?: string
         }
@@ -404,37 +594,76 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          cost_center_id: string | null
+          cost_nature: string | null
+          cost_type: string | null
           created_at: string | null
           date: string
           description: string | null
           id: string
+          product_name: string | null
+          profit_center_id: string | null
+          quantity: number | null
           type: string
+          unit_cost: number | null
+          unit_price: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           amount: number
           category: string
+          cost_center_id?: string | null
+          cost_nature?: string | null
+          cost_type?: string | null
           created_at?: string | null
           date?: string
           description?: string | null
           id?: string
+          product_name?: string | null
+          profit_center_id?: string | null
+          quantity?: number | null
           type: string
+          unit_cost?: number | null
+          unit_price?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           amount?: number
           category?: string
+          cost_center_id?: string | null
+          cost_nature?: string | null
+          cost_type?: string | null
           created_at?: string | null
           date?: string
           description?: string | null
           id?: string
+          product_name?: string | null
+          profit_center_id?: string | null
+          quantity?: number | null
           type?: string
+          unit_cost?: number | null
+          unit_price?: number | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_profit_center_id_fkey"
+            columns: ["profit_center_id"]
+            isOneToOne: false
+            referencedRelation: "profit_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

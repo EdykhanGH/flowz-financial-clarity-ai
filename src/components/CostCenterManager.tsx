@@ -42,7 +42,7 @@ const CostCenterManager: React.FC<CostCenterManagerProps> = ({
 
     setIsAdding(true);
     try {
-      await addCostCenter(newCenter.trim());
+      await addCostCenter(newCenter.trim(), 'operational_cost');
       setNewCenter('');
     } finally {
       setIsAdding(false);
@@ -52,7 +52,7 @@ const CostCenterManager: React.FC<CostCenterManagerProps> = ({
   const handleAddSuggested = async (center: string) => {
     setIsAdding(true);
     try {
-      await addCostCenter(center);
+      await addCostCenter(center, 'operational_cost');
     } finally {
       setIsAdding(false);
     }
@@ -121,7 +121,7 @@ const CostCenterManager: React.FC<CostCenterManagerProps> = ({
                     variant="secondary"
                     className="flex items-center gap-2 px-3 py-1"
                   >
-                    {center.cost_center}
+                    {center.name}
                     <button
                       onClick={() => deleteCostCenter(center.id)}
                       className="text-red-400 hover:text-red-300"

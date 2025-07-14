@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
-export type CostCenter = Tables<'cost_centers'>;
+export type ProfitCenter = Tables<'profit_centers'>;
 
 export interface Product {
   id: string;
@@ -13,29 +13,29 @@ export interface Product {
   sub_category?: string;
 }
 
-export const useCostCenters = () => {
-  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+export const useProfitCenters = () => {
+  const [profitCenters, setProfitCenters] = useState<ProfitCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchCostCenters = async () => {
+  const fetchProfitCenters = async () => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
-        .from('cost_centers')
+        .from('profit_centers')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setCostCenters(data || []);
+      setProfitCenters(data || []);
     } catch (error: any) {
-      console.error('Error fetching cost centers:', error);
+      console.error('Error fetching profit centers:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch cost centers",
+        description: "Failed to fetch profit centers",
         variant: "destructive"
       });
     } finally {
@@ -43,12 +43,12 @@ export const useCostCenters = () => {
     }
   };
 
-  const addCostCenter = async (name: string, categoryType: CostCenter['category_type'], products: Product[] = []) => {
+  const addProfitCenter = async (name: string, categoryType: ProfitCenter['category_type'], products: Product[] = []) => {
     if (!user) return false;
 
     try {
       const { data, error } = await supabase
-        .from('cost_centers')
+        .from('profit_centers')
         .insert({
           user_id: user.id,
           name,
@@ -60,29 +60,29 @@ export const useCostCenters = () => {
 
       if (error) throw error;
 
-      setCostCenters(prev => [...prev, data]);
+      setProfitCenters(prev => [...prev, data]);
       toast({
         title: "Success",
-        description: "Cost center added successfully"
+        description: "Profit center added successfully"
       });
       return true;
     } catch (error: any) {
-      console.error('Error adding cost center:', error);
+      console.error('Error adding profit center:', error);
       toast({
         title: "Error", 
-        description: `Failed to add cost center: ${error.message}`,
+        description: `Failed to add profit center: ${error.message}`,
         variant: "destructive"
       });
       return false;
     }
   };
 
-  const updateCostCenter = async (id: string, updates: Partial<CostCenter>) => {
+  const updateProfitCenter = async (id: string, updates: Partial<ProfitCenter>) => {
     if (!user) return false;
 
     try {
       const { data, error } = await supabase
-        .from('cost_centers')
+        .from('profit_centers')
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
@@ -91,42 +91,42 @@ export const useCostCenters = () => {
 
       if (error) throw error;
 
-      setCostCenters(prev => prev.map(cc => cc.id === id ? data : cc));
+      setProfitCenters(prev => prev.map(pc => pc.id === id ? data : pc));
       return true;
     } catch (error: any) {
-      console.error('Error updating cost center:', error);
+      console.error('Error updating profit center:', error);
       toast({
         title: "Error",
-        description: `Failed to update cost center: ${error.message}`,
+        description: `Failed to update profit center: ${error.message}`,
         variant: "destructive"
       });
       return false;
     }
   };
 
-  const deleteCostCenter = async (id: string) => {
+  const deleteProfitCenter = async (id: string) => {
     if (!user) return false;
 
     try {
       const { error } = await supabase
-        .from('cost_centers')
+        .from('profit_centers')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setCostCenters(prev => prev.filter(cc => cc.id !== id));
+      setProfitCenters(prev => prev.filter(pc => pc.id !== id));
       toast({
         title: "Success",
-        description: "Cost center deleted successfully"
+        description: "Profit center deleted successfully"
       });
       return true;
     } catch (error: any) {
-      console.error('Error deleting cost center:', error);
+      console.error('Error deleting profit center:', error);
       toast({
         title: "Error",
-        description: `Failed to delete cost center: ${error.message}`,
+        description: `Failed to delete profit center: ${error.message}`,
         variant: "destructive"
       });
       return false;
@@ -134,15 +134,15 @@ export const useCostCenters = () => {
   };
 
   useEffect(() => {
-    fetchCostCenters();
+    fetchProfitCenters();
   }, [user]);
 
   return {
-    costCenters,
+    profitCenters,
     loading,
-    addCostCenter,
-    updateCostCenter,
-    deleteCostCenter,
-    refreshCostCenters: fetchCostCenters
+    addProfitCenter,
+    updateProfitCenter,
+    deleteProfitCenter,
+    refreshProfitCenters: fetchProfitCenters
   };
 };

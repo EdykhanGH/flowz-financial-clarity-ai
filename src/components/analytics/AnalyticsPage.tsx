@@ -3,47 +3,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, Package } from 'lucide-react';
 import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
 import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
+import ExpenseAnalysisSection from '@/components/analytics/ExpenseAnalysisSection';
+import ProfitAnalysisSection from '@/components/analytics/ProfitAnalysisSection';
+import ProductAnalysisSection from '@/components/analytics/ProductAnalysisSection';
 
-// Create placeholder components for now
-const ProfitAnalysisSection = () => (
-  <div className="p-6 bg-white rounded-lg shadow-sm">
-    <h2 className="text-2xl font-bold mb-6">Profit Analysis</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Profit Margin Analysis</h3>
-        <p className="text-gray-600">Track profit margins by product/service category</p>
-      </div>
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Revenue vs Cost Correlation</h3>
-        <p className="text-gray-600">Analyze the relationship between revenue and costs</p>
-      </div>
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Break-even Analysis</h3>
-        <p className="text-gray-600">Calculate break-even points for your business</p>
-      </div>
-    </div>
-  </div>
-);
+// No longer needed as we're using the actual components
+// const ProfitAnalysisSection = () => (
+//   <div className="p-6 bg-white rounded-lg shadow-sm">
+//     <h2 className="text-2xl font-bold mb-6">Profit Analysis</h2>
+//     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Profit Margin Analysis</h3>
+//         <p className="text-gray-600">Track profit margins by product/service category</p>
+//       </div>
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Revenue vs Cost Correlation</h3>
+//         <p className="text-gray-600">Analyze the relationship between revenue and costs</p>
+//       </div>
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Break-even Analysis</h3>
+//         <p className="text-gray-600">Calculate break-even points for your business</p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
-const ProductAnalysisSection = () => (
-  <div className="p-6 bg-white rounded-lg shadow-sm">
-    <h2 className="text-2xl font-bold mb-6">Product Analysis</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Inventory Turnover</h3>
-        <p className="text-gray-600">Track how quickly inventory moves</p>
-      </div>
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Stock Level Optimization</h3>
-        <p className="text-gray-600">Optimize stock levels to reduce costs</p>
-      </div>
-      <div className="p-4 border rounded-lg">
-        <h3 className="font-semibold mb-2">Seasonal Demand Patterns</h3>
-        <p className="text-gray-600">Understand seasonal trends in demand</p>
-      </div>
-    </div>
-  </div>
-);
+// const ProductAnalysisSection = () => (
+//   <div className="p-6 bg-white rounded-lg shadow-sm">
+//     <h2 className="text-2xl font-bold mb-6">Product Analysis</h2>
+//     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Inventory Turnover</h3>
+//         <p className="text-gray-600">Track how quickly inventory moves</p>
+//       </div>
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Stock Level Optimization</h3>
+//         <p className="text-gray-600">Optimize stock levels to reduce costs</p>
+//       </div>
+//       <div className="p-4 border rounded-lg">
+//         <h3 className="font-semibold mb-2">Seasonal Demand Patterns</h3>
+//         <p className="text-gray-600">Understand seasonal trends in demand</p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 const AnalyticsPage: React.FC = () => {
   return (
@@ -70,7 +73,7 @@ const AnalyticsPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="cost" className="space-y-6">
-          <CostAnalysisSection />
+          <ExpenseAnalysisSection />
         </TabsContent>
 
         <TabsContent value="profit" className="space-y-6">

@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCostCenters } from '@/hooks/useCostCenters';
 import { useProfitCenters } from '@/hooks/useProfitCenters';
+import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const EnhancedManualEntry = () => {
   const [expenseData, setExpenseData] = useState({
@@ -37,33 +38,74 @@ const EnhancedManualEntry = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  const [availableProducts, setAvailableProducts] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showProductDialog, setShowProductDialog] = useState(false);
+  const [categoryType, setCategoryType] = useState<'expense' | 'revenue'>('expense');
   
   const { addTransaction, isAddingTransaction } = useTransactions();
-  const { costCenters, loading: costCentersLoading } = useCostCenters();
-  const { profitCenters, loading: profitCentersLoading } = useProfitCenters();
+  const { costCenters, loading: costCentersLoading, addCostCenter } = useCostCenters();
+  const { profitCenters, loading: profitCentersLoading, addProfitCenter } = useProfitCenters();
+  const { products, loading: productsLoading, addProduct } = useProducts();
   const { toast } = useToast();
 
-  // Fetch products when a product-related category is selected
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (expenseData.category === 'Product Cost' || revenueData.category === 'Product Sales') {
-        try {
-          const { data: products, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('name');
-          
-          if (error) throw error;
-          setAvailableProducts(products || []);
-        } catch (error) {
-          console.error('Error fetching products:', error);
-        }
-      }
-    };
+  // Handle adding new category
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a category name",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    fetchProducts();
-  }, [expenseData.category, revenueData.category]);
+    setIsAddingCategory(true);
+    try {
+      if (categoryType === 'expense') {
+        await addCostCenter(newCategoryName, 'expense');
+      } else {
+        await addProfitCenter(newCategoryName, 'revenue');
+      }
+      setNewCategoryName('');
+      setShowCategoryDialog(false);
+    } catch (error) {
+      console.error('Error adding category:', error);
+    } finally {
+      setIsAddingCategory(false);
+    }
+  };
+
+  // Handle adding new product
+  const handleAddProduct = async () => {
+    if (!newProductName.trim() || !newProductCategory.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter product name and category",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAddingProduct(true);
+    try {
+      await addProduct({
+        name: newProductName,
+        category: newProductCategory
+      });
+      setNewProductName('');
+      setNewProductCategory('');
+      setShowProductDialog(false);
+    } catch (error) {
+      console.error('Error adding product:', error);
+    } finally {
+      setIsAddingProduct(false);
+    }
+  };
 
   // Calculate unit cost when quantity changes
   useEffect(() => {
@@ -265,7 +307,56 @@ const EnhancedManualEntry = () => {
               </div>
 
               <div>
-                <Label htmlFor="expense-category" className="text-white">Category *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="expense-category" className="text-white">Category *</Label>
+                  <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setCategoryType('expense')}
+                        className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add New
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-800 border-gray-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Add New Expense Category</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="new-category" className="text-white">Category Name</Label>
+                          <Input
+                            id="new-category"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Enter category name"
+                            className="bg-gray-700 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleAddCategory}
+                            disabled={isAddingCategory}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            {isAddingCategory ? 'Adding...' : 'Add Category'}
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => setShowCategoryDialog(false)}
+                            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Select value={expenseData.category} onValueChange={(value) => setExpenseData(prev => ({ ...prev, category: value, product: '' }))}>
                   <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                     <SelectValue placeholder="Select expense category" />
@@ -288,23 +379,83 @@ const EnhancedManualEntry = () => {
                 </Select>
               </div>
 
-              {expenseData.category === 'Product Cost' && (
+              {(expenseData.category === 'Product Cost' || expenseData.category === 'Product Sales') && (
                 <div>
-                  <Label htmlFor="expense-product" className="text-white">Product *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="expense-product" className="text-white">Product *</Label>
+                    <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add New
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-gray-800 border-gray-700">
+                        <DialogHeader>
+                          <DialogTitle className="text-white">Add New Product</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="new-product-name" className="text-white">Product Name</Label>
+                            <Input
+                              id="new-product-name"
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                              placeholder="Enter product name"
+                              className="bg-gray-700 border-gray-600 text-white"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-product-category" className="text-white">Product Category</Label>
+                            <Input
+                              id="new-product-category"
+                              value={newProductCategory}
+                              onChange={(e) => setNewProductCategory(e.target.value)}
+                              placeholder="Enter product category"
+                              className="bg-gray-700 border-gray-600 text-white"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={handleAddProduct}
+                              disabled={isAddingProduct}
+                              className="bg-orange-500 hover:bg-orange-600"
+                            >
+                              {isAddingProduct ? 'Adding...' : 'Add Product'}
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setShowProductDialog(false)}
+                              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <Select value={expenseData.product} onValueChange={(value) => setExpenseData(prev => ({ ...prev, product: value }))}>
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                       <SelectValue placeholder="Select product" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableProducts.length > 0 ? (
-                        availableProducts.map((product: any) => (
+                      {productsLoading ? (
+                        <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                      ) : products.length > 0 ? (
+                        products.map((product) => (
                           <SelectItem key={product.id} value={product.name}>
                             {product.name}
                           </SelectItem>
                         ))
                       ) : (
                         <SelectItem value="no-products" disabled>
-                          No products available. Add products in onboarding.
+                          No products available. Add products above.
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -401,7 +552,56 @@ const EnhancedManualEntry = () => {
               </div>
 
               <div>
-                <Label htmlFor="revenue-category" className="text-white">Category *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="revenue-category" className="text-white">Category *</Label>
+                  <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setCategoryType('revenue')}
+                        className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add New
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-800 border-gray-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Add New Revenue Category</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="new-category" className="text-white">Category Name</Label>
+                          <Input
+                            id="new-category"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Enter category name"
+                            className="bg-gray-700 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleAddCategory}
+                            disabled={isAddingCategory}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            {isAddingCategory ? 'Adding...' : 'Add Category'}
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => setShowCategoryDialog(false)}
+                            className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Select value={revenueData.category} onValueChange={(value) => setRevenueData(prev => ({ ...prev, category: value, product: '' }))}>
                   <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                     <SelectValue placeholder="Select revenue category" />
@@ -424,23 +624,83 @@ const EnhancedManualEntry = () => {
                 </Select>
               </div>
 
-              {revenueData.category === 'Product Sales' && (
+              {(revenueData.category === 'Product Sales' || revenueData.category === 'Product Cost') && (
                 <div>
-                  <Label htmlFor="revenue-product" className="text-white">Product *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="revenue-product" className="text-white">Product *</Label>
+                    <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add New
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-gray-800 border-gray-700">
+                        <DialogHeader>
+                          <DialogTitle className="text-white">Add New Product</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="new-product-name" className="text-white">Product Name</Label>
+                            <Input
+                              id="new-product-name"
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                              placeholder="Enter product name"
+                              className="bg-gray-700 border-gray-600 text-white"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-product-category" className="text-white">Product Category</Label>
+                            <Input
+                              id="new-product-category"
+                              value={newProductCategory}
+                              onChange={(e) => setNewProductCategory(e.target.value)}
+                              placeholder="Enter product category"
+                              className="bg-gray-700 border-gray-600 text-white"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={handleAddProduct}
+                              disabled={isAddingProduct}
+                              className="bg-orange-500 hover:bg-orange-600"
+                            >
+                              {isAddingProduct ? 'Adding...' : 'Add Product'}
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setShowProductDialog(false)}
+                              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <Select value={revenueData.product} onValueChange={(value) => setRevenueData(prev => ({ ...prev, product: value }))}>
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                       <SelectValue placeholder="Select product" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableProducts.length > 0 ? (
-                        availableProducts.map((product: any) => (
+                      {productsLoading ? (
+                        <SelectItem value="loading" disabled>Loading products...</SelectItem>
+                      ) : products.length > 0 ? (
+                        products.map((product) => (
                           <SelectItem key={product.id} value={product.name}>
                             {product.name}
                           </SelectItem>
                         ))
                       ) : (
                         <SelectItem value="no-products" disabled>
-                          No products available. Add products in onboarding.
+                          No products available. Add products above.
                         </SelectItem>
                       )}
                     </SelectContent>

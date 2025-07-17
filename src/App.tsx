@@ -15,11 +15,16 @@ import Onboarding from "./pages/Onboarding";
 import CheckEmail from "./pages/CheckEmail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import OnboardingCheck from "./components/OnboardingCheck";
+import ErrorBoundary from "./components/ErrorBoundary";
+
+console.log('App.tsx: React version check', React.version);
+console.log('App.tsx: React hooks check', { useState: React.useState, useEffect: React.useEffect });
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -54,7 +59,8 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

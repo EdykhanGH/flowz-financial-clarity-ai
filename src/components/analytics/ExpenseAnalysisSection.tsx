@@ -35,8 +35,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -170,11 +170,12 @@ const ExpenseAnalysisSection: React.FC = () => {
             </PopoverTrigger>
             <PopoverContent className="w-80 p-4">
               <h4 className="font-medium mb-2">Date Filter</h4>
-              <Calendar
-                mode="single"
-                selected={filterDate}
-                onSelect={setFilterDate}
-                className="rounded-md border mb-4"
+              <DatePicker
+                date={filterDate}
+                setDate={setFilterDate}
+                label=""
+                placeholder="Select filter date"
+                className="mb-4"
               />
               
               <h4 className="font-medium mb-2">Cost Center</h4>

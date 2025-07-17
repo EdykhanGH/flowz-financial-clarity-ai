@@ -93,54 +93,24 @@ const DataUpload: React.FC = () => {
         <p className="text-gray-400">Multiple ways to capture your financial data - Analytics Ready</p>
       </div>
 
-      <Tabs defaultValue="bank" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-800">
-          <TabsTrigger value="bank" className="data-[state=active]:bg-orange-500">
-            <Banknote className="w-4 h-4 mr-2" />
-            Bank Statements
-          </TabsTrigger>
+      <Tabs defaultValue="manual" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-800">
           <TabsTrigger value="manual" className="data-[state=active]:bg-orange-500">
             <Edit className="w-4 h-4 mr-2" />
             Manual Entry
           </TabsTrigger>
-          <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500">
-            <Upload className="w-4 h-4 mr-2" />
-            Document Upload
-          </TabsTrigger>
-          <TabsTrigger value="api" className="data-[state=active]:bg-orange-500">
-            <Link className="w-4 h-4 mr-2" />
-            API Connections
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="data-[state=active]:bg-orange-500">
-            <FileText className="w-4 h-4 mr-2" />
-            Templates
+          <TabsTrigger value="bank" className="data-[state=active]:bg-orange-500">
+            <Banknote className="w-4 h-4 mr-2" />
+            Bank Statements
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="bank" className="space-y-6">
-          <BankStatementUpload />
-        </TabsContent>
 
         <TabsContent value="manual" className="space-y-6">
           <EnhancedManualEntry />
         </TabsContent>
 
-        <TabsContent value="upload" className="space-y-6">
-          <FileUploadSection
-            fileData={fileData}
-            isLoading={isLoading}
-            onFileUpload={handleFileUpload}
-            onSaveData={handleSaveData}
-            onAnalyze={() => setShowAnalysis(true)}
-          />
-        </TabsContent>
-
-        <TabsContent value="api" className="space-y-6">
-          <APIConnections />
-        </TabsContent>
-
-        <TabsContent value="templates">
-          <TemplateSelector />
+        <TabsContent value="bank" className="space-y-6">
+          <BankStatementUpload />
         </TabsContent>
       </Tabs>
 

@@ -21,7 +21,7 @@ import {
 import DataUpload from '@/components/DataUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import AnalyticsPage from '@/components/analytics/AnalyticsPage';
-import WhatIfAnalysisPage from '@/components/analytics/WhatIfAnalysisPage';
+import ScenarioAnalysisPage from '@/components/analytics/ScenarioAnalysisPage';
 import BudgetManagementPage from '@/components/budget/BudgetManagementPage';
 import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
 
@@ -34,7 +34,7 @@ const DashboardContent = () => {
     { id: 'home', label: 'Home', icon: Home },
     { id: 'data', label: 'Data Upload', icon: Database },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'whatif', label: 'What-If Analysis', icon: TrendingUp },
+    { id: 'scenario', label: 'Scenario Analysis', icon: TrendingUp },
     { id: 'budget', label: 'Budget Management', icon: Calculator },
     { id: 'assistant', label: 'AI Assistant', icon: Bot }
   ];
@@ -55,8 +55,8 @@ const DashboardContent = () => {
         );
       case 'analytics':
         return <AnalyticsPage />;
-      case 'whatif':
-        return <WhatIfAnalysisPage />;
+      case 'scenario':
+        return <ScenarioAnalysisPage />;
       case 'budget':
         return <BudgetManagementPage />;
       case 'assistant':
@@ -139,7 +139,7 @@ const DashboardContent = () => {
               <Menu className="w-4 h-4" />
             </Button>
             <h2 className="text-xl font-semibold capitalize text-gray-900">
-              {activeTab === 'whatif' ? 'What-If Analysis' : 
+              {activeTab === 'scenario' ? 'Scenario Analysis' : 
                activeTab === 'home' ? 'Home' : 
                activeTab === 'data' ? 'Data Upload' :
                activeTab === 'analytics' ? 'Analytics' :

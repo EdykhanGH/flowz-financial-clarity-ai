@@ -25,9 +25,9 @@ const ProfitAnalysisSection = () => (
   </div>
 );
 
-const InventoryAnalysisSection = () => (
+const ProductAnalysisSection = () => (
   <div className="p-6 bg-white rounded-lg shadow-sm">
-    <h2 className="text-2xl font-bold mb-6">Inventory Analysis</h2>
+    <h2 className="text-2xl font-bold mb-6">Product Analysis</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div className="p-4 border rounded-lg">
         <h3 className="font-semibold mb-2">Inventory Turnover</h3>
@@ -65,7 +65,7 @@ const AnalyticsPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="inventory" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
             <Package className="w-4 h-4 mr-2" />
-            Inventory Analysis
+            Product Analysis
           </TabsTrigger>
         </TabsList>
 
@@ -78,7 +78,7 @@ const AnalyticsPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6">
-          <InventoryAnalysisSection />
+          <ProductAnalysisSection />
         </TabsContent>
       </Tabs>
     </div>

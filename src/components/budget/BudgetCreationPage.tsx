@@ -60,55 +60,6 @@ const BudgetCreationPage: React.FC = () => {
         <p className="text-gray-600">Create and track budgets based on your business categories</p>
       </div>
 
-      {/* Budget Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics?.totalRevenue || 0)}</div>
-            <p className="text-xs text-green-600">From transactions</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Expenses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics?.totalExpenses || 0)}</div>
-            <p className="text-xs text-red-600">From transactions</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Net Profit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency((analytics?.totalRevenue || 0) - (analytics?.totalExpenses || 0))}
-            </div>
-            <p className="text-xs text-gray-500">Revenue - Expenses</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Profit Margin</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {analytics?.totalRevenue ? 
-                (((analytics.totalRevenue - analytics.totalExpenses) / analytics.totalRevenue) * 100).toFixed(1) + '%'
-                : '0%'
-              }
-            </div>
-            <p className="text-xs text-gray-500">Net margin</p>
-          </CardContent>
-        </Card>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Budget Creation Form */}

@@ -13,6 +13,14 @@ export interface Transaction {
   amount: number;
   category: string;
   type: string;
+  product_name: string | null;
+  quantity: number | null;
+  unit_cost: number | null;
+  unit_price: number | null;
+  cost_center_id: string | null;
+  profit_center_id: string | null;
+  cost_nature: string | null;
+  cost_type: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -78,15 +86,31 @@ export const useTransactions = () => {
 
   // Add transaction mutation with automatic classification
   const addTransactionMutation = useMutation({
-    mutationFn: async (newTransaction: Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-      if (!user) throw new Error('User not authenticated');
+  mutationFn: async (newTransaction: Partial<Transaction>) => {
+    if (!user) throw new Error('User not authenticated');
+
+    const transaction = {
+      date: newTransaction.date,
+      description: newTransaction.description,
+      amount: newTransaction.amount,
+      type: newTransaction.type,
+      category: newTransaction.category,
+      product_name: newTransaction.product_name || null,
+      quantity: newTransaction.quantity || null,
+      unit_cost: newTransaction.unit_cost || null,
+      unit_price: newTransaction.unit_price || null,
+      cost_center_id: newTransaction.cost_center_id || null,
+      profit_center_id: newTransaction.profit_center_id || null,
+      cost_nature: newTransaction.cost_nature || null,
+      cost_type: newTransaction.cost_type || null,
+    };
 
       // Insert transaction
       const { data, error } = await supabase
         .from('transactions')
         .insert([
           {
-            ...newTransaction,
+            ...transaction,
             user_id: user.id,
           },
         ])

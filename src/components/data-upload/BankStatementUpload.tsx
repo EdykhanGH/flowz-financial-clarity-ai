@@ -584,23 +584,10 @@ Please ensure your bank statement has:
                                   </SelectItem>
                                 ))}
                                 
-                                {/* Default Categories */}
-                                <SelectItem value="Salary">Salary</SelectItem>
-                                <SelectItem value="Business Income">Business Income</SelectItem>
-                                <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>
-                                <SelectItem value="Transportation">Transportation</SelectItem>
-                                <SelectItem value="Utilities">Utilities</SelectItem>
-                                <SelectItem value="Housing">Housing</SelectItem>
-                                <SelectItem value="Healthcare">Healthcare</SelectItem>
-                                <SelectItem value="Education">Education</SelectItem>
-                                <SelectItem value="Entertainment">Entertainment</SelectItem>
-                                <SelectItem value="Bank Charges">Bank Charges</SelectItem>
-                                <SelectItem value="Investment Income">Investment Income</SelectItem>
-                                <SelectItem value="Shopping">Shopping</SelectItem>
-                                <SelectItem value="Cash Withdrawal">Cash Withdrawal</SelectItem>
-                                <SelectItem value="Insurance">Insurance</SelectItem>
-                                <SelectItem value="Loan & Credit">Loan & Credit</SelectItem>
-                                <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                                {/* Only show default "Uncategorized" if no onboarding categories */}
+                                {categories.length === 0 && products.length === 0 && (
+                                  <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                                )}
                               </SelectContent>
                             </Select>
                           ) : (

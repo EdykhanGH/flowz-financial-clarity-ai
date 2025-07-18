@@ -168,8 +168,8 @@ const processExcelData = (rawData: any[][]): Transaction[] => {
   // Enhanced column mapping
   const dateCol = findColumnIndex(headers, ['date', 'transaction date', 'value date', 'trans date', 'posting date', 'trans_date']);
   const descCol = findColumnIndex(headers, ['description', 'narration', 'details', 'transaction details', 'particulars', 'remark', 'memo']);
-  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out', 'dr', 'debits', 'withdraw']);
-  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in', 'cr', 'credits', 'deposit']);
+  const debitCol = findColumnIndex(headers, ['debit', 'withdrawal', 'out', 'amount out', 'dr', 'debits', 'withdraw', 'amount debit']);
+  const creditCol = findColumnIndex(headers, ['credit', 'deposit', 'in', 'amount in', 'cr', 'credits', 'deposit', 'amount credit']);
   const amountCol = findColumnIndex(headers, ['amount', 'transaction amount', 'value', 'total']);
   const balanceCol = findColumnIndex(headers, ['balance', 'running balance', 'available balance', 'book balance', 'current balance']);
   const referenceCol = findColumnIndex(headers, ['reference', 'ref', 'transaction ref', 'txn ref']);
@@ -195,16 +195,18 @@ const processExcelData = (rawData: any[][]): Transaction[] => {
     let amount = 0;
     let type: 'income' | 'expense' = 'expense';
     
-    // Enhanced amount and type determination - Debits are expenses, Credits are income
-    if (singleAmount > 0) {
-      amount = singleAmount;
-      type = determineTransactionType(String(description || ''), amount);
-    } else if (debitAmount > 0) {
+    // STRICT debit/credit classification - ignore keywords for proper classification
+    if (debitAmount > 0) {
       amount = debitAmount;
-      type = 'expense'; // All debit transactions are expenses
+      type = 'expense'; // ALL debit transactions are expenses
     } else if (creditAmount > 0) {
       amount = creditAmount;
-      type = 'income'; // All credit transactions are income
+      type = 'income'; // ALL credit transactions are income
+    } else if (singleAmount > 0) {
+      // For single amount columns, check if it's negative (expense) or positive (income)
+      amount = Math.abs(singleAmount);
+      // Use description keywords only for single amount columns as fallback
+      type = determineTransactionType(String(description || ''), singleAmount);
     }
     
     // Only add valid transactions

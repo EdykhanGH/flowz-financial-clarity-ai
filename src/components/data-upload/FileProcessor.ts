@@ -135,7 +135,8 @@ const processExcelData = (rawData: any[][]): Transaction[] => {
     ['posting date', 'particulars', 'dr', 'cr'],
     ['trans date', 'details', 'debit', 'credit'],
     ['date', 'reference', 'description', 'debit', 'credit'],
-    ['serial', 'date', 'description', 'amount']
+    ['serial', 'date', 'description', 'amount'],
+    ['transaction date', 'transaction id', 'narration', 'amount debit', 'amount credit', 'current balance']
   ];
   
   // Find header row more accurately
@@ -194,16 +195,16 @@ const processExcelData = (rawData: any[][]): Transaction[] => {
     let amount = 0;
     let type: 'income' | 'expense' = 'expense';
     
-    // Enhanced amount and type determination
+    // Enhanced amount and type determination - Debits are expenses, Credits are income
     if (singleAmount > 0) {
       amount = singleAmount;
       type = determineTransactionType(String(description || ''), amount);
     } else if (debitAmount > 0) {
       amount = debitAmount;
-      type = 'expense';
+      type = 'expense'; // All debit transactions are expenses
     } else if (creditAmount > 0) {
       amount = creditAmount;
-      type = 'income';
+      type = 'income'; // All credit transactions are income
     }
     
     // Only add valid transactions

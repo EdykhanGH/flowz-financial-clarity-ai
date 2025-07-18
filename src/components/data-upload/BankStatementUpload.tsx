@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator, Database } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
+import { useBusinessCategories } from '@/hooks/useBusinessCategories';
+import { useProducts } from '@/hooks/useProducts';
 import { parseFile, Transaction, calculateSummary, exportToCSV } from './FileProcessor';
 
 interface BankTransaction extends Transaction {
@@ -41,6 +43,8 @@ const BankStatementUpload: React.FC = () => {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const { addTransaction } = useTransactions();
   const { toast } = useToast();
+  const { categories } = useBusinessCategories();
+  const { products } = useProducts();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -566,6 +570,21 @@ Please ensure your bank statement has:
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
+                                {/* Business Categories from Onboarding */}
+                                {categories.map(category => (
+                                  <SelectItem key={category.id} value={category.category_name}>
+                                    {category.category_name}
+                                  </SelectItem>
+                                ))}
+                                
+                                {/* Products from Onboarding */}
+                                {products.map(product => (
+                                  <SelectItem key={product.id} value={product.name}>
+                                    {product.name} ({product.category})
+                                  </SelectItem>
+                                ))}
+                                
+                                {/* Default Categories */}
                                 <SelectItem value="Salary">Salary</SelectItem>
                                 <SelectItem value="Business Income">Business Income</SelectItem>
                                 <SelectItem value="Food & Groceries">Food & Groceries</SelectItem>

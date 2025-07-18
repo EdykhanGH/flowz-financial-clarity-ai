@@ -47,6 +47,19 @@ const ProductAnalysisSection: React.FC = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [productFilter, setProductFilter] = useState<string | undefined>(undefined);
   
+  console.log('ProductAnalysisSection - transactions:', transactions?.length || 0);
+  console.log('ProductAnalysisSection - products:', products?.length || 0);
+  
+  // Show message if no data available
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">Product Analysis</h2>
+        <p className="text-muted-foreground">No transaction data available. Please add some transactions to see product analysis.</p>
+      </div>
+    );
+  }
+  
   // Filter transactions based on current filters
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(transaction => {

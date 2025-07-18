@@ -8,11 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator, Database } from 'lucide-react';
+import { Upload, Check, X, Edit, Save, AlertCircle, FileText, Info, CheckCircle, Download, Calculator, Database, Plus } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/hooks/use-toast';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
 import { useProducts } from '@/hooks/useProducts';
+import { useExpenseCategories } from '@/hooks/useExpenseCategories';
+import { useRevenueCategories } from '@/hooks/useRevenueCategories';
 import { parseFile, Transaction, calculateSummary, exportToCSV } from './FileProcessor';
 
 interface BankTransaction extends Transaction {
@@ -43,8 +45,12 @@ const BankStatementUpload: React.FC = () => {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const { addTransaction } = useTransactions();
   const { toast } = useToast();
-  const { categories } = useBusinessCategories();
+  const { categories: businessCategories } = useBusinessCategories();
   const { products } = useProducts();
+  const { categories: expenseCategories, addCategory: addExpenseCategory } = useExpenseCategories();
+  const { categories: revenueCategories, addCategory: addRevenueCategory } = useRevenueCategories();
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -562,34 +568,139 @@ Please ensure your bank statement has:
                         </TableCell>
                         <TableCell className="text-gray-300">
                           {transaction.isEditing ? (
-                            <Select 
-                              value={transaction.userCategory || transaction.category} 
-                              onValueChange={(value) => updateTransaction(transaction.id, 'userCategory', value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {/* Business Categories from Onboarding */}
-                                {categories.map(category => (
-                                  <SelectItem key={category.id} value={category.category_name}>
-                                    {category.category_name}
+                            <div className="space-y-2">
+                              <Select 
+                                value={transaction.userCategory || transaction.category} 
+                                onValueChange={(value) => {
+                                  if (value === 'ADD_NEW') {
+                                    setShowNewCategoryInput(transaction.id);
+                                  } else {
+                                    updateTransaction(transaction.id, 'userCategory', value);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-40">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {/* Business Categories */}
+                                  {businessCategories.length > 0 && (
+                                    <>
+                                      <SelectItem disabled value="business-header" className="font-semibold text-xs text-gray-500">
+                                        Business Categories
+                                      </SelectItem>
+                                      {businessCategories.map(category => (
+                                        <SelectItem key={`business-${category.id}`} value={category.category_name}>
+                                          {category.category_name}
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  )}
+                                  
+                                  {/* Expense Categories */}
+                                  {expenseCategories.length > 0 && (
+                                    <>
+                                      <SelectItem disabled value="expense-header" className="font-semibold text-xs text-gray-500">
+                                        Expense Categories
+                                      </SelectItem>
+                                      {expenseCategories.map(category => (
+                                        <SelectItem key={`expense-${category.id}`} value={category.category_name}>
+                                          {category.category_name}
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  )}
+                                  
+                                  {/* Revenue Categories */}
+                                  {revenueCategories.length > 0 && (
+                                    <>
+                                      <SelectItem disabled value="revenue-header" className="font-semibold text-xs text-gray-500">
+                                        Revenue Categories
+                                      </SelectItem>
+                                      {revenueCategories.map(category => (
+                                        <SelectItem key={`revenue-${category.id}`} value={category.category_name}>
+                                          {category.category_name}
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  )}
+                                  
+                                  {/* Products */}
+                                  {products.length > 0 && (
+                                    <>
+                                      <SelectItem disabled value="products-header" className="font-semibold text-xs text-gray-500">
+                                        Products
+                                      </SelectItem>
+                                      {products.map(product => (
+                                        <SelectItem key={`product-${product.id}`} value={product.name}>
+                                          {product.name} ({product.category})
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  )}
+                                  
+                                  {/* Add New Category Option */}
+                                  <SelectItem value="ADD_NEW" className="text-blue-400 font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <Plus className="w-3 h-3" />
+                                      Add New Category
+                                    </div>
                                   </SelectItem>
-                                ))}
-                                
-                                {/* Products from Onboarding */}
-                                {products.map(product => (
-                                  <SelectItem key={product.id} value={product.name}>
-                                    {product.name} ({product.category})
-                                  </SelectItem>
-                                ))}
-                                
-                                {/* Only show default "Uncategorized" if no onboarding categories */}
-                                {categories.length === 0 && products.length === 0 && (
+                                  
+                                  {/* Default Uncategorized */}
                                   <SelectItem value="Uncategorized">Uncategorized</SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
+                                </SelectContent>
+                              </Select>
+                              
+                              {/* New Category Input */}
+                              {showNewCategoryInput === transaction.id && (
+                                <div className="space-y-2 p-2 border border-gray-600 rounded bg-gray-800">
+                                  <Input
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Enter category name"
+                                    className="text-xs h-8"
+                                  />
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        if (newCategoryName.trim()) {
+                                          const transactionType = transaction.userType || transaction.type;
+                                          let success = false;
+                                          
+                                          if (transactionType === 'expense') {
+                                            success = await addExpenseCategory(newCategoryName.trim());
+                                          } else {
+                                            success = await addRevenueCategory(newCategoryName.trim());
+                                          }
+                                          
+                                          if (success) {
+                                            updateTransaction(transaction.id, 'userCategory', newCategoryName.trim());
+                                            setNewCategoryName('');
+                                            setShowNewCategoryInput(null);
+                                          }
+                                        }
+                                      }}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setShowNewCategoryInput(null);
+                                        setNewCategoryName('');
+                                      }}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-xs bg-gray-600 px-2 py-1 rounded">
                               {transaction.userCategory || transaction.category}

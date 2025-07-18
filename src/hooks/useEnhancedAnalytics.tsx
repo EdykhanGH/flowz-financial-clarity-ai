@@ -161,20 +161,30 @@ export const useEnhancedAnalytics = () => {
     enabled: !!user,
   });
 
-  // Calculate aggregated analytics
+  // Calculate aggregated analytics - optimized to prevent excessive recalculations
   const aggregatedAnalytics = useMemo(() => {
-    const totals = analyticsMetrics.reduce((acc, metric) => {
-      acc.totalRevenue += Number(metric.total_revenue);
-      acc.totalExpenses += Number(metric.total_expenses);
-      acc.grossProfit += Number(metric.gross_profit);
-      acc.netProfit += Number(metric.net_profit);
-      acc.fixedCosts += Number(metric.fixed_costs);
-      acc.variableCosts += Number(metric.variable_costs);
-      acc.directCosts += Number(metric.direct_costs);
-      acc.indirectCosts += Number(metric.indirect_costs);
-      acc.transactionCount += metric.transaction_count;
-      return acc;
-    }, {
+    if (!analyticsMetrics || analyticsMetrics.length === 0) {
+      return {
+        totalRevenue: 0,
+        totalExpenses: 0,
+        grossProfit: 0,
+        netProfit: 0,
+        fixedCosts: 0,
+        variableCosts: 0,
+        directCosts: 0,
+        indirectCosts: 0,
+        transactionCount: 0,
+        grossProfitMargin: 0,
+        netProfitMargin: 0,
+        contributionMargin: 0,
+        contributionMarginRatio: 0,
+        breakEvenDays: 0,
+        marginOfSafety: 0,
+        marginOfSafetyDays: 0
+      };
+    }
+
+    const totals = {
       totalRevenue: 0,
       totalExpenses: 0,
       grossProfit: 0,
@@ -184,7 +194,20 @@ export const useEnhancedAnalytics = () => {
       directCosts: 0,
       indirectCosts: 0,
       transactionCount: 0
-    });
+    };
+
+    // Single loop for better performance
+    for (const metric of analyticsMetrics) {
+      totals.totalRevenue += Number(metric.total_revenue || 0);
+      totals.totalExpenses += Number(metric.total_expenses || 0);
+      totals.grossProfit += Number(metric.gross_profit || 0);
+      totals.netProfit += Number(metric.net_profit || 0);
+      totals.fixedCosts += Number(metric.fixed_costs || 0);
+      totals.variableCosts += Number(metric.variable_costs || 0);
+      totals.directCosts += Number(metric.direct_costs || 0);
+      totals.indirectCosts += Number(metric.indirect_costs || 0);
+      totals.transactionCount += Number(metric.transaction_count || 0);
+    }
 
     // Calculate derived metrics
     const grossProfitMargin = totals.totalRevenue > 0 ? (totals.grossProfit / totals.totalRevenue) * 100 : 0;
@@ -193,7 +216,7 @@ export const useEnhancedAnalytics = () => {
     const contributionMarginRatio = totals.totalRevenue > 0 ? (contributionMargin / totals.totalRevenue) * 100 : 0;
     
     // Break-even analysis
-    const avgDailyRevenue = totals.totalRevenue / (analyticsMetrics.length || 1);
+    const avgDailyRevenue = totals.totalRevenue / Math.max(1, analyticsMetrics.length);
     const breakEvenDays = avgDailyRevenue > 0 ? totals.fixedCosts / avgDailyRevenue : 0;
     const marginOfSafety = totals.totalRevenue - totals.fixedCosts;
     const marginOfSafetyDays = avgDailyRevenue > 0 ? marginOfSafety / avgDailyRevenue : 0;

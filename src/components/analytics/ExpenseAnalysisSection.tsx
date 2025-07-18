@@ -45,6 +45,16 @@ const ExpenseAnalysisSection: React.FC = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [costCenterFilter, setCostCenterFilter] = useState<string | undefined>(undefined);
   
+  // Early return if no transactions to prevent heavy calculations
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">Expense Analysis</h2>
+        <p className="text-muted-foreground">No transaction data available. Please add some transactions to see expense analysis.</p>
+      </div>
+    );
+  }
+
   // Filter transactions based on current filters
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(transaction => {
@@ -62,11 +72,6 @@ const ExpenseAnalysisSection: React.FC = () => {
           return false;
         }
       }
-      
-      // Filter by cost center if selected (temporarily disabled as field doesn't exist)
-      // if (costCenterFilter && transaction.cost_center_id !== costCenterFilter) {
-      //   return false;
-      // }
       
       return true;
     });
@@ -98,45 +103,47 @@ const ExpenseAnalysisSection: React.FC = () => {
       .sort((a, b) => b.amount - a.amount);
   }, [filteredTransactions]);
   
-  // Cost type breakdown (fixed, variable, mixed)
+  // Cost type breakdown (fixed, variable, mixed) - optimized
   const costTypeBreakdown = React.useMemo(() => {
-    const fixed = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'fixed')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    if (filteredTransactions.length === 0) return [];
     
-    const variable = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'variable')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const breakdown = { fixed: 0, variable: 0, mixed: 0 };
     
-    const mixed = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'mixed' || !t.classification?.cost_type)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    for (const t of filteredTransactions) {
+      const amount = Number(t.amount);
+      const costType = t.cost_type || 'mixed';
+      
+      if (costType === 'fixed') breakdown.fixed += amount;
+      else if (costType === 'variable') breakdown.variable += amount;
+      else breakdown.mixed += amount;
+    }
     
     return [
-      { name: 'Fixed Costs', value: fixed, percentage: totalCost > 0 ? (fixed / totalCost) * 100 : 0 },
-      { name: 'Variable Costs', value: variable, percentage: totalCost > 0 ? (variable / totalCost) * 100 : 0 },
-      { name: 'Mixed/Unclassified Costs', value: mixed, percentage: totalCost > 0 ? (mixed / totalCost) * 100 : 0 }
+      { name: 'Fixed Costs', value: breakdown.fixed, percentage: totalCost > 0 ? (breakdown.fixed / totalCost) * 100 : 0 },
+      { name: 'Variable Costs', value: breakdown.variable, percentage: totalCost > 0 ? (breakdown.variable / totalCost) * 100 : 0 },
+      { name: 'Mixed/Unclassified Costs', value: breakdown.mixed, percentage: totalCost > 0 ? (breakdown.mixed / totalCost) * 100 : 0 }
     ];
   }, [filteredTransactions, totalCost]);
 
-  // Cost nature breakdown (direct vs indirect)
+  // Cost nature breakdown (direct vs indirect) - optimized
   const costNatureBreakdown = React.useMemo(() => {
-    const direct = filteredTransactions
-      .filter(t => t.classification?.cost_nature === 'direct')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    if (filteredTransactions.length === 0) return [];
     
-    const indirect = filteredTransactions
-      .filter(t => t.classification?.cost_nature === 'indirect')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const breakdown = { direct: 0, indirect: 0, unclassified: 0 };
     
-    const unclassified = filteredTransactions
-      .filter(t => !t.classification?.cost_nature)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    for (const t of filteredTransactions) {
+      const amount = Number(t.amount);
+      const costNature = t.cost_nature;
+      
+      if (costNature === 'direct') breakdown.direct += amount;
+      else if (costNature === 'indirect') breakdown.indirect += amount;
+      else breakdown.unclassified += amount;
+    }
     
     return [
-      { name: 'Direct Business Costs', value: direct, percentage: totalCost > 0 ? (direct / totalCost) * 100 : 0 },
-      { name: 'Indirect Business Costs', value: indirect, percentage: totalCost > 0 ? (indirect / totalCost) * 100 : 0 },
-      { name: 'Unclassified Costs', value: unclassified, percentage: totalCost > 0 ? (unclassified / totalCost) * 100 : 0 }
+      { name: 'Direct Business Costs', value: breakdown.direct, percentage: totalCost > 0 ? (breakdown.direct / totalCost) * 100 : 0 },
+      { name: 'Indirect Business Costs', value: breakdown.indirect, percentage: totalCost > 0 ? (breakdown.indirect / totalCost) * 100 : 0 },
+      { name: 'Unclassified Costs', value: breakdown.unclassified, percentage: totalCost > 0 ? (breakdown.unclassified / totalCost) * 100 : 0 }
     ];
   }, [filteredTransactions, totalCost]);
 

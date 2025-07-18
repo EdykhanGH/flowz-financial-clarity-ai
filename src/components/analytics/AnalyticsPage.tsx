@@ -74,21 +74,72 @@ const AnalyticsPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="cost" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-            <ExpenseAnalysisSection />
-          </Suspense>
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h2 className="text-2xl font-bold mb-6">Cost Analysis</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Fixed vs Variable Costs</h3>
+                <p className="text-gray-600">Analyze the breakdown of your cost structure</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Cost Center Analysis</h3>
+                <p className="text-gray-600">Compare spending across different cost centers</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Cost Trends</h3>
+                <p className="text-gray-600">Track cost patterns over time</p>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-700 text-sm">📊 Upload transaction data to see detailed cost analysis and charts</p>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="profit" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-            <ProfitAnalysisSection />
-          </Suspense>
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h2 className="text-2xl font-bold mb-6">Profit Analysis</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Profit Margin Analysis</h3>
+                <p className="text-gray-600">Track profit margins by product/service category</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Revenue vs Cost Correlation</h3>
+                <p className="text-gray-600">Analyze the relationship between revenue and costs</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Break-even Analysis</h3>
+                <p className="text-gray-600">Calculate break-even points for your business</p>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-green-50 rounded-lg">
+              <p className="text-green-700 text-sm">💰 Add revenue data to unlock profit analysis features</p>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6">
-          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-            <ProductAnalysisSection />
-          </Suspense>
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h2 className="text-2xl font-bold mb-6">Product Analysis</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Inventory Turnover</h3>
+                <p className="text-gray-600">Track how quickly inventory moves</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Stock Level Optimization</h3>
+                <p className="text-gray-600">Optimize stock levels to reduce costs</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Seasonal Demand Patterns</h3>
+                <p className="text-gray-600">Understand seasonal trends in demand</p>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+              <p className="text-purple-700 text-sm">📦 Configure products to enable inventory analysis</p>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

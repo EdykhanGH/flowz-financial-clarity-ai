@@ -5,9 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Calendar, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { useCostCenters } from '@/hooks/useCostCenters';
-import { useBusinessAnalytics } from '@/hooks/useBusinessAnalytics';
 import { useToast } from '@/hooks/use-toast';
+
+// Dummy cost centers for demonstration
+const dummyCostCenters = [
+  { id: '1', name: 'Marketing & Advertising', category_type: 'Marketing' },
+  { id: '2', name: 'Operations & Overhead', category_type: 'Operations' },
+  { id: '3', name: 'Sales & Distribution', category_type: 'Sales' },
+  { id: '4', name: 'Administration', category_type: 'Admin' },
+  { id: '5', name: 'Research & Development', category_type: 'R&D' },
+];
 
 const BudgetCreationPage: React.FC = () => {
   const [budgetName, setBudgetName] = useState('');
@@ -17,8 +24,6 @@ const BudgetCreationPage: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
-  const { costCenters } = useCostCenters();
-  const { analytics } = useBusinessAnalytics();
   const { toast } = useToast();
 
   const handleCreateBudget = async () => {
@@ -99,7 +104,7 @@ const BudgetCreationPage: React.FC = () => {
                   <SelectValue placeholder="Select cost category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {costCenters?.map((center) => (
+                  {dummyCostCenters.map((center) => (
                     <SelectItem key={center.id} value={center.name}>
                       {center.name}
                     </SelectItem>

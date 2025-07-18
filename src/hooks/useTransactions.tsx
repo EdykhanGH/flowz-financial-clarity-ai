@@ -38,7 +38,7 @@ export const useTransactions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch transactions with classifications
+  // Fetch transactions with classifications - OPTIMIZED with limits
   const { data: transactions = [], isLoading, error } = useQuery({
     queryKey: ['transactions', user?.id],
     queryFn: async (): Promise<TransactionWithClassification[]> => {
@@ -48,7 +48,8 @@ export const useTransactions = () => {
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(100); // CRITICAL: Limit to 100 records to prevent page freezing
 
       if (transactionsError) throw transactionsError;
 
@@ -82,6 +83,8 @@ export const useTransactions = () => {
       return transactionsWithClassifications;
     },
     enabled: !!user,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   // Add transaction mutation with automatic classification

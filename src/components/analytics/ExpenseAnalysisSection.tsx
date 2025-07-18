@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useOptimizedTransactions } from '@/hooks/useOptimizedTransactions';
 import {
   Popover,
   PopoverContent,
@@ -41,7 +41,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const ExpenseAnalysisSection: React.FC = () => {
-  const { transactions } = useTransactions();
+  const { transactions, analytics, isLoading } = useOptimizedTransactions(100);
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [costCenterFilter, setCostCenterFilter] = useState<string | undefined>(undefined);
   
@@ -55,28 +55,16 @@ const ExpenseAnalysisSection: React.FC = () => {
     );
   }
 
-  // Filter transactions based on current filters - optimized
-  const filteredTransactions = React.useMemo(() => {
-    if (!transactions) return [];
+  // Filter transactions based on current filters - heavily optimized
+  const filteredTransactions = useMemo(() => {
+    if (!transactions?.length) return [];
     
-    // Limit processing to last 100 transactions for performance
-    const recentTransactions = transactions.slice(0, 100);
+    const expenses = transactions.filter(t => t.type === 'expense');
     
-    return recentTransactions.filter(transaction => {
-      // Filter by transaction type (only expenses)
-      if (transaction.type !== 'expense') return false;
-      
-      // Filter by date if selected
-      if (filterDate) {
-        const transactionDate = new Date(transaction.date);
-        const filterDateObj = new Date(filterDate);
-        if (transactionDate.toDateString() !== filterDateObj.toDateString()) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
+    if (!filterDate) return expenses.slice(0, 50); // Limit to 50 for performance
+    
+    const filterDateStr = format(filterDate, 'yyyy-MM-dd');
+    return expenses.filter(t => t.date === filterDateStr).slice(0, 50);
   }, [transactions, filterDate]);
 
   // Total cost calculation

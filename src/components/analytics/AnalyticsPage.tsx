@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, Package } from 'lucide-react';
-import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
-import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
-import ExpenseAnalysisSection from '@/components/analytics/ExpenseAnalysisSection';
-import ProfitAnalysisSection from '@/components/analytics/ProfitAnalysisSection';
-import ProductAnalysisSection from '@/components/analytics/ProductAnalysisSection';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy components to prevent page blocking
+const ExpenseAnalysisSection = lazy(() => import('@/components/analytics/ExpenseAnalysisSection'));
+const ProfitAnalysisSection = lazy(() => import('@/components/analytics/ProfitAnalysisSection'));
+const ProductAnalysisSection = lazy(() => import('@/components/analytics/ProductAnalysisSection'));
 
 // No longer needed as we're using the actual components
 // const ProfitAnalysisSection = () => (
@@ -73,15 +74,21 @@ const AnalyticsPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="cost" className="space-y-6">
-          <ExpenseAnalysisSection />
+          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+            <ExpenseAnalysisSection />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="profit" className="space-y-6">
-          <ProfitAnalysisSection />
+          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+            <ProfitAnalysisSection />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6">
-          <ProductAnalysisSection />
+          <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+            <ProductAnalysisSection />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

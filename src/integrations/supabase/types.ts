@@ -56,6 +56,57 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_metrics: {
+        Row: {
+          created_at: string
+          direct_costs: number | null
+          fixed_costs: number | null
+          gross_profit: number | null
+          id: string
+          indirect_costs: number | null
+          metric_date: string
+          net_profit: number | null
+          total_expenses: number | null
+          total_revenue: number | null
+          transaction_count: number | null
+          updated_at: string
+          user_id: string
+          variable_costs: number | null
+        }
+        Insert: {
+          created_at?: string
+          direct_costs?: number | null
+          fixed_costs?: number | null
+          gross_profit?: number | null
+          id?: string
+          indirect_costs?: number | null
+          metric_date: string
+          net_profit?: number | null
+          total_expenses?: number | null
+          total_revenue?: number | null
+          transaction_count?: number | null
+          updated_at?: string
+          user_id: string
+          variable_costs?: number | null
+        }
+        Update: {
+          created_at?: string
+          direct_costs?: number | null
+          fixed_costs?: number | null
+          gross_profit?: number | null
+          id?: string
+          indirect_costs?: number | null
+          metric_date?: string
+          net_profit?: number | null
+          total_expenses?: number | null
+          total_revenue?: number | null
+          transaction_count?: number | null
+          updated_at?: string
+          user_id?: string
+          variable_costs?: number | null
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           allocated_amount: number
@@ -260,6 +311,65 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_center_performance: {
+        Row: {
+          avg_cost_per_transaction: number | null
+          budget_allocated: number | null
+          budget_utilized: number | null
+          cost_center_id: string | null
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          total_costs: number | null
+          transaction_count: number | null
+          updated_at: string
+          user_id: string
+          variance_amount: number | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          avg_cost_per_transaction?: number | null
+          budget_allocated?: number | null
+          budget_utilized?: number | null
+          cost_center_id?: string | null
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          total_costs?: number | null
+          transaction_count?: number | null
+          updated_at?: string
+          user_id: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          avg_cost_per_transaction?: number | null
+          budget_allocated?: number | null
+          budget_utilized?: number | null
+          cost_center_id?: string | null
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          total_costs?: number | null
+          transaction_count?: number | null
+          updated_at?: string
+          user_id?: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_center_performance_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_centers: {
         Row: {
           category_type: string
@@ -360,6 +470,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      product_performance: {
+        Row: {
+          avg_cost_price: number | null
+          avg_selling_price: number | null
+          created_at: string
+          gross_profit: number | null
+          id: string
+          inventory_turnover: number | null
+          period_end: string
+          period_start: string
+          product_id: string | null
+          total_costs: number | null
+          total_revenue: number | null
+          units_sold: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_cost_price?: number | null
+          avg_selling_price?: number | null
+          created_at?: string
+          gross_profit?: number | null
+          id?: string
+          inventory_turnover?: number | null
+          period_end: string
+          period_start: string
+          product_id?: string | null
+          total_costs?: number | null
+          total_revenue?: number | null
+          units_sold?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_cost_price?: number | null
+          avg_selling_price?: number | null
+          created_at?: string
+          gross_profit?: number | null
+          id?: string
+          inventory_turnover?: number | null
+          period_end?: string
+          period_start?: string
+          product_id?: string | null
+          total_costs?: number | null
+          total_revenue?: number | null
+          units_sold?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_performance_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {

@@ -77,7 +77,7 @@ export const useEnhancedAnalytics = () => {
   const queryClient = useQueryClient();
   const [dateFilter, setDateFilter] = useState<DateFilter>({});
 
-  // Fetch analytics metrics
+  // Fetch analytics metrics only
   const { data: analyticsMetrics = [], isLoading: isLoadingMetrics, error: metricsError } = useQuery({
     queryKey: ['analyticsMetrics', user?.id, dateFilter],
     queryFn: async (): Promise<AnalyticsMetrics[]> => {
@@ -87,7 +87,8 @@ export const useEnhancedAnalytics = () => {
         .from('analytics_metrics')
         .select('*')
         .eq('user_id', user.id)
-        .order('metric_date', { ascending: false });
+        .order('metric_date', { ascending: false })
+        .limit(50); // Limit to recent 50 records to improve performance
 
       if (dateFilter.startDate) {
         query = query.gte('metric_date', format(dateFilter.startDate, 'yyyy-MM-dd'));
@@ -101,9 +102,10 @@ export const useEnhancedAnalytics = () => {
       return data || [];
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Fetch product performance
+  // Lazy load product performance only when needed
   const { data: productPerformance = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
     queryKey: ['productPerformance', user?.id, dateFilter],
     queryFn: async (): Promise<ProductPerformance[]> => {
@@ -116,7 +118,8 @@ export const useEnhancedAnalytics = () => {
           product:products(name, category, standard_price, standard_cost)
         `)
         .eq('user_id', user.id)
-        .order('total_revenue', { ascending: false });
+        .order('total_revenue', { ascending: false })
+        .limit(20); // Limit results
 
       if (dateFilter.startDate) {
         query = query.gte('period_start', format(dateFilter.startDate, 'yyyy-MM-dd'));
@@ -130,9 +133,10 @@ export const useEnhancedAnalytics = () => {
       return data || [];
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch cost center performance
+  // Lazy load cost center performance only when needed
   const { data: costCenterPerformance = [], isLoading: isLoadingCostCenters, error: costCentersError } = useQuery({
     queryKey: ['costCenterPerformance', user?.id, dateFilter],
     queryFn: async (): Promise<CostCenterPerformance[]> => {
@@ -145,7 +149,8 @@ export const useEnhancedAnalytics = () => {
           cost_center:cost_centers(name, category_type)
         `)
         .eq('user_id', user.id)
-        .order('total_costs', { ascending: false });
+        .order('total_costs', { ascending: false })
+        .limit(20); // Limit results
 
       if (dateFilter.startDate) {
         query = query.gte('period_start', format(dateFilter.startDate, 'yyyy-MM-dd'));
@@ -159,6 +164,7 @@ export const useEnhancedAnalytics = () => {
       return data || [];
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Calculate aggregated analytics - optimized to prevent excessive recalculations

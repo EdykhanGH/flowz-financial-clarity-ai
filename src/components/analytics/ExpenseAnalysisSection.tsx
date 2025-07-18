@@ -55,27 +55,29 @@ const ExpenseAnalysisSection: React.FC = () => {
     );
   }
 
-  // Filter transactions based on current filters
+  // Filter transactions based on current filters - optimized
   const filteredTransactions = React.useMemo(() => {
-    return transactions.filter(transaction => {
+    if (!transactions) return [];
+    
+    // Limit processing to last 100 transactions for performance
+    const recentTransactions = transactions.slice(0, 100);
+    
+    return recentTransactions.filter(transaction => {
       // Filter by transaction type (only expenses)
       if (transaction.type !== 'expense') return false;
       
       // Filter by date if selected
       if (filterDate) {
         const transactionDate = new Date(transaction.date);
-        if (
-          transactionDate.getDate() !== filterDate.getDate() ||
-          transactionDate.getMonth() !== filterDate.getMonth() ||
-          transactionDate.getFullYear() !== filterDate.getFullYear()
-        ) {
+        const filterDateObj = new Date(filterDate);
+        if (transactionDate.toDateString() !== filterDateObj.toDateString()) {
           return false;
         }
       }
       
       return true;
     });
-  }, [transactions, filterDate, costCenterFilter]);
+  }, [transactions, filterDate]);
 
   // Total cost calculation
   const totalCost = React.useMemo(() => {

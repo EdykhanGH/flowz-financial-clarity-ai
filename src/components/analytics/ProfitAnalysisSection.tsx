@@ -45,19 +45,6 @@ const ProfitAnalysisSection: React.FC = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [periodFilter, setPeriodFilter] = useState<string>('all');
   
-  console.log('ProfitAnalysisSection - transactions:', transactions?.length || 0);
-  console.log('ProfitAnalysisSection - analytics:', analytics);
-  
-  // Show message if no data available
-  if (!transactions || transactions.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Profit Analysis</h2>
-        <p className="text-muted-foreground">No transaction data available. Please add some transactions to see profit analysis.</p>
-      </div>
-    );
-  }
-  
   // Filter transactions based on current filters
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(transaction => {

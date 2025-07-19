@@ -50,20 +50,98 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const [newProfitCenter, setNewProfitCenter] = useState('');
 
   const businessCategories = [
-    'Manufacturing - Food Products',
-    'Manufacturing - Chemical Products', 
-    'Manufacturing - Metal Industries',
-    'Services - Professional Services',
-    'Services - IT Services',
-    'Services - Consulting',
-    'Services - Healthcare',
-    'Retail & Trade - E-commerce',
-    'Retail & Trade - Traditional Retail',
-    'Retail & Trade - Wholesale',
-    'Construction & Real Estate',
-    'Transportation & Logistics',
-    'Agriculture & Agro-based Industries',
-    'Other Services'
+    // Agriculture & Food
+    'Agriculture & Farming',
+    'Livestock & Poultry',
+    'Fisheries & Aquaculture',
+    'Food Processing & Manufacturing',
+    'Food & Beverage Retail',
+    
+    // Manufacturing
+    'Textile & Garment Manufacturing',
+    'Chemical & Pharmaceutical Manufacturing',
+    'Metal & Steel Processing',
+    'Plastic & Rubber Manufacturing',
+    'Cement & Construction Materials',
+    'Automotive & Parts Manufacturing',
+    'Electronics Manufacturing',
+    'Furniture & Wood Products',
+    
+    // Energy & Natural Resources
+    'Oil & Gas',
+    'Renewable Energy',
+    'Mining & Quarrying',
+    'Power Generation & Distribution',
+    
+    // Technology & Communications
+    'Information Technology Services',
+    'Software Development',
+    'Telecommunications',
+    'Digital Marketing & Media',
+    'E-commerce & Online Services',
+    
+    // Financial Services
+    'Banking & Financial Services',
+    'Insurance',
+    'Investment & Securities',
+    'Microfinance & Cooperatives',
+    'Fintech',
+    
+    // Trade & Commerce
+    'Import & Export Trading',
+    'Wholesale Trading',
+    'General Retail',
+    'Supermarkets & Convenience Stores',
+    'Fashion & Accessories Retail',
+    'Auto Parts & Services',
+    
+    // Construction & Real Estate
+    'Construction & Engineering',
+    'Real Estate Development',
+    'Property Management',
+    'Architecture & Design',
+    
+    // Transportation & Logistics
+    'Transportation Services',
+    'Logistics & Warehousing',
+    'Courier & Delivery Services',
+    'Aviation Services',
+    'Maritime Services',
+    
+    // Professional Services
+    'Legal Services',
+    'Accounting & Auditing',
+    'Consulting Services',
+    'Business Support Services',
+    'Human Resources Services',
+    
+    // Healthcare & Education
+    'Healthcare Services',
+    'Pharmaceutical Services',
+    'Medical Equipment & Supplies',
+    'Education & Training',
+    'Educational Technology',
+    
+    // Hospitality & Entertainment
+    'Hotels & Hospitality',
+    'Restaurants & Catering',
+    'Event Planning & Management',
+    'Entertainment & Media',
+    'Tourism & Travel Services',
+    
+    // Personal & Consumer Services
+    'Beauty & Personal Care',
+    'Fitness & Wellness',
+    'Laundry & Dry Cleaning',
+    'Security Services',
+    'Cleaning Services',
+    
+    // Specialized Industries
+    'Printing & Publishing',
+    'Advertising & Marketing',
+    'Arts & Crafts',
+    'Sports & Recreation',
+    'Non-Profit Organizations'
   ];
 
   const businessScales = ['Micro', 'Small', 'Medium', 'Large'];

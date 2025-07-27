@@ -100,7 +100,7 @@ const ExpenseAnalysisSection: React.FC = () => {
   
   // Cost type breakdown (fixed, variable, mixed) based on cost_nature field
   const costTypeBreakdown = React.useMemo(() => {
-    // Use transaction fields directly, fallback to classification if available
+    // Use cost_nature field for fixed/variable classification
     const fixed = filteredTransactions
       .filter(t => (t.cost_nature === 'fixed') || (t.classification?.cost_nature === 'fixed'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -122,6 +122,7 @@ const ExpenseAnalysisSection: React.FC = () => {
 
   // Cost nature breakdown (direct vs indirect)
   const costNatureBreakdown = React.useMemo(() => {
+    // Use cost_type field for direct/indirect classification
     const direct = filteredTransactions
       .filter(t => (t.cost_type === 'direct') || (t.classification?.cost_type === 'direct'))
       .reduce((sum, t) => sum + Number(t.amount), 0);

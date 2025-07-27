@@ -74,9 +74,9 @@ const ProfitAnalysisSection: React.FC = () => {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
-    // Calculate Cost of Goods Sold (COGS) - direct costs
+    // Calculate Cost of Goods Sold (COGS) - direct costs using cost_type field
     const cogs = filteredTransactions
-      .filter(t => t.type === 'expense' && (t.cost_type === 'direct' || t.classification?.cost_type === 'direct'))
+      .filter(t => t.type === 'expense' && ((t.cost_type === 'direct') || (t.classification?.cost_type === 'direct')))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const grossProfit = revenue - cogs;
@@ -98,12 +98,13 @@ const ProfitAnalysisSection: React.FC = () => {
 
   // Break-even analysis
   const breakEvenAnalysis = React.useMemo(() => {
+    // Use cost_nature field for fixed/variable classification
     const fixedCosts = filteredTransactions
-      .filter(t => t.type === 'expense' && (t.cost_nature === 'fixed' || t.classification?.cost_nature === 'fixed'))
+      .filter(t => t.type === 'expense' && ((t.cost_nature === 'fixed') || (t.classification?.cost_nature === 'fixed')))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const variableCosts = filteredTransactions
-      .filter(t => t.type === 'expense' && (t.cost_nature === 'variable' || t.classification?.cost_nature === 'variable'))
+      .filter(t => t.type === 'expense' && ((t.cost_nature === 'variable') || (t.classification?.cost_nature === 'variable')))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const revenue = profitMetrics.revenue;

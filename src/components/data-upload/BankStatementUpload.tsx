@@ -260,14 +260,24 @@ Please ensure your bank statement has:
       
       if (savedCount > 0) {
         toast({
-          title: "Successfully Saved to Dashboard!",
-          description: `${savedCount} transactions saved and will appear in your dashboard${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+          title: "🎉 Data Successfully Connected to Dashboard!",
+          description: `${savedCount} transactions saved! Your dashboard analytics, summaries, and charts have been updated with your bank statement data.`,
+          duration: 5000,
         });
         
         // Clear the form after successful save
         setTransactions([]);
         setSelectedFile(null);
         setFinancialSummary(null);
+        
+        // Show additional success guidance
+        setTimeout(() => {
+          toast({
+            title: "💡 View Your Updated Analytics",
+            description: "Navigate to the Home tab to see your updated totals, or check Analytics for detailed insights.",
+            duration: 4000,
+          });
+        }, 1000);
       } else {
         throw new Error('No transactions were saved successfully');
       }

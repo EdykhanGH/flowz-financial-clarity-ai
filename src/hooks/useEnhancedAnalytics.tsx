@@ -108,146 +108,7 @@ export const useEnhancedAnalytics = (filters: FilterOptions = {}) => {
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Calculate analytics data
-  const analyticsData = useMemo((): EnhancedAnalyticsData | null => {
-    if (!transactions.length) return null;
-
-    setIsCalculating(true);
-
-    try {
-      // Apply filters
-      const filteredTransactions = transactions.filter(transaction => {
-        // Date filters
-        if (filters.startDate && transaction.date < filters.startDate) return false;
-        if (filters.endDate && transaction.date > filters.endDate) return false;
-        if (filters.costCenterId && transaction.cost_center_id !== filters.costCenterId) return false;
-        if (filters.profitCenterId && transaction.profit_center_id !== filters.profitCenterId) return false;
-        if (filters.category && transaction.category !== filters.category) return false;
-        
-        // Period filter
-        if (filters.period && filters.period !== 'custom') {
-          const now = new Date();
-          const transactionDate = new Date(transaction.date);
-          
-          switch (filters.period) {
-            case 'today':
-              if (!isSameDay(transactionDate, now)) return false;
-              break;
-            case 'week':
-              const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              if (transactionDate < weekAgo) return false;
-              break;
-            case 'month':
-              if (transactionDate.getMonth() !== now.getMonth() || 
-                  transactionDate.getFullYear() !== now.getFullYear()) return false;
-              break;
-            case 'quarter':
-              const quarterStart = Math.floor(now.getMonth() / 3) * 3;
-              const quarterStartDate = new Date(now.getFullYear(), quarterStart, 1);
-              if (transactionDate < quarterStartDate) return false;
-              break;
-            case 'year':
-              if (transactionDate.getFullYear() !== now.getFullYear()) return false;
-              break;
-          }
-        }
-        
-        return true;
-      });
-
-      // Basic calculations
-      const revenues = filteredTransactions.filter(t => t.type === 'income');
-      const expenses = filteredTransactions.filter(t => t.type === 'expense');
-
-      const totalRevenue = revenues.reduce((sum, t) => sum + Number(t.amount), 0);
-      const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
-
-      // Cost type analysis
-      const fixedCosts = expenses
-        .filter(t => t.cost_nature === 'fixed')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      
-      const variableCosts = expenses
-        .filter(t => t.cost_nature === 'variable')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      const directCosts = expenses
-        .filter(t => t.cost_type === 'direct')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      const indirectCosts = expenses
-        .filter(t => t.cost_type === 'indirect')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      // Profit calculations
-      const grossProfit = totalRevenue - directCosts;
-      const netProfit = totalRevenue - totalExpenses;
-      const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-      const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
-      // Break-even analysis
-      const contributionMargin = totalRevenue - variableCosts;
-      const contributionMarginRatio = totalRevenue > 0 ? contributionMargin / totalRevenue : 0;
-      const breakEvenRevenue = contributionMarginRatio > 0 ? fixedCosts / contributionMarginRatio : 0;
-      
-      // Assuming 30-day period for daily calculations
-      const avgDailyRevenue = totalRevenue / 30;
-      const breakEvenDays = avgDailyRevenue > 0 ? breakEvenRevenue / avgDailyRevenue : 0;
-      const marginOfSafetyAmount = totalRevenue - breakEvenRevenue;
-      const marginOfSafetyDays = avgDailyRevenue > 0 ? marginOfSafetyAmount / avgDailyRevenue : 0;
-
-      // Category analysis
-      const expenseByCategory = calculateCategoryBreakdown(expenses, totalExpenses);
-      const revenueByCategory = calculateCategoryBreakdown(revenues, totalRevenue);
-
-      // Product performance
-      const topProducts = calculateProductPerformance(filteredTransactions);
-
-      // Monthly data and trends
-      const monthlyData = calculateMonthlyData(filteredTransactions);
-      const costBehaviorData = calculateCostBehaviorData(expenses);
-
-      // Growth rates
-      const { monthlyGrowthRate, revenueGrowthRate, expenseGrowthRate } = calculateGrowthRates(monthlyData);
-
-      // KPIs
-      const kpis = calculateKPIs(filteredTransactions);
-
-      const result: EnhancedAnalyticsData = {
-        totalRevenue,
-        totalExpenses,
-        netProfit,
-        grossProfit,
-        netProfitMargin,
-        grossProfitMargin,
-        fixedCosts,
-        variableCosts,
-        directCosts,
-        indirectCosts,
-        contributionMargin,
-        breakEvenRevenue,
-        breakEvenDays,
-        marginOfSafetyAmount,
-        marginOfSafetyDays,
-        monthlyGrowthRate,
-        revenueGrowthRate,
-        expenseGrowthRate,
-        topProducts,
-        expenseByCategory,
-        revenueByCategory,
-        monthlyData,
-        costBehaviorData,
-        budgetVariance: [], // Will be populated separately
-        kpis
-      };
-
-      return result;
-    } finally {
-      setIsCalculating(false);
-    }
-  }, [transactions, filters]);
-
-  // Helper functions
+  // Helper functions (moved before useMemo to avoid temporal dead zone)
   const isSameDay = (date1: Date, date2: Date) => {
     return date1.getDate() === date2.getDate() &&
            date1.getMonth() === date2.getMonth() &&
@@ -413,6 +274,145 @@ export const useEnhancedAnalytics = (filters: FilterOptions = {}) => {
       workingCapitalRatio: 0, // Would need balance sheet data
     };
   };
+
+  // Calculate analytics data
+  const analyticsData = useMemo((): EnhancedAnalyticsData | null => {
+    if (!transactions.length) return null;
+
+    setIsCalculating(true);
+
+    try {
+      // Apply filters
+      const filteredTransactions = transactions.filter(transaction => {
+        // Date filters
+        if (filters.startDate && transaction.date < filters.startDate) return false;
+        if (filters.endDate && transaction.date > filters.endDate) return false;
+        if (filters.costCenterId && transaction.cost_center_id !== filters.costCenterId) return false;
+        if (filters.profitCenterId && transaction.profit_center_id !== filters.profitCenterId) return false;
+        if (filters.category && transaction.category !== filters.category) return false;
+        
+        // Period filter
+        if (filters.period && filters.period !== 'custom') {
+          const now = new Date();
+          const transactionDate = new Date(transaction.date);
+          
+          switch (filters.period) {
+            case 'today':
+              if (!isSameDay(transactionDate, now)) return false;
+              break;
+            case 'week':
+              const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              if (transactionDate < weekAgo) return false;
+              break;
+            case 'month':
+              if (transactionDate.getMonth() !== now.getMonth() || 
+                  transactionDate.getFullYear() !== now.getFullYear()) return false;
+              break;
+            case 'quarter':
+              const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+              const quarterStartDate = new Date(now.getFullYear(), quarterStart, 1);
+              if (transactionDate < quarterStartDate) return false;
+              break;
+            case 'year':
+              if (transactionDate.getFullYear() !== now.getFullYear()) return false;
+              break;
+          }
+        }
+        
+        return true;
+      });
+
+      // Basic calculations
+      const revenues = filteredTransactions.filter(t => t.type === 'income');
+      const expenses = filteredTransactions.filter(t => t.type === 'expense');
+
+      const totalRevenue = revenues.reduce((sum, t) => sum + Number(t.amount), 0);
+      const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Cost type analysis
+      const fixedCosts = expenses
+        .filter(t => t.cost_nature === 'fixed')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      const variableCosts = expenses
+        .filter(t => t.cost_nature === 'variable')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const directCosts = expenses
+        .filter(t => t.cost_type === 'direct')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const indirectCosts = expenses
+        .filter(t => t.cost_type === 'indirect')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Profit calculations
+      const grossProfit = totalRevenue - directCosts;
+      const netProfit = totalRevenue - totalExpenses;
+      const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+      const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+      // Break-even analysis
+      const contributionMargin = totalRevenue - variableCosts;
+      const contributionMarginRatio = totalRevenue > 0 ? contributionMargin / totalRevenue : 0;
+      const breakEvenRevenue = contributionMarginRatio > 0 ? fixedCosts / contributionMarginRatio : 0;
+      
+      // Assuming 30-day period for daily calculations
+      const avgDailyRevenue = totalRevenue / 30;
+      const breakEvenDays = avgDailyRevenue > 0 ? breakEvenRevenue / avgDailyRevenue : 0;
+      const marginOfSafetyAmount = totalRevenue - breakEvenRevenue;
+      const marginOfSafetyDays = avgDailyRevenue > 0 ? marginOfSafetyAmount / avgDailyRevenue : 0;
+
+      // Category analysis
+      const expenseByCategory = calculateCategoryBreakdown(expenses, totalExpenses);
+      const revenueByCategory = calculateCategoryBreakdown(revenues, totalRevenue);
+
+      // Product performance
+      const topProducts = calculateProductPerformance(filteredTransactions);
+
+      // Monthly data and trends
+      const monthlyData = calculateMonthlyData(filteredTransactions);
+      const costBehaviorData = calculateCostBehaviorData(expenses);
+
+      // Growth rates
+      const { monthlyGrowthRate, revenueGrowthRate, expenseGrowthRate } = calculateGrowthRates(monthlyData);
+
+      // KPIs
+      const kpis = calculateKPIs(filteredTransactions);
+
+      const result: EnhancedAnalyticsData = {
+        totalRevenue,
+        totalExpenses,
+        netProfit,
+        grossProfit,
+        netProfitMargin,
+        grossProfitMargin,
+        fixedCosts,
+        variableCosts,
+        directCosts,
+        indirectCosts,
+        contributionMargin,
+        breakEvenRevenue,
+        breakEvenDays,
+        marginOfSafetyAmount,
+        marginOfSafetyDays,
+        monthlyGrowthRate,
+        revenueGrowthRate,
+        expenseGrowthRate,
+        topProducts,
+        expenseByCategory,
+        revenueByCategory,
+        monthlyData,
+        costBehaviorData,
+        budgetVariance: [], // Will be populated separately
+        kpis
+      };
+
+      return result;
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [transactions, filters]);
 
   return {
     analyticsData,

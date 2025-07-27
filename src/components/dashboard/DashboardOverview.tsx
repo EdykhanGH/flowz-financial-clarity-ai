@@ -24,6 +24,8 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'rec
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardOverviewProps {
   setActiveTab: (tab: string) => void;
@@ -43,7 +45,19 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
   const { transactions, isLoading } = useTransactions();
   const { categories } = useBusinessCategories();
   const { data: businessProfile } = useBusinessContext();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'quarter'>('month');
+
+  // Function to refresh transaction data
+  const refreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+  };
+
+  // Auto-refresh transactions when component mounts to ensure latest data is shown
+  React.useEffect(() => {
+    refreshData();
+  }, []);
 
   // Calculate metrics based on selected period
   const periodData = useMemo(() => {
@@ -265,15 +279,26 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveTab }) =
           <p className="text-gray-600">Here's your business performance overview</p>
         </div>
         
-        {/* Period Selector */}
-        <Tabs value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as any)} className="mt-4 sm:mt-0">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="today">Today</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="quarter">Quarter</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Period Selector with Refresh */}
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshData}
+            className="flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            Refresh Data
+          </Button>
+          <Tabs value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as any)} className="mt-4 sm:mt-0">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+              <TabsTrigger value="today">Today</TabsTrigger>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="quarter">Quarter</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Top Section: Financial Metrics Cards */}

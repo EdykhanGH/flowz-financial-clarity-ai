@@ -98,19 +98,19 @@ const ExpenseAnalysisSection: React.FC = () => {
       .sort((a, b) => b.amount - a.amount);
   }, [filteredTransactions]);
   
-  // Cost type breakdown (fixed, variable, mixed) based on cost_nature field
+  // Cost type breakdown (fixed, variable, mixed) based on cost_type field
   const costTypeBreakdown = React.useMemo(() => {
-    // Use cost_nature field for fixed/variable classification
+    // Use cost_type field for fixed/variable classification
     const fixed = filteredTransactions
-      .filter(t => (t.cost_nature === 'fixed') || (t.classification?.cost_nature === 'fixed'))
+      .filter(t => (t.cost_type === 'fixed') || (t.classification?.cost_type === 'fixed'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const variable = filteredTransactions
-      .filter(t => (t.cost_nature === 'variable') || (t.classification?.cost_nature === 'variable'))
+      .filter(t => (t.cost_type === 'variable') || (t.classification?.cost_type === 'variable'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const mixed = filteredTransactions
-      .filter(t => !t.cost_nature || (!t.classification?.cost_nature && !t.cost_nature))
+      .filter(t => !t.cost_type || (!t.classification?.cost_type && !t.cost_type))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     return [
@@ -122,17 +122,17 @@ const ExpenseAnalysisSection: React.FC = () => {
 
   // Cost nature breakdown (direct vs indirect)
   const costNatureBreakdown = React.useMemo(() => {
-    // Use cost_type field for direct/indirect classification
+    // Use cost_nature field for direct/indirect classification
     const direct = filteredTransactions
-      .filter(t => (t.cost_type === 'direct') || (t.classification?.cost_type === 'direct'))
+      .filter(t => (t.cost_nature === 'direct') || (t.classification?.cost_nature === 'direct'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const indirect = filteredTransactions
-      .filter(t => (t.cost_type === 'indirect') || (t.classification?.cost_type === 'indirect'))
+      .filter(t => (t.cost_nature === 'indirect') || (t.classification?.cost_nature === 'indirect'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const unclassified = filteredTransactions
-      .filter(t => !t.cost_type && !t.classification?.cost_type)
+      .filter(t => !t.cost_nature && !t.classification?.cost_nature)
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     return [

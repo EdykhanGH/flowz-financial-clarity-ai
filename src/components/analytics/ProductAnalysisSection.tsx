@@ -104,7 +104,7 @@ const ProductAnalysisSection: React.FC = () => {
           productData[productName].units += transaction.quantity;
           productData[productName].unitPrice = transaction.unit_price || 0;
         }
-      } else if (transaction.type === 'expense' && transaction.classification?.cost_nature === 'direct') {
+      } else if (transaction.type === 'expense' && (transaction.cost_type === 'direct' || transaction.classification?.cost_type === 'direct')) {
         productData[productName].costs += Number(transaction.amount);
         if (transaction.quantity) {
           productData[productName].unitCost = transaction.unit_cost || 0;

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import {
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBusinessCategories } from '@/hooks/useBusinessCategories';
+import { useBudgets } from '@/hooks/useBudgets';
 
 interface BudgetItem {
   category: string;
@@ -29,10 +30,34 @@ interface BudgetItem {
 const VarianceAnalysisSection: React.FC = () => {
   const { transactions } = useTransactions();
   const { categories } = useBusinessCategories();
+  const { calculateBudgetVariance, updateBudgetSpending } = useBudgets();
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
+  const [realVarianceData, setRealVarianceData] = useState<BudgetItem[]>([]);
 
-  // Create sample budget data based on categories and actual spending
+  // Load real budget variance data
+  useEffect(() => {
+    const loadVarianceData = async () => {
+      await updateBudgetSpending();
+      const variance = await calculateBudgetVariance(selectedPeriod as any);
+      const budgetItems: BudgetItem[] = variance.map(v => ({
+        category: v.category,
+        budgeted: v.budgeted,
+        actual: v.actual,
+        variance: v.variance,
+        variancePercent: v.variancePercent,
+        status: v.status
+      }));
+      setRealVarianceData(budgetItems);
+    };
+    
+    loadVarianceData();
+  }, [selectedPeriod, calculateBudgetVariance, updateBudgetSpending]);
+
+  // Fallback to sample data if no real budgets exist
   const budgetVarianceData = useMemo((): BudgetItem[] => {
+    if (realVarianceData.length > 0) {
+      return realVarianceData;
+    }
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();

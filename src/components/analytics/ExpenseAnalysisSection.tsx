@@ -101,15 +101,15 @@ const ExpenseAnalysisSection: React.FC = () => {
   // Cost type breakdown (fixed, variable, mixed)
   const costTypeBreakdown = React.useMemo(() => {
     const fixed = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'fixed')
+      .filter(t => t.cost_nature === 'fixed' || t.classification?.cost_nature === 'fixed')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const variable = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'variable')
+      .filter(t => t.cost_nature === 'variable' || t.classification?.cost_nature === 'variable')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const mixed = filteredTransactions
-      .filter(t => t.classification?.cost_type === 'mixed' || !t.classification?.cost_type)
+      .filter(t => !t.cost_nature && !t.classification?.cost_nature)
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     return [
@@ -122,15 +122,15 @@ const ExpenseAnalysisSection: React.FC = () => {
   // Cost nature breakdown (direct vs indirect)
   const costNatureBreakdown = React.useMemo(() => {
     const direct = filteredTransactions
-      .filter(t => t.classification?.cost_nature === 'direct')
+      .filter(t => t.cost_type === 'direct' || t.classification?.cost_type === 'direct')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const indirect = filteredTransactions
-      .filter(t => t.classification?.cost_nature === 'indirect')
+      .filter(t => t.cost_type === 'indirect' || t.classification?.cost_type === 'indirect')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const unclassified = filteredTransactions
-      .filter(t => !t.classification?.cost_nature)
+      .filter(t => !t.cost_type && !t.classification?.cost_type)
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     return [

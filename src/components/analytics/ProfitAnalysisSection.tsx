@@ -76,7 +76,7 @@ const ProfitAnalysisSection: React.FC = () => {
     
     // Calculate Cost of Goods Sold (COGS) - direct costs
     const cogs = filteredTransactions
-      .filter(t => t.type === 'expense' && t.classification?.cost_nature === 'direct')
+      .filter(t => t.type === 'expense' && (t.cost_type === 'direct' || t.classification?.cost_type === 'direct'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const grossProfit = revenue - cogs;
@@ -99,11 +99,11 @@ const ProfitAnalysisSection: React.FC = () => {
   // Break-even analysis
   const breakEvenAnalysis = React.useMemo(() => {
     const fixedCosts = filteredTransactions
-      .filter(t => t.type === 'expense' && t.classification?.cost_type === 'fixed')
+      .filter(t => t.type === 'expense' && (t.cost_nature === 'fixed' || t.classification?.cost_nature === 'fixed'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const variableCosts = filteredTransactions
-      .filter(t => t.type === 'expense' && t.classification?.cost_type === 'variable')
+      .filter(t => t.type === 'expense' && (t.cost_nature === 'variable' || t.classification?.cost_nature === 'variable'))
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     const revenue = profitMetrics.revenue;

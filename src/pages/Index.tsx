@@ -4,99 +4,298 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bot, Cpu, FileUp } from 'lucide-react';
+import { BarChart, Bot, Cpu, FileUp, Search, TrendingUp, Repeat, AlertTriangle, PieChart, CheckCircle, Users, Zap, Target, UserCheck } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A]">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Header />
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="bg-[#1A1A1A] text-white">
           <div className="container mx-auto px-6 py-24 text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              AI-Powered Financial Clarity for Your Business Growth
+              Flowz... the business financial clarity you crave for.
             </h1>
-            <p className="mt-4 text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-              Flowz transforms your complex financial data into actionable insights, helping you make smarter, data-driven decisions.
+            <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
+              AI-powered financial analysis and cost insights for MSMEs and growing businesses.
+              Take control of your finances, cut waste, and make confident decisions — without needing an accounting degree.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
-                <Button size="lg" className="bg-primary hover:bg-secondary text-white font-bold">Get Started for Free</Button>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold w-full sm:w-auto">
+                  👉 Join Waitlist
+                </Button>
               </Link>
               <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold">
-                  View Demo
+                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold w-full sm:w-auto">
+                  👉 Watch Demo
                 </Button>
               </Link>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-20">
+        {/* Problem Section */}
+        <section className="py-20 bg-muted/30">
+          <div className="container mx-auto px-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              "Running a business shouldn't mean running blind."
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Most MSMEs struggle with:
+            </p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="text-center">
+                <div className="text-destructive mb-2">❌</div>
+                <p className="font-medium">Confusing cost structures</p>
+              </div>
+              <div className="text-center">
+                <div className="text-destructive mb-2">❌</div>
+                <p className="font-medium">Poor pricing decisions</p>
+              </div>
+              <div className="text-center">
+                <div className="text-destructive mb-2">❌</div>
+                <p className="font-medium">Untracked waste and expenses</p>
+              </div>
+              <div className="text-center">
+                <div className="text-destructive mb-2">❌</div>
+                <p className="font-medium">No clear view of profit or cash flow</p>
+              </div>
+            </div>
+            <p className="text-lg font-medium">
+              Flowz makes it simple. We help you understand your numbers, find leaks, and grow sustainably.
+            </p>
+          </div>
+        </section>
+
+        {/* What Flowz Does Section */}
+        <section className="py-20">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold">Revolutionize Your Financial Management</h2>
-              <p className="mt-2 text-lg text-gray-600">Flowz offers a suite of powerful tools to simplify your accounting.</p>
+              <h2 className="text-3xl md:text-4xl font-bold">Clarity, not complexity.</h2>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-                    <Cpu size={32} className="text-primary" />
+                    <Search size={32} className="text-primary" />
                   </div>
-                  <CardTitle className="mt-4">Automated Cost Classification</CardTitle>
+                  <CardTitle className="mt-4">🔍 Cost & Profit Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">Our AI automatically categorizes your expenses, saving you time and reducing errors.</p>
+                  <p className="text-muted-foreground">Track what you're spending, on what — and how it affects profit.</p>
                 </CardContent>
               </Card>
               <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-                    <BarChart size={32} className="text-primary" />
+                    <TrendingUp size={32} className="text-primary" />
                   </div>
-                  <CardTitle className="mt-4">Predictive Analytics</CardTitle>
+                  <CardTitle className="mt-4">📈 Forecasting & Budgeting</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">Forecast future revenue and costs with high accuracy to plan with confidence.</p>
+                  <p className="text-muted-foreground">Plan your business future with smart AI-powered projections.</p>
                 </CardContent>
               </Card>
               <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-                    <FileUp size={32} className="text-primary" />
+                    <Repeat size={32} className="text-primary" />
                   </div>
-                  <CardTitle className="mt-4">Seamless Data Integration</CardTitle>
+                  <CardTitle className="mt-4">🔁 Product & Unit Economics</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">Upload CSVs, Excel files, or connect your existing accounting software effortlessly.</p>
+                  <p className="text-muted-foreground">Know which products make or lose money — and adjust fast.</p>
                 </CardContent>
               </Card>
-               <Card className="text-center">
+              <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-                    <Bot size={32} className="text-primary" />
+                    <AlertTriangle size={32} className="text-primary" />
                   </div>
-                  <CardTitle className="mt-4">AI Chatbot Assistant</CardTitle>
+                  <CardTitle className="mt-4">🚨 Smart Alerts & Recommendations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">Get instant answers to your financial questions in plain English, 24/7.</p>
+                  <p className="text-muted-foreground">Get AI insights to stop overspending or poor financial moves.</p>
+                </CardContent>
+              </Card>
+              <Card className="text-center md:col-span-2 lg:col-span-1">
+                <CardHeader>
+                  <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
+                    <PieChart size={32} className="text-primary" />
+                  </div>
+                  <CardTitle className="mt-4">📊 Visual Dashboards</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">All your business finances in one clean, easy-to-understand dashboard.</p>
                 </CardContent>
               </Card>
             </div>
           </div>
         </section>
-        
-        {/* CTA Section */}
-        <section className="bg-gray-100">
-          <div className="container mx-auto px-6 py-20 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold">Ready to Take Control of Your Finances?</h2>
-            <p className="mt-4 text-lg text-gray-600">Join hundreds of MSMEs who trust Flowz for financial clarity.</p>
-            <div className="mt-8">
+
+        {/* Who Flowz Is For Section */}
+        <section className="py-20 bg-muted/30">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">Built for growing businesses like yours:</h2>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="text-center">
+                <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
+                  <Users size={32} className="text-primary" />
+                </div>
+                <p className="font-medium">Micro & Small Retailers</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
+                  <Cpu size={32} className="text-primary" />
+                </div>
+                <p className="font-medium">Food & Product Manufacturers</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
+                  <Zap size={32} className="text-primary" />
+                </div>
+                <p className="font-medium">Tech MSMEs</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
+                  <BarChart size={32} className="text-primary" />
+                </div>
+                <p className="font-medium">E-commerce & Traders</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4">
+                  <Target size={32} className="text-primary" />
+                </div>
+                <p className="font-medium">Service Providers</p>
+              </div>
+            </div>
+            <p className="text-center mt-8 text-lg">
+              Whether you sell goods, services, or both — Flowz works for your business.
+            </p>
+          </div>
+        </section>
+
+        {/* Why Flowz Stands Out Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">What makes Flowz different?</h2>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">MSME-focused</h3>
+                  <p className="text-muted-foreground">Built for African small businesses, not large enterprises.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">No Finance Background Needed</h3>
+                  <p className="text-muted-foreground">We simplify accounting so anyone can understand their numbers.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">AI at the Core</h3>
+                  <p className="text-muted-foreground">Flowz doesn't just report numbers — it helps you act on them.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">Designed for Growth</h3>
+                  <p className="text-muted-foreground">From micro trader to scaling SME, Flowz grows with you.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-20 bg-muted/30">
+          <div className="container mx-auto px-6">
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="p-6">
+                <CardContent className="p-0">
+                  <p className="text-lg mb-4 italic">
+                    "Before Flowz, I was guessing my product prices. Now I know what each unit costs and how much I'm truly making."
+                  </p>
+                  <p className="font-bold">— Chioma, Small Scale Manufacturer</p>
+                </CardContent>
+              </Card>
+              <Card className="p-6">
+                <CardContent className="p-0">
+                  <p className="text-lg mb-4 italic">
+                    "I no longer wait for my accountant to tell me what's wrong — Flowz shows me instantly."
+                  </p>
+                  <p className="font-bold">— Emeka, Tech MSME Founder</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">3 Simple Steps to Clarity:</h2>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="mx-auto bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mb-4">
+                  1
+                </div>
+                <h3 className="text-xl font-bold mb-2">Connect your data</h3>
+                <p className="text-muted-foreground">Upload receipts, input cost items, or sync basic records.</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mb-4">
+                  2
+                </div>
+                <h3 className="text-xl font-bold mb-2">Get smart analysis</h3>
+                <p className="text-muted-foreground">Flowz breaks it down — by cost, category, and profitability.</p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mb-4">
+                  3
+                </div>
+                <h3 className="text-xl font-bold mb-2">Act with confidence</h3>
+                <p className="text-muted-foreground">Use insights to adjust prices, budgets, and decisions.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA Section */}
+        <section className="py-20 bg-[#1A1A1A] text-white">
+          <div className="container mx-auto px-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to make smarter financial decisions?</h2>
+            <p className="text-lg text-gray-300 mb-8">
+              🚀 Join other MSMEs building smarter, stronger businesses with Flowz.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
-                <Button size="lg" className="bg-primary hover:bg-secondary text-white font-bold">Sign Up Now</Button>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold w-full sm:w-auto">
+                  👉 Get Early Access
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold w-full sm:w-auto">
+                  👉 Join Our Waitlist
+                </Button>
+              </Link>
+              <Link to="/dashboard">
+                <Button size="lg" variant="secondary" className="font-bold w-full sm:w-auto">
+                  👉 Book a Demo
+                </Button>
               </Link>
             </div>
           </div>

@@ -12,6 +12,7 @@ const Header = () => {
           <span className="text-xl font-bold">Flowz</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
+          <Link to="/about" className="hover:text-primary">About</Link>
           <Link to="#features" className="hover:text-primary">Features</Link>
           <Link to="#pricing" className="hover:text-primary">Pricing</Link>
           <Link to="/contact" className="hover:text-primary">Contact</Link>

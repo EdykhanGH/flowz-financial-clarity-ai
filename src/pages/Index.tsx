@@ -33,41 +33,9 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Problem Section */}
-        <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-6 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              "Running a business shouldn't mean running blind."
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Most MSMEs struggle with:
-            </p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="text-center">
-                <div className="text-destructive mb-2">❌</div>
-                <p className="font-medium">Confusing cost structures</p>
-              </div>
-              <div className="text-center">
-                <div className="text-destructive mb-2">❌</div>
-                <p className="font-medium">Poor pricing decisions</p>
-              </div>
-              <div className="text-center">
-                <div className="text-destructive mb-2">❌</div>
-                <p className="font-medium">Untracked waste and expenses</p>
-              </div>
-              <div className="text-center">
-                <div className="text-destructive mb-2">❌</div>
-                <p className="font-medium">No clear view of profit or cash flow</p>
-              </div>
-            </div>
-            <p className="text-lg font-medium">
-              Flowz makes it simple. We help you understand your numbers, find leaks, and grow sustainably.
-            </p>
-          </div>
-        </section>
 
         {/* What Flowz Does Section */}
-        <section className="py-20">
+        <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">Clarity, not complexity.</h2>
@@ -133,7 +101,7 @@ const Index = () => {
         </section>
 
         {/* Who Flowz Is For Section */}
-        <section className="py-20 bg-muted/30">
+        <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">Built for growing businesses like yours:</h2>
@@ -177,7 +145,7 @@ const Index = () => {
         </section>
 
         {/* Why Flowz Stands Out Section */}
-        <section className="py-20">
+        <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">What makes Flowz different?</h2>
@@ -216,7 +184,7 @@ const Index = () => {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-20 bg-muted/30">
+        <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="p-6">
@@ -240,7 +208,7 @@ const Index = () => {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-20">
+        <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">3 Simple Steps to Clarity:</h2>
@@ -272,7 +240,7 @@ const Index = () => {
         </section>
 
         {/* Final CTA Section */}
-        <section className="py-20 bg-[#1A1A1A] text-white">
+        <section className="py-16 bg-[#1A1A1A] text-white">
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to make smarter financial decisions?</h2>
             <p className="text-lg text-gray-300 mb-8">

@@ -21,8 +21,7 @@ const Index = () => {
               the business financial clarity you crave for
             </p>
             <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
-              AI-powered financial analysis and cost insights for MSMEs and growing businesses.
-              Take control of your finances, cut waste, and make confident decisions — without needing an accounting degree.
+              In this inflation-driven economy, guesswork can kill your business. Flowz gives you clear, actionable cost and profit insights, so you can cut waste, protect margins, and grow without financial confusion.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">

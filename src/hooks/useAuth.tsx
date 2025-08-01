@@ -27,15 +27,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-
-        // Handle email confirmation
-        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-          console.log('User email confirmed, redirecting to dashboard');
-          // Small delay to ensure state is updated
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 100);
-        }
       }
     );
 

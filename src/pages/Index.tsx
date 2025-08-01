@@ -15,8 +15,11 @@ const Index = () => {
         <section className="bg-[#1A1A1A] text-white">
           <div className="container mx-auto px-6 py-24 text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Flowz... the business financial clarity you crave for.
+              Flowz
             </h1>
+            <p className="text-xl md:text-2xl italic text-gray-300 mt-2">
+              the business financial clarity you crave for
+            </p>
             <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
               AI-powered financial analysis and cost insights for MSMEs and growing businesses.
               Take control of your finances, cut waste, and make confident decisions — without needing an accounting degree.
@@ -203,8 +206,8 @@ const Index = () => {
               <div className="flex items-start gap-4">
                 <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
                 <div>
-                  <h3 className="font-bold text-lg mb-2">AI at the Core</h3>
-                  <p className="text-muted-foreground">Flowz doesn't just report numbers — it helps you act on them.</p>
+                  <h3 className="font-bold text-lg mb-2">Deep Insights</h3>
+                  <p className="text-muted-foreground">Uncover hidden patterns and blind spots that you or your accountant might be missing.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">

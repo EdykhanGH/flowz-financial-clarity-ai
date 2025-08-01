@@ -29,11 +29,6 @@ const Index = () => {
                   👉 Join Waitlist
                 </Button>
               </Link>
-              <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold w-full sm:w-auto">
-                  👉 Watch Demo
-                </Button>
-              </Link>
             </div>
           </div>
         </section>
@@ -191,8 +186,8 @@ const Index = () => {
               <div className="flex items-start gap-4">
                 <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
                 <div>
-                  <h3 className="font-bold text-lg mb-2">MSME-focused</h3>
-                  <p className="text-muted-foreground">Built for African small businesses, not large enterprises.</p>
+                  <h3 className="font-bold text-lg mb-2">Designed for Real Business Struggles</h3>
+                  <p className="text-muted-foreground">From rising supplier costs to unpredictable expenses, Flowz gives growing businesses and MSMEs the clarity to take control not just survive, but grow stronger.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -206,7 +201,7 @@ const Index = () => {
                 <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
                 <div>
                   <h3 className="font-bold text-lg mb-2">Deep Insights</h3>
-                  <p className="text-muted-foreground">Uncover hidden patterns and blind spots that you or your accountant might be missing.</p>
+                  <p className="text-muted-foreground">While others track numbers, Flowz shows you what's eating your profits, and how to cut waste, adapt prices, and stay ahead.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">

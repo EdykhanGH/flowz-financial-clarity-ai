@@ -32,21 +32,29 @@ const AuthHandler = () => {
   useEffect(() => {
     // Handle auth callback from email verification
     const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Auth callback error:', error);
-        return;
-      }
+      try {
+        // This will process the tokens from the URL hash
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth callback error:', error);
+          return;
+        }
 
-      if (data.session?.user) {
-        console.log('User authenticated via callback, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
+        if (data.session?.user) {
+          console.log('User authenticated via callback, redirecting to dashboard');
+          // Clear the URL hash and navigate to dashboard
+          window.history.replaceState(null, '', window.location.pathname);
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err) {
+        console.error('Auth callback handling error:', err);
       }
     };
 
     // Check if we have auth hash parameters
-    if (location.hash.includes('access_token') || location.hash.includes('refresh_token')) {
+    if (location.hash.includes('access_token') || location.hash.includes('refresh_token') || location.hash.includes('type=signup')) {
+      console.log('Detected auth tokens in URL, processing...');
       handleAuthCallback();
     }
   }, [navigate, location]);

@@ -13,7 +13,7 @@ const Header = () => {
         </Link>
         <nav className="flex items-center gap-6">
           <Link to="/about" className="hover:text-primary">About</Link>
-          <Link to="#features" className="hover:text-primary">Features</Link>
+          <Link to="/features" className="hover:text-primary">Features</Link>
           <Link to="#pricing" className="hover:text-primary hidden md:block">Pricing</Link>
           <Link to="/contact" className="hover:text-primary hidden md:block">Contact</Link>
         </nav>

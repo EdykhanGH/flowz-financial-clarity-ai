@@ -4,74 +4,9 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bot, Cpu, FileUp, Search, TrendingUp, Repeat, AlertTriangle, PieChart, CheckCircle, Users, Zap, Target, UserCheck, DollarSign, Eye, ShieldAlert, TrendingDown, Calculator, Package, MessageCircle, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { BarChart, Cpu, CheckCircle, Users, Zap, Target } from 'lucide-react';
 
 const Index = () => {
-  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
-
-  const features = [
-    {
-      id: 'cost-breakdown',
-      title: 'Cost Breakdown That Makes Sense',
-      icon: DollarSign,
-      description: 'See exactly where your money goes — from bulk purchases to everyday running costs. Get a full picture of direct, indirect, and hidden costs eating into your profit.'
-    },
-    {
-      id: 'profit-insight',
-      title: 'Profit Insight, Not Just Revenue',
-      icon: Eye,
-      description: 'Not every sale is a good sale. Flowz shows you which products or services truly bring profit — and which ones drain your cash without you knowing.'
-    },
-    {
-      id: 'wastage-detection',
-      title: 'Wastage & Leak Detection',
-      icon: TrendingDown,
-      description: 'From excess inventory to silent costs like delivery losses or overstaffing, Flowz flags inefficiencies you may be overlooking — so you can fix them early.'
-    },
-    {
-      id: 'smart-forecasting',
-      title: 'Smart Forecasting',
-      icon: TrendingUp,
-      description: 'Plan ahead with confidence. Flowz analyzes your financial trends and shows you how much you can afford to spend, what to expect next month, and when it\'s safe to grow.'
-    },
-    {
-      id: 'clear-dashboards',
-      title: 'Clear Dashboards, No Jargon',
-      icon: PieChart,
-      description: 'You don\'t need to be an accountant. Flowz gives you simple, visual insights you can understand at a glance — no spreadsheets or guesswork.'
-    },
-    {
-      id: 'inventory-tracking',
-      title: 'Inventory & Cost of Goods Tracking',
-      icon: Package,
-      description: 'Track the cost of goods sold (COGS) and know exactly how inventory affects your cashflow. Whether you sell bags of rice or digital products, we help you stay ahead.'
-    },
-    {
-      id: 'financial-alerts',
-      title: 'Alerts for Financial Red Flags',
-      icon: ShieldAlert,
-      description: 'Don\'t wait until it\'s too late. Flowz alerts you to unusual expenses, rising costs, or sudden drops in profit — so you stay in control.'
-    },
-    {
-      id: 'budgeting-variance',
-      title: 'Budgeting & Variance Analysis',
-      icon: Calculator,
-      description: 'Set your budget and track what you actually spend. Flowz shows you the difference (variance) between your plan and reality — so you stay on track and adjust in real-time.'
-    },
-    {
-      id: 'ai-chat',
-      title: 'Chat With Flowz AI for Real-Time Advice',
-      icon: MessageCircle,
-      description: 'Got questions? Ask Flowz. Chat with our smart assistant to understand your numbers or get helpful insights about market trends, pricing strategies, or business opportunities.'
-    },
-    {
-      id: 'tailored-nigerian',
-      title: 'Tailored for Growing Nigerian Businesses',
-      icon: MapPin,
-      description: 'Built with your hustle in mind, Flowz works for retail, manufacturing, services, or trade. No complex setup, just plug in your data and start seeing results.'
-    }
-  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -139,69 +74,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Interactive Features Section */}
-        <section id="features" className="py-16 bg-muted/30">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold">Features That Give You Clarity, Not Confusion</h2>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature) => {
-                const IconComponent = feature.icon;
-                const isHovered = hoveredFeature === feature.id;
-                
-                return (
-                  <Card 
-                    key={feature.id}
-                    className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 relative overflow-hidden"
-                    onMouseEnter={() => setHoveredFeature(feature.id)}
-                    onMouseLeave={() => setHoveredFeature(null)}
-                  >
-                    <CardHeader className="text-center pb-4">
-                      <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
-                        <IconComponent size={24} className="text-primary" />
-                      </div>
-                      <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
-                        {feature.title}
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    {/* Animated description overlay */}
-                    <div className={`absolute inset-0 bg-background/95 backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 ${
-                      isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
-                    }`}>
-                      <CardContent className="p-0 text-center">
-                        <div className="mb-4">
-                          <IconComponent size={32} className="text-primary mx-auto mb-2" />
-                          <h3 className="font-bold text-lg mb-3 text-primary">{feature.title}</h3>
-                        </div>
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                          {feature.description}
-                        </p>
-                      </CardContent>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-            
-            {/* CTA Buttons */}
-            <div className="mt-12 text-center">
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link to="/signup">
-                  <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold w-full sm:w-auto text-lg py-4 px-8">
-                    👉 Join the Waitlist
-                  </Button>
-                </Link>
-                <Link to="/dashboard">
-                  <Button size="lg" variant="outline" className="font-bold w-full sm:w-auto text-lg py-4 px-8 border-2">
-                    👉 Book a Demo
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Who Flowz Is For Section */}
         <section className="py-16">

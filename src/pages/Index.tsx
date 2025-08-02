@@ -27,7 +27,7 @@ const Index = () => {
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold w-full sm:w-auto text-lg py-4 px-8">
-                  👉 Join Waitlist
+                  👉 Join our Waitlist
                 </Button>
               </Link>
             </div>
@@ -190,7 +190,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold w-full sm:w-auto text-lg py-4 px-8 border-2">
+                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-[#1A1A1A] font-bold w-full sm:w-auto text-lg py-4 px-8 border-2 bg-white/10 backdrop-blur-sm">
                   👉 Book a Demo
                 </Button>
               </Link>

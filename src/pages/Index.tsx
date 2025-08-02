@@ -17,7 +17,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
               Flowz
             </h1>
-            <p className="text-xl md:text-2xl italic text-gray-300 mt-2">
+            <p className="text-2xl md:text-3xl italic text-gray-200 mt-2 font-medium">
               the business financial clarity you crave for
             </p>
             <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
@@ -34,8 +34,47 @@ const Index = () => {
         </section>
 
 
-        {/* What Flowz Does Section */}
+        {/* Why Flowz Stands Out Section */}
         <section className="py-16">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">What makes Flowz different?</h2>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">Designed for Real Business Struggles</h3>
+                  <p className="text-muted-foreground">From rising supplier costs to unpredictable expenses, Flowz gives growing businesses and MSMEs the clarity to take control not just survive, but grow stronger.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">No Finance Background Needed</h3>
+                  <p className="text-muted-foreground">We simplify accounting so anyone can understand their numbers.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">Deep Insights</h3>
+                  <p className="text-muted-foreground">While others track numbers, Flowz shows you what's eating your profits, and how to cut waste, adapt prices, and stay ahead.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">Designed for Growth</h3>
+                  <p className="text-muted-foreground">From micro trader to scaling SME, Flowz grows with you.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What Flowz Does Section */}
+        <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">Clarity, not complexity.</h2>
@@ -101,7 +140,7 @@ const Index = () => {
         </section>
 
         {/* Who Flowz Is For Section */}
-        <section className="py-16 bg-muted/30">
+        <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">Built for growing businesses like yours:</h2>
@@ -144,47 +183,9 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Why Flowz Stands Out Section */}
-        <section className="py-16">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold">What makes Flowz different?</h2>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Designed for Real Business Struggles</h3>
-                  <p className="text-muted-foreground">From rising supplier costs to unpredictable expenses, Flowz gives growing businesses and MSMEs the clarity to take control not just survive, but grow stronger.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">No Finance Background Needed</h3>
-                  <p className="text-muted-foreground">We simplify accounting so anyone can understand their numbers.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Deep Insights</h3>
-                  <p className="text-muted-foreground">While others track numbers, Flowz shows you what's eating your profits, and how to cut waste, adapt prices, and stay ahead.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Designed for Growth</h3>
-                  <p className="text-muted-foreground">From micro trader to scaling SME, Flowz grows with you.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Testimonials Section */}
         <section className="py-16 bg-muted/30">
+
           <div className="container mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="p-6">
@@ -244,7 +245,7 @@ const Index = () => {
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to make smarter financial decisions?</h2>
             <p className="text-lg text-gray-300 mb-8">
-              🚀 Join other MSMEs building smarter, stronger businesses with Flowz.
+              Join other MSMEs building smarter, stronger businesses with Flowz.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">

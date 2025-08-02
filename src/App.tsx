@@ -33,22 +33,46 @@ const AuthHandler = () => {
     // Handle auth callback from email verification
     const handleAuthCallback = async () => {
       try {
-        // This will process the tokens from the URL hash
-        const { data, error } = await supabase.auth.getSession();
+        console.log('Processing auth callback from URL hash');
+        
+        // Check if this is a signup confirmation
+        const isSignupConfirmation = location.hash.includes('type=signup');
+        
+        // Get the current session after the auth callback
+        const { data: sessionData, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Auth callback error:', error);
+          // Clear the hash and redirect to login on error
+          window.history.replaceState(null, '', window.location.pathname);
+          navigate('/login', { replace: true });
           return;
         }
 
-        if (data.session?.user) {
-          console.log('User authenticated via callback, redirecting to dashboard');
-          // Clear the URL hash and navigate to dashboard
+        if (sessionData.session?.user) {
+          console.log('User authenticated via callback');
+          // Clear the URL hash
           window.history.replaceState(null, '', window.location.pathname);
-          navigate('/dashboard', { replace: true });
+          
+          if (isSignupConfirmation) {
+            // For new signups, redirect to onboarding
+            console.log('Redirecting new user to onboarding');
+            navigate('/onboarding', { replace: true });
+          } else {
+            // For existing users, redirect to dashboard
+            console.log('Redirecting existing user to dashboard');
+            navigate('/dashboard', { replace: true });
+          }
+        } else {
+          // No session, clear hash and redirect to login
+          window.history.replaceState(null, '', window.location.pathname);
+          navigate('/login', { replace: true });
         }
       } catch (err) {
         console.error('Auth callback handling error:', err);
+        // Clear the hash and redirect to login on error
+        window.history.replaceState(null, '', window.location.pathname);
+        navigate('/login', { replace: true });
       }
     };
 

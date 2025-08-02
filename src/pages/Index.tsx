@@ -21,7 +21,7 @@ const Index = () => {
               the business financial clarity you crave for
             </p>
             <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
-              Prices keep going up and guessing your way through can kill your business. Flowz shows you where your money really goes, what brings profit, and how to stop waste, including areas you might be missing like hidden costs, low-performing products, or silent losses, no accountant needed.
+              Prices keep going up and guessing your way through can kill your business. Flowz reveals where your money really goes, from hidden costs to low-performing products and silent losses, so you can cut waste and grow smart. No accountant needed.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">

@@ -59,7 +59,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "Product B margin: 7% (below target). Recommendation: reprice or reduce input cost."
+                          <span className="font-bold">Insight:</span> "Product B margin: 7% (below target). Recommendation: reprice or reduce input cost."
                         </p>
                       </div>
                     </CardContent>
@@ -82,7 +82,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "Ops spend +₦185k vs budget (staff overtime). Suggested fix: shift scheduling; review headcount hours."
+                          <span className="font-bold">Insight:</span> "Ops spend +₦185k vs budget (staff overtime). Suggested fix: shift scheduling; review headcount hours."
                         </p>
                       </div>
                     </CardContent>
@@ -105,7 +105,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "What if price +5%? Profit +₦480k/month; demand impact minimal based on last 90 days."
+                          <span className="font-bold">Insight:</span> "What if price +5%? Profit +₦480k/month; demand impact minimal based on last 90 days."
                         </p>
                       </div>
                     </CardContent>
@@ -128,7 +128,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "Last month's profit fell 9% due to diesel + vendor price hike on flour."
+                          <span className="font-bold">Insight:</span> "Last month's profit fell 9% due to diesel + vendor price hike on flour."
                         </p>
                       </div>
                     </CardContent>
@@ -151,7 +151,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "Projected cash dip in week 3. Recommendation: delay bulk purchase or negotiate 14-day terms."
+                          <span className="font-bold">Insight:</span> "Projected cash dip in week 3. Recommendation: delay bulk purchase or negotiate 14-day terms."
                         </p>
                       </div>
                     </CardContent>
@@ -174,7 +174,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "COGS up 6% from freight; margin compression flagged on SKUs #121–#138."
+                          <span className="font-bold">Insight:</span> "COGS up 6% from freight; margin compression flagged on SKUs #121–#138."
                         </p>
                       </div>
                     </CardContent>
@@ -197,7 +197,7 @@ const Index = () => {
                       </p>
                       <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
                         <p className="text-sm font-medium text-foreground">
-                          <span className="font-bold">What you'll see:</span> "Delivery loss rate 3.2% (↑). Estimated monthly leak: ₦92k."
+                          <span className="font-bold">Insight:</span> "Delivery loss rate 3.2% (↑). Estimated monthly leak: ₦92k."
                         </p>
                       </div>
                     </CardContent>

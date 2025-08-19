@@ -4,7 +4,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Cpu, CheckCircle, Users, Zap, Target } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { BarChart, Cpu, CheckCircle, Users, Zap, Target, DollarSign, Calculator, TrendingUp, MessageCircle, Eye, Package, ShieldAlert } from 'lucide-react';
 
 const Index = () => {
 
@@ -15,14 +16,11 @@ const Index = () => {
         {/* Hero Section */}
         <section className="bg-[#1A1A1A] text-white">
           <div className="container mx-auto px-6 py-24 text-center">
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Flowz
+            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+              Get the business financial clarity to transform your business
             </h1>
-            <p className="text-2xl md:text-3xl italic text-gray-200 mt-2 font-medium">
-              the business financial clarity you crave for
-            </p>
-            <p className="mt-6 text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
-              Prices keep going up and guessing your way through can kill your business. Flowz reveals where your money really goes, from hidden costs to low-performing products and silent losses, so you can cut waste and grow smart. No accountant needed.
+            <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
+              Turn your business numbers into clear, actionable insights to drive smarter decisions and growth
             </p>
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
@@ -35,42 +33,183 @@ const Index = () => {
         </section>
 
 
-        {/* Why Flowz Stands Out Section */}
+        {/* Features Carousel Section */}
         <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold">What makes Flowz different?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold">Features that drive results</h2>
+              <p className="text-muted-foreground mt-4">Navigate through our powerful features that transform your business data into actionable insights</p>
             </div>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Designed for Real Business Struggles</h3>
-                  <p className="text-muted-foreground">From rising supplier costs to unpredictable expenses, Flowz gives growing businesses and MSMEs the clarity to take control not just survive, but grow stronger.</p>
-                </div>
+            
+            <Carousel className="w-full max-w-4xl mx-auto">
+              <CarouselContent>
+                {/* Feature 1 - Cost & Profit Clarity */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <DollarSign size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Cost & Profit Clarity</CardTitle>
+                      <p className="text-lg font-semibold text-primary">See what makes money—and what doesn't.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Flowz breaks down direct, indirect, fixed, and variable costs to reveal true margins per product/service. Cut waste and price with confidence.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "Product B margin: 7% (below target). Recommendation: reprice or reduce input cost."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 2 - Budgeting & Variance Analysis */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <Calculator size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Budgeting & Variance Analysis</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Plan smart. Track reality. Adjust fast.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Set monthly/quarterly budgets and compare against actuals automatically. Spot overspend early, understand variances, and stay on target.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "Ops spend +₦185k vs budget (staff overtime). Suggested fix: shift scheduling; review headcount hours."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 3 - Scenario & Decision Analysis */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <TrendingUp size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Scenario & Decision Analysis</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Ask "what if?" before you spend.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Test price changes, supplier switches, and volume shifts. See margin, cash, and break-even impact—before you commit.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "What if price +5%? Profit +₦480k/month; demand impact minimal based on last 90 days."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 4 - Chat with Flowz */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <MessageCircle size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Chat with Flowz (Assistant)</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Answers about your numbers, in plain English.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Ask anything—"Why did profit drop?" "Which branch leaks cash?" Flowz explains, compares trends, and pulls external signals when relevant.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "Last month's profit fell 9% due to diesel + vendor price hike on flour."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 5 - Smart Forecasting */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <Eye size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Smart Forecasting</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Plan tomorrow, today.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Predict cash flow, costs, and sales using your history and market signals. Know when it's safe to grow.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "Projected cash dip in week 3. Recommendation: delay bulk purchase or negotiate 14-day terms."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 6 - Records, COGS & Sales */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <Package size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Records, COGS & Sales</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Clean books, clear stock, true COGS.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Sales and cost of goods sold automatically—so your margins aren't a guess.
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "COGS up 6% from freight; margin compression flagged on SKUs #121–#138."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+
+                {/* Feature 7 - Risk & Leak Detection */}
+                <CarouselItem>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-2">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
+                        <ShieldAlert size={32} className="text-primary" />
+                      </div>
+                      <CardTitle className="text-2xl font-bold mb-2">Risk & Leak Detection</CardTitle>
+                      <p className="text-lg font-semibold text-primary">Catch silent losses early.</p>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        Flowz flags unusual expenses, rising unit costs, low-performing items, and operational leaks (e.g., shrinkage, overtime drift).
+                      </p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-sm font-medium text-foreground">
+                          <span className="font-bold">What you'll see:</span> "Delivery loss rate 3.2% (↑). Estimated monthly leak: ₦92k."
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              </CarouselContent>
+              
+              <div className="flex justify-center mt-8 gap-4">
+                <CarouselPrevious className="relative static translate-y-0" />
+                <CarouselNext className="relative static translate-y-0" />
               </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">No Finance Background Needed</h3>
-                  <p className="text-muted-foreground">We simplify accounting so anyone can understand their numbers.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Deep Insights</h3>
-                  <p className="text-muted-foreground">While others track numbers, Flowz shows you what's eating your profits, and how to cut waste, adapt prices, and stay ahead.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Designed for Growth</h3>
-                  <p className="text-muted-foreground">From micro trader to scaling SME, Flowz grows with you.</p>
-                </div>
-              </div>
-            </div>
+            </Carousel>
           </div>
         </section>
 

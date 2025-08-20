@@ -581,7 +581,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               variant="outline"
               onClick={handlePrev}
               disabled={currentStep === 1}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
               Previous

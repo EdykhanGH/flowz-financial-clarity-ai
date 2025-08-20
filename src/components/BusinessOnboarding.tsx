@@ -148,7 +148,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const businessModels = ['B2B', 'B2C', 'Hybrid', 'E-commerce', 'Marketplace', 'Subscription', 'Franchise'];
 
   const handleNext = () => {
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -266,9 +266,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const getStepTitle = () => {
     const titles = [
       'Business Information',
-      'Business Details',
-      'Products & Centers',
-      'Location'
+      'Business Details & Location',
+      'Products & Centers'
     ];
     return titles[currentStep - 1];
   };
@@ -361,6 +360,29 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
                   <SelectItem value="international">International</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <Label htmlFor="city" className="text-white">City *</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  placeholder="Enter your city"
+                  required
+                />
+              </div>
+              <div className="space-y-4">
+                <Label htmlFor="state" className="text-white">State *</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  placeholder="Enter your state"
+                  required
+                />
+              </div>
             </div>
           </div>
         );
@@ -520,33 +542,6 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </div>
         );
 
-      case 4:
-        return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city" className="text-white">City *</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  placeholder="Enter your city"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="state" className="text-white">State *</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => setFormData({...formData, state: e.target.value})}
-                  placeholder="Enter your state"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        );
 
       default:
         return null;
@@ -561,11 +556,11 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             <div>
               <CardTitle className="text-white">Business Setup</CardTitle>
               <CardDescription className="text-gray-400">
-                Step {currentStep} of 4: {getStepTitle()}
+                Step {currentStep} of 3: {getStepTitle()}
               </CardDescription>
             </div>
             <div className="flex space-x-1">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -597,8 +592,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               disabled={isLoading}
               className="bg-orange-500 hover:bg-orange-600"
             >
-              {currentStep === 4 ? (isLoading ? 'Completing...' : 'Complete Setup') : 'Next'}
-              {currentStep < 4 && <ChevronRight className="w-4 h-4 ml-2" />}
+              {currentStep === 3 ? (isLoading ? 'Completing...' : 'Complete Setup') : 'Next'}
+              {currentStep < 3 && <ChevronRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>
         </CardContent>

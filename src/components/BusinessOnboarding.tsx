@@ -148,7 +148,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
   const businessModels = ['B2B', 'B2C', 'Hybrid', 'E-commerce', 'Marketplace', 'Subscription', 'Franchise'];
 
   const handleNext = () => {
-    if (currentStep < 8) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -265,13 +265,9 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
 
   const getStepTitle = () => {
     const titles = [
-      'Business Name',
-      'Business Category', 
-      'Business Description',
-      'Business Model',
-      'Business Scale',
-      'Market Scope',
-      'Cost & Profit Centers',
+      'Business Information',
+      'Business Details',
+      'Products & Centers',
       'Location'
     ];
     return titles[currentStep - 1];
@@ -281,103 +277,95 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <Label htmlFor="businessName" className="text-white">Business Name *</Label>
-            <Input
-              id="businessName"
-              value={formData.businessName}
-              onChange={(e) => setFormData({...formData, businessName: e.target.value})}
-              placeholder="Enter your business name"
-              required
-            />
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Label htmlFor="businessName" className="text-white">Business Name *</Label>
+              <Input
+                id="businessName"
+                value={formData.businessName}
+                onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                placeholder="Enter your business name"
+                required
+              />
+            </div>
+
+            <div className="space-y-4">
+              <Label htmlFor="category" className="text-white">Business Category *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your business category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessCategories.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <Label htmlFor="description" className="text-white">Business Description (Core Business Operations) *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Describe what your business does, main activities, and core operations..."
+                rows={4}
+                required
+              />
+            </div>
           </div>
         );
 
       case 2:
         return (
-          <div className="space-y-4">
-            <Label htmlFor="category" className="text-white">Business Category *</Label>
-            <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select your business category" />
-              </SelectTrigger>
-              <SelectContent>
-                {businessCategories.map((category) => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Label className="text-white">Business Model *</Label>
+              <Select value={formData.businessModel} onValueChange={(value) => setFormData({...formData, businessModel: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select business model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessModels.map((model) => (
+                    <SelectItem key={model} value={model}>{model}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-white">Business Scale *</Label>
+              <Select value={formData.businessScale} onValueChange={(value) => setFormData({...formData, businessScale: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select business scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessScales.map((scale) => (
+                    <SelectItem key={scale} value={scale.toLowerCase()}>{scale}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-white">Market Scope *</Label>
+              <Select value={formData.marketScope} onValueChange={(value) => setFormData({...formData, marketScope: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select market scope" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="local">Local</SelectItem>
+                  <SelectItem value="regional">Regional</SelectItem>
+                  <SelectItem value="national">National</SelectItem>
+                  <SelectItem value="international">International</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         );
 
       case 3:
-        return (
-          <div className="space-y-4">
-            <Label htmlFor="description" className="text-white">Business Description (Core Business Operations) *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Describe what your business does, main activities, and core operations..."
-              rows={4}
-              required
-            />
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-4">
-            <Label className="text-white">Business Model *</Label>
-            <Select value={formData.businessModel} onValueChange={(value) => setFormData({...formData, businessModel: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select business model" />
-              </SelectTrigger>
-              <SelectContent>
-                {businessModels.map((model) => (
-                  <SelectItem key={model} value={model}>{model}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-4">
-            <Label className="text-white">Business Scale *</Label>
-            <Select value={formData.businessScale} onValueChange={(value) => setFormData({...formData, businessScale: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select business scale" />
-              </SelectTrigger>
-              <SelectContent>
-                {businessScales.map((scale) => (
-                  <SelectItem key={scale} value={scale.toLowerCase()}>{scale}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        );
-
-      case 6:
-        return (
-          <div className="space-y-4">
-            <Label className="text-white">Market Scope *</Label>
-            <Select value={formData.marketScope} onValueChange={(value) => setFormData({...formData, marketScope: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select market scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="local">Local</SelectItem>
-                <SelectItem value="regional">Regional</SelectItem>
-                <SelectItem value="national">National</SelectItem>
-                <SelectItem value="international">International</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-
-      case 7:
         return (
           <div className="space-y-6">
             {/* Products Section */}
@@ -532,7 +520,7 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
           </div>
         );
 
-      case 8:
+      case 4:
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -573,11 +561,11 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
             <div>
               <CardTitle className="text-white">Business Setup</CardTitle>
               <CardDescription className="text-gray-400">
-                Step {currentStep} of 8: {getStepTitle()}
+                Step {currentStep} of 4: {getStepTitle()}
               </CardDescription>
             </div>
             <div className="flex space-x-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+              {[1, 2, 3, 4].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -609,8 +597,8 @@ const BusinessOnboarding = ({ onComplete }: BusinessOnboardingProps) => {
               disabled={isLoading}
               className="bg-orange-500 hover:bg-orange-600"
             >
-              {currentStep === 8 ? (isLoading ? 'Completing...' : 'Complete Setup') : 'Next'}
-              {currentStep < 8 && <ChevronRight className="w-4 h-4 ml-2" />}
+              {currentStep === 4 ? (isLoading ? 'Completing...' : 'Complete Setup') : 'Next'}
+              {currentStep < 4 && <ChevronRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>
         </CardContent>

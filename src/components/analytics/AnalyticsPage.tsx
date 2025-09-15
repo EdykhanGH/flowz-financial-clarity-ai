@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, Package } from 'lucide-react';
+import { Calculator, TrendingUp, Package, Shield, BarChart3 } from 'lucide-react';
 import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
 import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
 import ExpenseAnalysisSection from '@/components/analytics/ExpenseAnalysisSection';
 import ProfitAnalysisSection from '@/components/analytics/ProfitAnalysisSection';
 import ProductAnalysisSection from '@/components/analytics/ProductAnalysisSection';
+import RiskDashboard from '@/components/analytics/RiskDashboard';
+import AdvancedAnalyticsPage from '@/components/analytics/AdvancedAnalyticsPage';
 
 // No longer needed as we're using the actual components
 // const ProfitAnalysisSection = () => (
@@ -57,18 +59,26 @@ const AnalyticsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="cost" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-          <TabsTrigger value="cost" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="cost">
             <Calculator className="w-4 h-4 mr-2" />
             Cost Analysis
           </TabsTrigger>
-          <TabsTrigger value="profit" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+          <TabsTrigger value="profit">
             <TrendingUp className="w-4 h-4 mr-2" />
             Profit Analysis
           </TabsTrigger>
-          <TabsTrigger value="inventory" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+          <TabsTrigger value="inventory">
             <Package className="w-4 h-4 mr-2" />
             Product Analysis
+          </TabsTrigger>
+          <TabsTrigger value="advanced">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Advanced Analytics
+          </TabsTrigger>
+          <TabsTrigger value="risk">
+            <Shield className="w-4 h-4 mr-2" />
+            Risk Assessment
           </TabsTrigger>
         </TabsList>
 
@@ -82,6 +92,14 @@ const AnalyticsPage: React.FC = () => {
 
         <TabsContent value="inventory" className="space-y-6">
           <ProductAnalysisSection />
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-6">
+          <AdvancedAnalyticsPage />
+        </TabsContent>
+
+        <TabsContent value="risk" className="space-y-6">
+          <RiskDashboard />
         </TabsContent>
       </Tabs>
     </div>

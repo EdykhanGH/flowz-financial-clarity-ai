@@ -70,7 +70,7 @@ export const useInvoices = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as Invoice[];
     },
     enabled: !!user,
   });

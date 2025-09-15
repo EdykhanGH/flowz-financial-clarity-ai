@@ -64,7 +64,7 @@ export const useEmployees = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as Employee[];
     },
     enabled: !!user,
   });

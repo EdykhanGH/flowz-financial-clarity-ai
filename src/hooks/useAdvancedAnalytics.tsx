@@ -196,10 +196,10 @@ function identifyCostOptimizations(transactions: any[]): CostOptimization[] {
   }, {} as Record<string, number>);
 
   const optimizations: CostOptimization[] = [];
-  const totalExpenses = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+  const totalExpenses = Object.values(categoryTotals).reduce((sum: number, val: number) => sum + val, 0);
 
   Object.entries(categoryTotals).forEach(([category, cost]) => {
-    const categoryShare = cost / totalExpenses;
+    const categoryShare = Number(cost) / Number(totalExpenses);
     
     // Focus on categories with significant spend
     if (categoryShare > 0.05) { // More than 5% of total expenses
@@ -287,15 +287,16 @@ function analyzeProfitabilitySegments(transactions: any[]): ProfitabilityInsight
   }, {} as Record<string, { revenue: number; costs: number }>);
 
   Object.entries(productData).forEach(([product, data]) => {
-    if (data.revenue > 0 || data.costs > 0) {
-      const profit = data.revenue - data.costs;
-      const margin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
+    const productData = data as { revenue: number; costs: number };
+    if (productData.revenue > 0 || productData.costs > 0) {
+      const profit = productData.revenue - productData.costs;
+      const margin = productData.revenue > 0 ? (profit / productData.revenue) * 100 : 0;
       
       insights.push({
         segment: product,
         type: 'product',
-        revenue: data.revenue,
-        costs: data.costs,
+        revenue: productData.revenue,
+        costs: productData.costs,
         profit,
         margin,
         trend: profit > 0 ? 'growing' : 'declining',

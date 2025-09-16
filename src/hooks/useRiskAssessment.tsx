@@ -103,18 +103,19 @@ export const useRiskAssessment = () => {
 // Credit Risk Calculation
 function calculateCreditRisk(transactions: any[], customers: any[]): RiskMetric {
   const revenues = transactions.filter(t => t.type === 'income');
-  const totalRevenue = revenues.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalRevenue = revenues.reduce((sum, t) => sum + Number(t.amount || 0), 0);
   
   // Customer concentration risk
   const customerRevenue = revenues.reduce((acc, t) => {
     const customerId = t.customer_id || 'unknown';
-    acc[customerId] = (acc[customerId] || 0) + Number(t.amount || 0);
+    const amount = Number(t.amount || 0);
+    acc[customerId] = (acc[customerId] || 0) + amount;
     return acc;
   }, {} as Record<string, number>);
 
-  const sortedCustomers = Object.values(customerRevenue).sort((a, b) => b - a);
-  const top3Revenue = sortedCustomers.slice(0, 3).reduce((sum, val) => sum + val, 0);
-  const concentrationRatio = totalRevenue > 0 ? (top3Revenue / totalRevenue) * 100 : 0;
+  const sortedCustomers = Object.values(customerRevenue).sort((a: number, b: number) => b - a);
+  const top3Revenue = sortedCustomers.slice(0, 3).reduce((sum: number, val: number) => sum + val, 0);
+  const concentrationRatio = totalRevenue > 0 ? (Number(top3Revenue) / Number(totalRevenue)) * 100 : 0;
   
   // Payment delay analysis (simplified)
   const avgPaymentDelay = 15; // This would be calculated from actual payment data
@@ -205,17 +206,18 @@ function calculateLiquidityRisk(last30Days: any[], last90Days: any[]): RiskMetri
 // Operational Risk Calculation
 function calculateOperationalRisk(transactions: any[], suppliers: any[], businessProfile: any): RiskMetric {
   const expenses = transactions.filter(t => t.type === 'expense');
-  const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount || 0), 0);
   
   // Supplier concentration
   const supplierExpenses = expenses.reduce((acc, t) => {
     const supplierId = t.supplier_id || 'unknown';
-    acc[supplierId] = (acc[supplierId] || 0) + Number(t.amount || 0);
+    const amount = Number(t.amount || 0);
+    acc[supplierId] = (acc[supplierId] || 0) + amount;
     return acc;
   }, {} as Record<string, number>);
 
-  const sortedSuppliers = Object.values(supplierExpenses).sort((a, b) => b - a);
-  const topSupplierShare = totalExpenses > 0 ? (sortedSuppliers[0] || 0) / totalExpenses * 100 : 0;
+  const sortedSuppliers = Object.values(supplierExpenses).sort((a: number, b: number) => b - a);
+  const topSupplierShare = totalExpenses > 0 ? (Number(sortedSuppliers[0] || 0)) / Number(totalExpenses) * 100 : 0;
   
   // Key person dependency (based on business profile)
   const isSmallBusiness = businessProfile?.business_size_employees === 'Micro (1-10)' || 

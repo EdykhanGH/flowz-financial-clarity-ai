@@ -176,7 +176,7 @@ export const AIAssistant = () => {
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">AI Financial Assistant</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Adidy - Financial Assistant</h2>
               <div className="flex items-center mt-1 space-x-2">
                 <Badge variant="outline" className="text-green-600 border-green-200">
                   Data Connected
@@ -195,7 +195,7 @@ export const AIAssistant = () => {
             <div className="h-full flex flex-col items-center justify-center">
               <div className="text-center mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Welcome to your AI Financial Assistant
+                  Welcome to Adidy, your AI Financial Assistant
                 </h3>
                 <p className="text-gray-600 mb-6">
                   Ask me anything about your financial data, get insights, or generate reports

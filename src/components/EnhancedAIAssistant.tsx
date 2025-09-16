@@ -289,7 +289,7 @@ What specific aspect of your business would you like to explore?`;
       const welcomeMessage: Message = {
         id: 'welcome',
         type: 'assistant',
-        content: `Welcome to your AI Business Intelligence Assistant! 🤖
+        content: `Welcome to Adidy, your AI Business Intelligence Assistant! 🤖
 
 I've analyzed your business data and I'm ready to help you with:
 • Financial analysis and insights
@@ -308,7 +308,7 @@ What would you like to explore today?`,
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">AI Business Assistant</h2>
+        <h2 className="text-2xl font-bold">Adidy - Business Intelligence</h2>
         <Badge variant="secondary" className="bg-orange-100 text-orange-800">
           Powered by Business Intelligence
         </Badge>

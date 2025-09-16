@@ -36,7 +36,7 @@ const DashboardContent = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'scenario', label: 'Scenario Analysis', icon: TrendingUp },
     { id: 'budget', label: 'Budget Management', icon: Calculator },
-    { id: 'assistant', label: 'AI Assistant', icon: Bot }
+    { id: 'assistant', label: 'Adidy', icon: Bot }
   ];
 
   const handleSignOut = async () => {
@@ -144,7 +144,7 @@ const DashboardContent = () => {
                activeTab === 'data' ? 'Data Upload' :
                activeTab === 'analytics' ? 'Analytics' :
                activeTab === 'budget' ? 'Budget Management' :
-               activeTab === 'assistant' ? 'AI Assistant' : activeTab}
+               activeTab === 'assistant' ? 'Adidy' : activeTab}
             </h2>
           </div>
           

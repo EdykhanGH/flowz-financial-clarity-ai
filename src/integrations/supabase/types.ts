@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_types: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          normal_balance: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          normal_balance: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          normal_balance?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           action_items: Json | null
@@ -409,6 +433,66 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_of_accounts: {
+        Row: {
+          account_code: string
+          account_name: string
+          account_type_id: string
+          created_at: string
+          current_balance: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          opening_balance: number | null
+          parent_account_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          account_type_id: string
+          created_at?: string
+          current_balance?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          opening_balance?: number | null
+          parent_account_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          account_type_id?: string
+          created_at?: string
+          current_balance?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          opening_balance?: number | null
+          parent_account_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_account_type_id_fkey"
+            columns: ["account_type_id"]
+            isOneToOne: false
+            referencedRelation: "account_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_center_performance: {
         Row: {
           avg_cost_per_transaction: number | null
@@ -801,6 +885,96 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          created_at: string
+          description: string
+          entry_date: string
+          entry_number: string
+          id: string
+          reference: string | null
+          status: string
+          total_credit: number
+          total_debit: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          entry_date: string
+          entry_number: string
+          id?: string
+          reference?: string | null
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          entry_date?: string
+          entry_number?: string
+          id?: string
+          reference?: string | null
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          created_at: string
+          credit_amount: number | null
+          debit_amount: number | null
+          description: string | null
+          id: string
+          journal_entry_id: string
+          line_number: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id: string
+          line_number: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id?: string
+          line_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {

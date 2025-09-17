@@ -4,25 +4,13 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
-  Home,
-  Database,
-  BarChart3, 
-  TrendingUp, 
-  Calculator, 
-  Bot,
-  Bell,
-  Settings,
-  User,
-  Menu,
-  X,
-  LogOut,
-  Target
-} from 'lucide-react';
+  BookOpen, Home, Database, BarChart3, TrendingUp, Calculator, Bot, Menu, Bell, Settings, User, LogOut } from 'lucide-react';
 import DataUpload from '@/components/DataUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import AnalyticsPage from '@/components/analytics/AnalyticsPage';
 import ScenarioAnalysisPage from '@/components/analytics/ScenarioAnalysisPage';
 import BudgetManagementPage from '@/components/budget/BudgetManagementPage';
+import BookkeepingPage from '@/components/BookkeepingPage';
 import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
 
 const DashboardContent = () => {
@@ -36,6 +24,7 @@ const DashboardContent = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'scenario', label: 'Scenario Analysis', icon: TrendingUp },
     { id: 'budget', label: 'Budget Management', icon: Calculator },
+    { id: 'bookkeeping', label: 'Bookkeeping', icon: BookOpen },
     { id: 'assistant', label: 'Adidy', icon: Bot }
   ];
 
@@ -59,6 +48,8 @@ const DashboardContent = () => {
         return <ScenarioAnalysisPage />;
       case 'budget':
         return <BudgetManagementPage />;
+      case 'bookkeeping':
+        return <BookkeepingPage />;
       case 'assistant':
         return <EnhancedAIAssistant />;
       default:
@@ -144,6 +135,7 @@ const DashboardContent = () => {
                activeTab === 'data' ? 'Data Upload' :
                activeTab === 'analytics' ? 'Analytics' :
                activeTab === 'budget' ? 'Budget Management' :
+               activeTab === 'bookkeeping' ? 'Bookkeeping' :
                activeTab === 'assistant' ? 'Adidy' : activeTab}
             </h2>
           </div>

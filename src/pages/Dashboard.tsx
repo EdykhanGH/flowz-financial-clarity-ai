@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
-  BookOpen, Home, Database, BarChart3, TrendingUp, Calculator, Bot, Menu, Bell, Settings, User, LogOut } from 'lucide-react';
+  BookOpen, Home, Database, BarChart3, TrendingUp, Calculator, Bot, Menu, Bell, Settings, User, LogOut, X } from 'lucide-react';
 import DataUpload from '@/components/DataUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import AnalyticsPage from '@/components/analytics/AnalyticsPage';

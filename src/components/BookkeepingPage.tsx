@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import ChartOfAccountsManager from './bookkeeping/ChartOfAccountsManager';
 import JournalEntryManager from './bookkeeping/JournalEntryManager';
+import GeneralLedger from './bookkeeping/GeneralLedger';
+import TrialBalance from './bookkeeping/TrialBalance';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { useJournalEntries } from '@/hooks/useJournalEntries';
 
@@ -196,31 +198,11 @@ const BookkeepingPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="general-ledger">
-          <Card>
-            <CardHeader>
-              <CardTitle>General Ledger</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">General Ledger functionality coming soon...</p>
-              <p className="text-sm text-gray-500 mt-2">
-                This will show detailed account activity and running balances for each account.
-              </p>
-            </CardContent>
-          </Card>
+          <GeneralLedger />
         </TabsContent>
 
         <TabsContent value="trial-balance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trial Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Trial Balance report coming soon...</p>
-              <p className="text-sm text-gray-500 mt-2">
-                This will show a comprehensive list of all accounts with their debit and credit balances.
-              </p>
-            </CardContent>
-          </Card>
+          <TrialBalance />
         </TabsContent>
       </Tabs>
     </div>

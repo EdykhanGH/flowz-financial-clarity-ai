@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, Package, Shield, BarChart3 } from 'lucide-react';
 import CostAnalysisSection from '@/components/dashboard/CostAnalysisSection';
 import VarianceAnalysisSection from '@/components/dashboard/VarianceAnalysisSection';
-import ExpenseAnalysisSection from '@/components/analytics/ExpenseAnalysisSection';
+import EnhancedExpenseAnalysis from '@/components/analytics/EnhancedExpenseAnalysis';
 import ProfitAnalysisSection from '@/components/analytics/ProfitAnalysisSection';
 import ProductAnalysisSection from '@/components/analytics/ProductAnalysisSection';
 import RiskDashboard from '@/components/analytics/RiskDashboard';
@@ -83,7 +83,7 @@ const AnalyticsPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="cost" className="space-y-6">
-          <ExpenseAnalysisSection />
+          <EnhancedExpenseAnalysis />
         </TabsContent>
 
         <TabsContent value="profit" className="space-y-6">

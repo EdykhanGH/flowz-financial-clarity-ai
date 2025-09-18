@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
-  BookOpen, Home, Database, BarChart3, TrendingUp, Calculator, Bot, Menu, Bell, Settings, User, LogOut, X } from 'lucide-react';
+  BookOpen, Home, Database, BarChart3, TrendingUp, Calculator, Bot, Menu, Bell, Settings, User, LogOut, X, Users } from 'lucide-react';
 import DataUpload from '@/components/DataUpload';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import AnalyticsPage from '@/components/analytics/AnalyticsPage';
@@ -12,6 +12,7 @@ import ScenarioAnalysisPage from '@/components/analytics/ScenarioAnalysisPage';
 import BudgetManagementPage from '@/components/budget/BudgetManagementPage';
 import BookkeepingPage from '@/components/BookkeepingPage';
 import EnhancedAIAssistant from '@/components/EnhancedAIAssistant';
+import PayrollProcessing from '@/components/payroll/PayrollProcessing';
 
 const DashboardContent = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -25,6 +26,7 @@ const DashboardContent = () => {
     { id: 'scenario', label: 'Scenario Analysis', icon: TrendingUp },
     { id: 'budget', label: 'Budget Management', icon: Calculator },
     { id: 'bookkeeping', label: 'Bookkeeping', icon: BookOpen },
+    { id: 'payroll', label: 'Payroll', icon: Users },
     { id: 'assistant', label: 'Adidy', icon: Bot }
   ];
 
@@ -50,6 +52,8 @@ const DashboardContent = () => {
         return <BudgetManagementPage />;
       case 'bookkeeping':
         return <BookkeepingPage />;
+      case 'payroll':
+        return <PayrollProcessing />;
       case 'assistant':
         return <EnhancedAIAssistant />;
       default:
@@ -136,6 +140,7 @@ const DashboardContent = () => {
                activeTab === 'analytics' ? 'Analytics' :
                activeTab === 'budget' ? 'Budget Management' :
                activeTab === 'bookkeeping' ? 'Bookkeeping' :
+               activeTab === 'payroll' ? 'Payroll Management' :
                activeTab === 'assistant' ? 'Adidy' : activeTab}
             </h2>
           </div>

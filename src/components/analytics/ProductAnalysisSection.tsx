@@ -235,12 +235,12 @@ const ProductAnalysisSection: React.FC = () => {
               />
               
               <h4 className="font-medium mb-2">Product</h4>
-              <Select value={productFilter} onValueChange={setProductFilter}>
+              <Select value={productFilter} onValueChange={(value) => setProductFilter(value === 'all' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Products</SelectItem>
+                  <SelectItem value="all">All Products</SelectItem>
                   {products.map(product => (
                     <SelectItem key={product.id} value={product.name}>
                       {product.name}

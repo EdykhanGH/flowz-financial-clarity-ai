@@ -181,12 +181,12 @@ const ExpenseAnalysisSection: React.FC = () => {
               />
               
               <h4 className="font-medium mb-2">Cost Center</h4>
-              <Select value={costCenterFilter} onValueChange={setCostCenterFilter}>
+              <Select value={costCenterFilter} onValueChange={(value) => setCostCenterFilter(value === 'all' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select cost center" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Cost Centers</SelectItem>
+                  <SelectItem value="all">All Cost Centers</SelectItem>
                   {/* Cost center options would be dynamically loaded here */}
                 </SelectContent>
               </Select>

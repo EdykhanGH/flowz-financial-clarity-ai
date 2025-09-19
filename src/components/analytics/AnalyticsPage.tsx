@@ -60,9 +60,10 @@ const AnalyticsPage: React.FC = () => {
 
       <Tabs defaultValue="cost" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="cost">
+          <TabsTrigger value="cost" className="relative">
             <Calculator className="w-4 h-4 mr-2" />
             Cost Analysis
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1 rounded-full">ABC</span>
           </TabsTrigger>
           <TabsTrigger value="profit">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -83,6 +84,14 @@ const AnalyticsPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="cost" className="space-y-6">
+          <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border-l-4 border-l-orange-500">
+            <h3 className="font-semibold text-gray-900 mb-2">🚀 Advanced Cost Analytics Available</h3>
+            <p className="text-sm text-gray-700">
+              This section includes <strong>ABC Analysis</strong>, <strong>Marginal Cost Analysis</strong>, 
+              <strong>Nigerian Market Factors</strong>, and <strong>Activity-Based Costing</strong>. 
+              Use the tabs below to explore each advanced analysis.
+            </p>
+          </div>
           <EnhancedExpenseAnalysis />
         </TabsContent>
 

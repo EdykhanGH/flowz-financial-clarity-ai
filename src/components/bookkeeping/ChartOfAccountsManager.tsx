@@ -58,7 +58,7 @@ const ChartOfAccountsManager: React.FC = () => {
       account_code: '',
       account_name: '',
       account_type_id: '',
-      parent_account_id: '',
+      parent_account_id: 'none',
       description: '',
       opening_balance: 0,
     });
@@ -76,7 +76,7 @@ const ChartOfAccountsManager: React.FC = () => {
       account_code: account.account_code,
       account_name: account.account_name,
       account_type_id: account.account_type_id,
-      parent_account_id: account.parent_account_id || '',
+      parent_account_id: account.parent_account_id || 'none',
       description: account.description || '',
       opening_balance: account.opening_balance,
     });
@@ -91,12 +91,12 @@ const ChartOfAccountsManager: React.FC = () => {
         await updateAccount.mutateAsync({
           id: editingAccount.id,
           ...formData,
-          parent_account_id: formData.parent_account_id || null,
+          parent_account_id: formData.parent_account_id === 'none' ? null : formData.parent_account_id,
         });
       } else {
         await createAccount.mutateAsync({
           ...formData,
-          parent_account_id: formData.parent_account_id || null,
+          parent_account_id: formData.parent_account_id === 'none' ? null : formData.parent_account_id,
           is_active: true,
           current_balance: formData.opening_balance,
         });
@@ -219,12 +219,12 @@ const ChartOfAccountsManager: React.FC = () => {
 
               <div>
                 <Label htmlFor="parent_account_id">Parent Account (Optional)</Label>
-                <Select value={formData.parent_account_id} onValueChange={(value) => setFormData({ ...formData, parent_account_id: value })}>
+                <Select value={formData.parent_account_id} onValueChange={(value) => setFormData({ ...formData, parent_account_id: value === 'none' ? '' : value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select parent account" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {accounts
                       .filter(acc => acc.id !== editingAccount?.id)
                       .map((account) => (

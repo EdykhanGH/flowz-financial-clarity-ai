@@ -1,11 +1,12 @@
 import { useEffect, type ReactNode } from "react";
 import { X } from "lucide-react";
 import clsx from "clsx";
+import iconUrl from "@/assets/icon.svg";
 
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={clsx("inline-flex items-center gap-2 font-extrabold tracking-tight", className)}>
-      <img src="/icon.svg" alt="" className="h-8 w-8" />
+      <img src={iconUrl} alt="" className="h-8 w-8" />
       <span className="text-xl">flowz</span>
     </span>
   );

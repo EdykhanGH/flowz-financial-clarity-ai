@@ -130,6 +130,9 @@ export default function MonthPage() {
                       <b>💡 Tip:</b> {summary.tip}
                     </p>
                   )}
+                  {import.meta.env.MODE === "demo" && (
+                    <p className="mt-3 text-xs font-bold text-muted">Demo: this summary is written on your device from your numbers. The live app has AI write it.</p>
+                  )}
                   {stale && !writing && (
                     <p className="mt-3 text-xs font-bold text-muted">You've written more since this summary. Tap Refresh to update it.</p>
                   )}

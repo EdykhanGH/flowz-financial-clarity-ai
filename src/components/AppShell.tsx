@@ -2,6 +2,9 @@ import { NavLink, Outlet, Link } from "react-router-dom";
 import { BookOpen, PenLine, PieChart, Target, Users, Settings } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "./ui";
+import { useAuth } from "@/hooks/useAuth";
+
+const DEMO = import.meta.env.MODE === "demo";
 
 const tabs = [
   { to: "/today", label: "Today", icon: PenLine },
@@ -12,6 +15,7 @@ const tabs = [
 ];
 
 export default function AppShell() {
+  const { signOut } = useAuth();
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
       <header className="sticky top-0 z-30 flex items-center justify-between bg-paper/90 px-4 py-3 backdrop-blur">
@@ -22,6 +26,13 @@ export default function AppShell() {
           <Settings className="h-6 w-6" />
         </NavLink>
       </header>
+
+      {DEMO && (
+        <div className="mx-4 mb-2 flex items-center justify-between gap-3 rounded-2xl bg-sun-soft px-4 py-2 text-xs font-bold text-amber-800">
+          <span>Demo: the earlier days are sample data, saved only in this browser.</span>
+          <button onClick={signOut} className="shrink-0 underline">Start over</button>
+        </div>
+      )}
 
       <main className="flex-1 px-4 pb-28">
         <Outlet />

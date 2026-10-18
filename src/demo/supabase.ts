@@ -6,6 +6,10 @@ import { load, reset, save } from "./store";
 type Listener = (event: string, session: unknown) => void;
 const listeners = new Set<Listener>();
 
+// Every visit starts on the landing page. Notebook data stays in the browser, so signing in
+// again with the same email picks up where the visitor left off.
+let signedInThisVisit = false;
+
 function sessionFor(user: { id: string; email: string } | null) {
   if (!user) return null;
   return {
@@ -19,7 +23,7 @@ function sessionFor(user: { id: string; email: string } | null) {
 }
 
 function emit(event: string) {
-  const s = sessionFor(load().user);
+  const s = signedInThisVisit ? sessionFor(load().user) : null;
   listeners.forEach((l) => l(event, s));
 }
 
@@ -29,6 +33,7 @@ function signIn(email: string) {
     reset();
     save({ ...load(), user: { id: crypto.randomUUID(), email } });
   }
+  signedInThisVisit = true;
   emit("SIGNED_IN");
   return { data: { session: sessionFor(load().user), user: load().user }, error: null };
 }
@@ -36,7 +41,7 @@ function signIn(email: string) {
 export const supabase = {
   auth: {
     async getSession() {
-      return { data: { session: sessionFor(load().user) }, error: null };
+      return { data: { session: signedInThisVisit ? sessionFor(load().user) : null }, error: null };
     },
     onAuthStateChange(cb: Listener) {
       listeners.add(cb);
@@ -49,6 +54,7 @@ export const supabase = {
       return signIn(email);
     },
     async signOut() {
+      signedInThisVisit = false;
       reset();
       emit("SIGNED_OUT");
       return { error: null };

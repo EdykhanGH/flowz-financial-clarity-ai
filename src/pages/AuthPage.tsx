@@ -74,6 +74,11 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
         <p className="mt-2 text-muted">
           {isSignup ? "It takes less than a minute." : "Sign in to open your money notebook."}
         </p>
+        {import.meta.env.MODE === "demo" && (
+          <p className="mt-4 rounded-2xl bg-sun-soft px-4 py-3 text-sm font-semibold text-amber-800">
+            This is a demo. Use any email and password; nothing is sent. Your notebook is saved only in this browser.
+          </p>
+        )}
 
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div>

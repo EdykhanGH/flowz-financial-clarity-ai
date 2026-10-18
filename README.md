@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# Flowz — your money notebook
 
-## Project info
+Flowz digitises the paper notebook people use to jot down the day's money.
+You write lines in plain words — *"Sold 3 bags of rice 45,000"*, *"Gave mum 10k"*,
+*"Chioma owes me 5,000"* — and Flowz works out what each line is, adds everything up,
+and writes a plain-English summary of your month.
 
-**URL**: https://lovable.dev/projects/6ec4b7df-793a-443f-9116-be569a823622
+Built to be simple enough for anyone, business owner or not.
 
-## How can I edit this code?
+## What's inside
 
-There are several ways of editing your application.
+| Screen | What it does |
+| --- | --- |
+| **Today** | An open notebook page for the day. Each line is read as you type and gets a coloured tag (sale, purchase, expense, gift, owes me, I owe). Money in / out / left is totalled live, in ₦ and $ separately. Tap a tag to correct it. |
+| **Notebook** | Every past page, by month, with search. |
+| **Summary** | Monthly totals, comparison with last month, where money went, budgets, and an AI-written summary with a tip. |
+| **Budgets** | Monthly spending limits per category with progress bars. |
+| **Owed** | Everyone who owes you and everyone you owe, collected automatically from your pages. Tick them off when paid. |
 
-**Use Lovable**
+How a line is understood lives in `src/lib/parse.ts` (runs on the phone — instant, free, no internet needed).
+Examples it handles: `45,000`, `₦45k`, `N4500`, `1.5m`, `$250`, `15 dollars`, `3 shirts at 5000 each`, `4 x 2500`.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6ec4b7df-793a-443f-9116-be569a823622) and start prompting.
+## Tech
 
-Changes made via Lovable will be committed automatically to this repo.
+- React + TypeScript + Vite + Tailwind CSS (mobile-first, installable as a web app)
+- Supabase: email sign-up, Postgres with row-level security
+- Supabase Edge Function `monthly-summary` calls Claude (`claude-opus-5-5`) to write the summary
 
-**Use your preferred IDE**
+## Setting up
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Database
+Run `supabase/migrations/20261018090000_flowz_v1.sql` against your Supabase project —
+either paste it into **Supabase dashboard → SQL Editor** and run it, or `supabase db push`.
+It only creates new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`); it does not touch old ones.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Auth
+In **Authentication → URL Configuration**, set the Site URL to where the app is hosted and add
+`<your-site>/setup` and `<your-site>/settings` to the redirect URLs (used by the confirmation and password-reset emails).
 
-Follow these steps:
-
+### 3. Smart summary (AI)
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase functions deploy monthly-summary
+```
+Each user can refresh a month's summary up to 15 times; limits are in the function.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 4. Run the app
+```sh
+cp .env.example .env   # fill in your Supabase URL and anon (public) key
+npm install
+npm run dev            # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6ec4b7df-793a-443f-9116-be569a823622) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Other commands: `npm test` (line-reading tests), `npm run build`, `npm run typecheck`.

@@ -1,46 +1,10 @@
-
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "0.0.0.0",
-    port: 8080,
-    strictPort: true,
-    hmr: {
-      clientPort: 8080
-    }
-  },
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  optimizeDeps: {
-    include: ['pdfjs-dist'],
-    exclude: ['pdfjs-dist/build/pdf.worker.min.mjs']
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'pdfjs': ['pdfjs-dist']
-        }
-      }
-    }
-  },
-  worker: {
-    format: 'es',
-    plugins: () => [react()]
-  },
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(mode)
-  }
-}));
+export default defineConfig({
+  plugins: [react()],
+  resolve: { alias: { "@": path.resolve(fileURLToPath(new URL(".", import.meta.url)), "src") } },
+  server: { host: true, port: 8080 },
+});

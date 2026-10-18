@@ -1,134 +1,60 @@
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import type { ReactNode } from "react";
+import { useAuth } from "./hooks/useAuth";
+import { FullScreenLoader } from "./components/ui";
+import AppShell from "./components/AppShell";
+import Welcome from "./pages/Welcome";
+import AuthPage from "./pages/AuthPage";
+import Setup from "./pages/Setup";
+import DayPage from "./pages/DayPage";
+import Notebook from "./pages/Notebook";
+import MonthPage from "./pages/MonthPage";
+import Budgets from "./pages/Budgets";
+import Owed from "./pages/Owed";
+import SettingsPage from "./pages/SettingsPage";
 
-import React, { useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import Index from "./pages/Index";
-import About from "./pages/About";
-import Features from "./pages/Features";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import Onboarding from "./pages/Onboarding";
-import CheckEmail from "./pages/CheckEmail";
-import ProtectedRoute from "./components/ProtectedRoute";
-import OnboardingCheck from "./components/OnboardingCheck";
-import ErrorBoundary from "./components/ErrorBoundary";
-
-console.log('App.tsx: React version check', React.version);
-console.log('App.tsx: React hooks check', { useState: React.useState, useEffect: React.useEffect });
-
-const queryClient = new QueryClient();
-
-// Component to handle auth redirects
-const AuthHandler = () => {
-  const navigate = useNavigate();
+function RequireSetup({ children }: { children: ReactNode }) {
+  const { session, settings, loading } = useAuth();
   const location = useLocation();
+  if (loading) return <FullScreenLoader />;
+  if (!session) return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
+  if (!settings) return <Navigate to="/setup" replace />;
+  return <>{children}</>;
+}
 
-  useEffect(() => {
-    // Handle auth callback from email verification
-    const handleAuthCallback = async () => {
-      try {
-        console.log('Processing auth callback from URL hash');
-        
-        // Check if this is a signup confirmation
-        const isSignupConfirmation = location.hash.includes('type=signup');
-        
-        // Get the current session after the auth callback
-        const { data: sessionData, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth callback error:', error);
-          // Clear the hash and redirect to login on error
-          window.history.replaceState(null, '', window.location.pathname);
-          navigate('/login', { replace: true });
-          return;
-        }
+function PublicOnly({ children }: { children: ReactNode }) {
+  const { session, settings, loading } = useAuth();
+  if (loading) return <FullScreenLoader />;
+  if (session) return <Navigate to={settings ? "/today" : "/setup"} replace />;
+  return <>{children}</>;
+}
 
-        if (sessionData.session?.user) {
-          console.log('User authenticated via callback');
-          // Clear the URL hash
-          window.history.replaceState(null, '', window.location.pathname);
-          
-          if (isSignupConfirmation) {
-            // For new signups, redirect to onboarding
-            console.log('Redirecting new user to onboarding');
-            navigate('/onboarding', { replace: true });
-          } else {
-            // For existing users, redirect to dashboard
-            console.log('Redirecting existing user to dashboard');
-            navigate('/dashboard', { replace: true });
-          }
-        } else {
-          // No session, clear hash and redirect to login
-          window.history.replaceState(null, '', window.location.pathname);
-          navigate('/login', { replace: true });
-        }
-      } catch (err) {
-        console.error('Auth callback handling error:', err);
-        // Clear the hash and redirect to login on error
-        window.history.replaceState(null, '', window.location.pathname);
-        navigate('/login', { replace: true });
-      }
-    };
+function SetupRoute() {
+  const { session, settings, loading } = useAuth();
+  if (loading) return <FullScreenLoader />;
+  if (!session) return <Navigate to="/signin" replace />;
+  if (settings) return <Navigate to="/today" replace />;
+  return <Setup />;
+}
 
-    // Check if we have auth hash parameters
-    if (location.hash.includes('access_token') || location.hash.includes('refresh_token') || location.hash.includes('type=signup')) {
-      console.log('Detected auth tokens in URL, processing...');
-      handleAuthCallback();
-    }
-  }, [navigate, location]);
-
-  return null;
-};
-
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthHandler />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/features" element={<Features />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/check-email" element={<CheckEmail />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <OnboardingCheck>
-                      <Dashboard />
-                    </OnboardingCheck>
-                  </ProtectedRoute>
-                } 
-              />
-              <Route
-                path="/onboarding"
-                element={
-                  <ProtectedRoute>
-                    <Onboarding />
-                  </ProtectedRoute>
-                }
-              />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
-
-export default App;
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<PublicOnly><Welcome /></PublicOnly>} />
+      <Route path="/signin" element={<PublicOnly><AuthPage mode="signin" /></PublicOnly>} />
+      <Route path="/signup" element={<PublicOnly><AuthPage mode="signup" /></PublicOnly>} />
+      <Route path="/setup" element={<SetupRoute />} />
+      <Route element={<RequireSetup><AppShell /></RequireSetup>}>
+        <Route path="/today" element={<DayPage />} />
+        <Route path="/day/:date" element={<DayPage />} />
+        <Route path="/notebook" element={<Notebook />} />
+        <Route path="/month" element={<MonthPage />} />
+        <Route path="/month/:month" element={<MonthPage />} />
+        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/owed" element={<Owed />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

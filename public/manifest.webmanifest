@@ -1,0 +1,9 @@
+{
+  "name": "Flowz — money notebook",
+  "short_name": "Flowz",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFBF2",
+  "theme_color": "#2F9E77",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

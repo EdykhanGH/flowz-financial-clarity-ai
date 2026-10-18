@@ -1,1 +1,5 @@
-project_id = "ymejlmipzttjxuknfedv"
+project_id = "etqdmsqijcksooodiich"
+
+# Called by the pg_cron job with its own secret header instead of a user login.
+[functions.send-reminders]
+verify_jwt = false

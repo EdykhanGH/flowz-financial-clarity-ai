@@ -1,77 +1,26 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 255 100% 100%; /* #FFFFFF */
-    --foreground: 0 0% 10.2%; /* #1A1A1A */
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-paper text-ink font-sans antialiased; }
+  input, textarea, button, select { font: inherit; }
+}
 
-    --card: 0 0% 17.6%; /* #2D2D2D */
-    --card-foreground: 0 0% 98%; /* #FAFAFA */
-
-    --popover: 0 0% 17.6%; /* #2D2D2D */
-    --popover-foreground: 0 0% 98%; /* #FAFAFA */
-
-    --primary: 16 100% 60.2%; /* #FF6B35 */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF */
-
-    --secondary: 25 100% 63.1%; /* #FF8C42 */
-    --secondary-foreground: 0 0% 10.2%; /* #1A1A1A */
-
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 16 100% 60.2%;
-
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 0 0% 10.2%; /* #1A1A1A */
-    --foreground: 0 0% 98%; /* #FAFAFA */
-
-    --card: 0 0% 17.6%; /* #2D2D2D */
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 10.2%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 16 100% 60.2%; /* #FF6B35 */
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 25 100% 63.1%; /* #FF8C42 */
-    --secondary-foreground: 0 0% 10.2%;
-
-    --muted: 0 0% 17.6%;
-    --muted-foreground: 0 0% 63.9%;
-
-    --accent: 0 0% 17.6%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 17.6%;
-    --input: 0 0% 17.6%;
-    --ring: 16 100% 60.2%;
+@layer components {
+  .card { @apply bg-white rounded-3xl shadow-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
+  .btn-ghost { @apply btn bg-transparent text-ink hover:bg-line/40; }
+  .btn-soft { @apply btn bg-brand-soft text-brand-dark hover:bg-brand-soft/70; }
+  .field { @apply w-full rounded-2xl border-2 border-line bg-white px-4 py-3 outline-none transition focus:border-brand; }
+  .label { @apply mb-1.5 block text-sm font-bold text-muted; }
+  /* The ruled notebook page */
+  .ruled {
+    background-image: linear-gradient(to bottom, transparent 47px, #E9DFC9 47px, #E9DFC9 48px);
+    background-size: 100% 48px;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
-}
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }

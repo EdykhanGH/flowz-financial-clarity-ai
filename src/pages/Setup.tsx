@@ -5,6 +5,7 @@ import { saveSettings } from "@/lib/api";
 import type { Mode } from "@/lib/kinds";
 import type { Currency } from "@/lib/parse";
 import { ErrorNote, Logo, Spinner } from "@/components/ui";
+import { deviceTimeZone } from "@/lib/reminders";
 
 export default function Setup() {
   const { session, setSettings } = useAuth();
@@ -26,6 +27,7 @@ export default function Setup() {
         mode,
         business_name: mode === "business" ? businessName.trim() || null : null,
         default_currency: currency,
+        time_zone: deviceTimeZone(),
       });
       setSettings(saved);
     } catch (err) {

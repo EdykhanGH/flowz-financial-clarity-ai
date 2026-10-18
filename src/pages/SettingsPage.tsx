@@ -7,6 +7,8 @@ import type { Mode } from "@/lib/kinds";
 import type { Currency } from "@/lib/parse";
 import { supabase } from "@/lib/supabase";
 import { ErrorNote, Spinner } from "@/components/ui";
+import { ReminderSettings } from "@/components/Reminders";
+import { deviceTimeZone } from "@/lib/reminders";
 
 export default function SettingsPage() {
   const { userId, settings } = useUser();
@@ -31,6 +33,7 @@ export default function SettingsPage() {
           mode,
           business_name: mode === "business" ? businessName.trim() || null : null,
           default_currency: currency,
+          time_zone: deviceTimeZone(),
         }),
       );
       setMessage("Saved.");
@@ -85,6 +88,8 @@ export default function SettingsPage() {
         {message && <p className="text-sm font-bold text-brand">{message}</p>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? <Spinner /> : "Save changes"}</button>
       </form>
+
+      <ReminderSettings />
 
       <PasswordCard />
 

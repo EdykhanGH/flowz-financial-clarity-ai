@@ -2,6 +2,7 @@ import { NavLink, Outlet, Link } from "react-router-dom";
 import { BookOpen, PenLine, PieChart, Target, Users, Settings } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "./ui";
+import { ReminderBanner } from "./Reminders";
 import { useAuth } from "@/hooks/useAuth";
 
 const DEMO = import.meta.env.MODE === "demo";
@@ -33,6 +34,8 @@ export default function AppShell() {
           <button onClick={signOut} className="shrink-0 underline">Start over</button>
         </div>
       )}
+
+      <ReminderBanner />
 
       <main className="flex-1 px-4 pb-28">
         <Outlet />

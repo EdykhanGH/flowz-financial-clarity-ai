@@ -10,6 +10,7 @@ import { formatMoney, totalsByCurrency, type Entry } from "@/lib/money";
 import { parseLine, type Currency } from "@/lib/parse";
 import KindSheet, { type LinePatch } from "@/components/KindSheet";
 import TotalsCard from "@/components/TotalsCard";
+import { ReminderNudge } from "@/components/Reminders";
 import { ErrorNote, Spinner } from "@/components/ui";
 
 export default function DayPage() {
@@ -22,7 +23,7 @@ export default function DayPage() {
 type Line = Entry & { confident?: boolean };
 type SaveState = "idle" | "pending" | "saving" | "saved" | "offline";
 
-const EXAMPLES = ["Sold 3 bags of rice 45,000", "Bought fuel 8,500", "Gave mum 10k", "Transport 1,200", "Chioma owes me 5,000"];
+const EXAMPLES = ["Sold 3 bags of rice 45,000", "Bought fuel 8,500", "Gave mum 10k", "Transport 1,200", "Chioma owes me 5,000", "Money enter 15k", "Emeka dey owe me 4k"];
 
 function blankLine(date: string): Line {
   return {
@@ -382,7 +383,7 @@ function DayEditor({ date }: { date: string }) {
       </button>
       {showHelp && (
         <div className="card space-y-3 p-4 text-sm">
-          <p>Write one thing per line, the way you would on paper. Put the amount anywhere in the line.</p>
+          <p>Write one thing per line, the way you would on paper, in everyday English or Pidgin. Put the amount anywhere in the line.</p>
           <ul className="space-y-1.5">
             {EXAMPLES.map((ex) => {
               const p = parseLine(ex, cur);
@@ -398,10 +399,12 @@ function DayEditor({ date }: { date: string }) {
           </ul>
           <p className="flex gap-2 text-muted">
             <Lightbulb className="h-4 w-4 shrink-0 text-sun" />
-            “10k” means 10,000 and “1.5m” means 1,500,000. Add $ for dollars. Tap a coloured tag to change it.
+            “10k”, “ten thousand” and “#10,000” all mean ₦10,000. Add $ or “dollars” for dollars. Tap a coloured tag to change it.
           </p>
         </div>
       )}
+
+      {isToday && filled > 0 && <ReminderNudge />}
 
       {!isToday && (
         <Link to="/today" className="btn-soft w-full">Go to today's page</Link>

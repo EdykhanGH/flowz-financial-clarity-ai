@@ -24,6 +24,9 @@ export async function saveSettings(userId: string, values: Partial<Omit<Settings
     business_name: null,
     mode: "personal",
     default_currency: "NGN",
+    reminder_enabled: true,
+    reminder_time: "20:00:00",
+    time_zone: "Africa/Lagos",
     ...data.settings,
     ...values,
     user_id: userId,
@@ -35,6 +38,15 @@ export async function saveSettings(userId: string, values: Partial<Omit<Settings
     budgets: firstTime ? seedBudgets(settings.default_currency) : data.budgets,
   });
   return settings;
+}
+
+export async function savePushSubscription(_userId: string, _sub: unknown) {}
+
+export async function deletePushSubscription(_endpoint: string) {}
+
+export async function hasEntriesOn(date: string): Promise<boolean> {
+  await wait(50);
+  return load().entries.some((e) => e.entry_date === date && e.text.trim());
 }
 
 export async function listEntries(start: string, end: string): Promise<Entry[]> {

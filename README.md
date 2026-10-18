@@ -17,8 +17,15 @@ Built to be simple enough for anyone, business owner or not.
 | **Budgets** | Monthly spending limits per category with progress bars. |
 | **Owed** | Everyone who owes you and everyone you owe, collected automatically from your pages. Tick them off when paid. |
 
-How a line is understood lives in `src/lib/parse.ts` (runs on the phone — instant, free, no internet needed).
-Examples it handles: `45,000`, `₦45k`, `N4500`, `1.5m`, `$250`, `15 dollars`, `3 shirts at 5000 each`, `4 x 2500`.
+How a line is understood lives in `src/lib/parse.ts` and `src/lib/language.ts` (runs on the phone — instant, free, no internet needed).
+It understands British and American English, Nigerian Pidgin, short forms and common typos:
+`got 10k`, `money enter 15k`, `credit alert 40k`, `takings 46,500`, `Emeka dey owe me 4k`, `Tunde borrow me 5k`,
+`dash my pikin 2k`, `recieved 5000`, `trasport 1500`, `gas $40`, `groceries 60 bucks`.
+Amounts: `45,000`, `₦45k`, `N4500`, `#4,500`, `1.5m`, `$250`, `15 dollars`, `two thousand five hundred naira`,
+`3 shirts at 5000 each`, `4 x 2500`.
+
+**Daily reminder**: at a time the user picks (default 8pm), on days they haven't written anything,
+Flowz sends a phone notification and shows a banner inside the app.
 
 ## Tech
 
@@ -29,9 +36,9 @@ Examples it handles: `45,000`, `₦45k`, `N4500`, `1.5m`, `$250`, `15 dollars`, 
 ## Setting up
 
 ### 1. Database
-Run `supabase/migrations/20261018090000_flowz_v1.sql` against your Supabase project —
-either paste it into **Supabase dashboard → SQL Editor** and run it, or `supabase db push`.
-It only creates new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`); it does not touch old ones.
+Run the files in `supabase/migrations/` (in order) against your Supabase project —
+either paste each one into **Supabase dashboard → SQL Editor** and run it, or `supabase db push`.
+They only create new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`, `push_subscriptions`); they don't touch old ones.
 
 ### 2. Auth
 In **Authentication → URL Configuration**, set the Site URL to where the app is hosted and add
@@ -44,7 +51,17 @@ supabase functions deploy monthly-summary
 ```
 Each user can refresh a month's summary up to 15 times; limits are in the function.
 
-### 4. Run the app
+### 4. Daily reminder notifications
+```sh
+npx web-push generate-vapid-keys            # once
+supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com CRON_SECRET=<long random string>
+supabase functions deploy send-reminders
+```
+Put the same public key in `.env` as `VITE_VAPID_PUBLIC_KEY`. Turn on the `pg_cron` and `pg_net` extensions,
+then run `supabase/cron/reminders.sql` (with your project ref and CRON_SECRET filled in) in the SQL Editor.
+On iPhone, notifications work after the user adds Flowz to their home screen.
+
+### 5. Run the app
 ```sh
 cp .env.example .env   # fill in your Supabase URL and anon (public) key
 npm install

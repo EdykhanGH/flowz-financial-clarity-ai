@@ -9,6 +9,9 @@ export interface Settings {
   business_name: string | null;
   mode: Mode;
   default_currency: Currency;
+  reminder_enabled: boolean;
+  reminder_time: string; // "20:00:00"
+  time_zone: string;
 }
 
 export interface Summary {
@@ -41,6 +44,29 @@ export async function saveSettings(userId: string, values: Partial<Omit<Settings
       .select()
       .single(),
   ) as Settings;
+}
+
+// ---------- daily reminder ----------
+
+export async function savePushSubscription(
+  userId: string,
+  sub: { endpoint: string; p256dh: string; auth: string; user_agent: string },
+) {
+  check(await supabase.from("push_subscriptions").upsert({ ...sub, user_id: userId }, { onConflict: "endpoint" }));
+}
+
+export async function deletePushSubscription(endpoint: string) {
+  check(await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint));
+}
+
+/** True when anything has been written on that day. */
+export async function hasEntriesOn(date: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("entries")
+    .select("id", { count: "exact", head: true })
+    .eq("entry_date", date);
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
 }
 
 // ---------- entries ----------

@@ -2,6 +2,7 @@
 // Runs entirely on the device, so it is instant and free.
 
 import { CATEGORIES, type Kind } from "./kinds";
+import { numberWordsToDigits, toPlainWords } from "./language";
 
 export type Currency = "NGN" | "USD";
 
@@ -25,7 +26,7 @@ const QUANTITY_WORDS = new Set([
 ]);
 
 const NUMBER_RE =
-  /(₦|\$|\bngn\b|\busd\b|\bn(?=\d))?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?(?:\s*(k|m|thousand|million|grand)\b|\b)(\s*(?:naira|dollars?|usd|ngn|bucks)\b)?/gi;
+  /(₦|\$|#|\bngn\b|\busd\b|\bn(?=\s?\d))?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?(?:\s*(k|m|thousand|million|grand)\b|\b)(\s*(?:naira|dollars?|usd|ngn|bucks)\b)?/gi;
 
 interface Candidate {
   value: number;
@@ -199,8 +200,11 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
 }
 
 export function parseLine(text: string, defaultCurrency: Currency = "NGN"): ParsedLine {
-  const normalised = text.replace(/(\d)\s*[x×*]\s*(?=[₦$]?\s*\d)/g, "$1 x ");
-  const t = normalised.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalised = numberWordsToDigits(text)
+    .replace(/(\d)\s*[x×*]\s*(?=[₦$#]?\s*\d)/g, "$1 x ")
+    .replace(/(\d)(naira|ngn|usd|dollars?|bucks|thousand|million|grand)\b/gi, "$1 $2");
+  const raw = normalised.toLowerCase().replace(/\s+/g, " ").trim();
+  const t = toPlainWords(raw);
   if (!t) return { amount: null, currency: null, kind: "note", category: null, person: null, confident: true };
 
   const { amount, currency } = pickAmount(normalised);
@@ -215,7 +219,7 @@ export function parseLine(text: string, defaultCurrency: Currency = "NGN"): Pars
 
   return {
     amount,
-    currency: currency ?? textCurrency(t) ?? defaultCurrency,
+    currency: currency ?? textCurrency(raw) ?? defaultCurrency,
     kind,
     category: kind === "expense" && flowCategory === "stock" ? "other" : flowCategory,
     person,

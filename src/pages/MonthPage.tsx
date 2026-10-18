@@ -9,6 +9,7 @@ import { CATEGORY_BY_ID, KINDS, kindLabel, type Kind } from "@/lib/kinds";
 import { buildMonthStats, formatMoney, type Budget, type Entry } from "@/lib/money";
 import type { Currency } from "@/lib/parse";
 import { EmptyState, ErrorNote, ProgressBar, Spinner } from "@/components/ui";
+import AskFlowz from "@/components/AskFlowz";
 
 export default function MonthPage() {
   const params = useParams();
@@ -148,6 +149,8 @@ export default function MonthPage() {
               {summaryError && <div className="mt-3"><ErrorNote>{summaryError}</ErrorNote></div>}
             </div>
           </section>
+
+          <AskFlowz />
 
           {currencies.map((cur) => {
             const c = stats.currencies[cur]!;

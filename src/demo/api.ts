@@ -4,8 +4,10 @@ import type { Settings, Summary } from "../lib/api";
 import { formatMoney, type Budget, type Entry, type MonthStats } from "../lib/money";
 import type { Currency } from "../lib/parse";
 import { load, save, seedBudgets, seedEntries } from "./store";
+import { demoAnswer } from "./ask";
 
 export type { Settings, Summary };
+export type { ChatMessage } from "../lib/api";
 
 const wait = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const byDateThenPosition = (a: Entry, b: Entry) => a.entry_date.localeCompare(b.entry_date) || a.position - b.position;
@@ -183,4 +185,9 @@ function ruleSummary(stats: MonthStats): Summary {
       : "Write in Flowz every evening so your summary stays accurate.";
 
   return { month: stats.month, headline, points: points.slice(0, 5), tip, generated_at: new Date().toISOString() };
+}
+
+export async function askFlowz(question: string, _history: unknown[], today: string): Promise<string> {
+  await wait(700);
+  return demoAnswer(question, load().entries, today);
 }

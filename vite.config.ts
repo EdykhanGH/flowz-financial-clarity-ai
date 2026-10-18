@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => {
               { find: /^@\/lib\/api$/, replacement: path.join(src, "demo/api.ts") },
             ]
           : []),
+        // Lets Vitest load edge-function files, whose "npm:" imports only exist in Deno.
+        { find: /^npm:.*$/, replacement: path.join(src, "test/npm-stub.ts") },
         { find: "@", replacement: src },
       ],
     },

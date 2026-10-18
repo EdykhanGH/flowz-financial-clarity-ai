@@ -164,3 +164,25 @@ export async function generateSummary(stats: MonthStats): Promise<Summary> {
   }
   return data as Summary;
 }
+
+// ---------- Ask Flowz ----------
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export async function askFlowz(question: string, history: ChatMessage[], today: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("ask-flowz", { body: { question, history, today } });
+  if (error) {
+    let message = "Ask Flowz couldn't answer right now. Please try again in a moment.";
+    try {
+      const body = await (error as { context?: Response }).context?.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // keep the friendly default
+    }
+    throw new Error(message);
+  }
+  return (data as { answer: string }).answer;
+}

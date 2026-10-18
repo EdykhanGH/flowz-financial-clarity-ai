@@ -13,7 +13,7 @@ Built to be simple enough for anyone, business owner or not.
 | --- | --- |
 | **Today** | An open notebook page for the day. Each line is read as you type and gets a coloured tag (sale, purchase, expense, gift, owes me, I owe). Money in / out / left is totalled live, in ₦ and $ separately. Tap a tag to correct it. |
 | **Notebook** | Every past page, by month, with search. |
-| **Summary** | Monthly totals, comparison with last month, where money went, budgets, and an AI-written summary with a tip. |
+| **Summary** | Monthly totals, comparison with last month, where money went, budgets, an AI-written summary with a tip, and **Ask Flowz**: a chat where users ask questions about their own notebook. |
 | **Budgets** | Monthly spending limits per category with progress bars. |
 | **Owed** | Everyone who owes you and everyone you owe, collected automatically from your pages. Tick them off when paid. |
 
@@ -32,6 +32,8 @@ Flowz sends a phone notification and shows a banner inside the app.
 - React + TypeScript + Vite + Tailwind CSS (mobile-first, installable as a web app)
 - Supabase: email sign-up, Postgres with row-level security
 - Supabase Edge Function `monthly-summary` calls Claude (`claude-opus-5-5`) to write the summary
+- Supabase Edge Function `ask-flowz` answers questions. Claude calls tools that do all the maths in code on the
+  user's own rows, so the numbers in answers are exact. Limited to 40 questions per user per day.
 
 ## Setting up
 
@@ -48,6 +50,7 @@ In **Authentication → URL Configuration**, set the Site URL to where the app i
 ```sh
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy monthly-summary
+supabase functions deploy ask-flowz
 ```
 Each user can refresh a month's summary up to 15 times; limits are in the function.
 

@@ -5,7 +5,10 @@ import { CURRENCIES, CURRENCY_SYMBOL, formatMoney, type Entry } from "@/lib/mone
 import type { Currency } from "@/lib/parse";
 import { Sheet } from "./ui";
 
-export type LinePatch = Partial<Pick<Entry, "kind" | "category" | "currency" | "kind_locked">>;
+export type LinePatch = Partial<Pick<Entry, "kind" | "category" | "currency" | "kind_locked" | "person">>;
+
+const OUT_WITH_CATEGORY = (k: Kind) => KINDS[k].flow === "out" && k !== "i_repaid";
+const WITH_PERSON: Kind[] = ["owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "gift_in", "gift_out"];
 
 export default function KindSheet({
   line,
@@ -22,7 +25,7 @@ export default function KindSheet({
 }) {
   const open = Boolean(line);
   const kind = line?.kind ?? "note";
-  const showCategory = KINDS[kind].flow === "out";
+  const showCategory = OUT_WITH_CATEGORY(kind);
 
   return (
     <Sheet open={open} onClose={onClose} title="What is this line?">
@@ -45,7 +48,7 @@ export default function KindSheet({
                     onChange({
                       kind: k,
                       kind_locked: true,
-                      category: KINDS[k].flow === "out" ? (k === "purchase" ? "stock" : line.category ?? "other") : null,
+                      category: OUT_WITH_CATEGORY(k) ? (k === "purchase" ? "stock" : line.category ?? "other") : null,
                     })
                   }
                   className={clsx(
@@ -59,6 +62,20 @@ export default function KindSheet({
               ))}
             </div>
           </div>
+
+          {WITH_PERSON.includes(kind) && (
+            <div>
+              <label className="label" htmlFor="line-person">Who?</label>
+              <input
+                id="line-person"
+                className="field"
+                placeholder="e.g. Joy"
+                value={line.person ?? ""}
+                onChange={(e) => onChange({ person: e.target.value.trimStart() || null, kind_locked: true })}
+              />
+              <p className="mt-1 text-xs text-muted">Use the same name each time so Flowz can keep their balance.</p>
+            </div>
+          )}
 
           {showCategory && (
             <div>

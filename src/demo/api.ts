@@ -5,9 +5,10 @@ import { formatMoney, type Budget, type Entry, type MonthStats } from "../lib/mo
 import type { Currency } from "../lib/parse";
 import { load, save, seedBudgets, seedEntries } from "./store";
 import { demoAnswer } from "./ask";
+import { DEBT_KINDS } from "../lib/kinds";
 
 export type { Settings, Summary };
-export type { ChatMessage } from "../lib/api";
+export type { ChatMessage, AiReading } from "../lib/api";
 
 const wait = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const byDateThenPosition = (a: Entry, b: Entry) => a.entry_date.localeCompare(b.entry_date) || a.position - b.position;
@@ -84,7 +85,7 @@ export async function searchEntries(q: string): Promise<Entry[]> {
 export async function listDebts(): Promise<Entry[]> {
   await wait();
   return load()
-    .entries.filter((e) => (e.kind === "owed_to_me" || e.kind === "i_owe") && e.amount != null)
+    .entries.filter((e) => DEBT_KINDS.includes(e.kind) && e.amount != null)
     .sort((a, b) => b.entry_date.localeCompare(a.entry_date));
 }
 
@@ -190,4 +191,9 @@ function ruleSummary(stats: MonthStats): Summary {
 export async function askFlowz(question: string, _history: unknown[], today: string): Promise<string> {
   await wait(700);
   return demoAnswer(question, load().entries, today);
+}
+
+/** The demo has no AI; lines are read by the phone's rules only. */
+export async function readLinesWithAI(): Promise<null> {
+  return null;
 }

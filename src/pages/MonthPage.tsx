@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
-import { generateSummary, getSummary, listBudgets, listEntries, type Summary } from "@/lib/api";
+import { generateSummary, getSummary, listBudgets, listDebts, listEntries, type Summary } from "@/lib/api";
 import { monthKey, monthRange, prettyMonth, shiftMonth, shortDay, todayISO } from "@/lib/dates";
 import { CATEGORY_BY_ID, KINDS, kindLabel, type Kind } from "@/lib/kinds";
 import { buildMonthStats, formatMoney, type Budget, type Entry } from "@/lib/money";
@@ -21,6 +21,7 @@ export default function MonthPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [previous, setPrevious] = useState<Entry[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [debts, setDebts] = useState<Entry[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +35,10 @@ export default function MonthPage() {
     setSummaryError(null);
     const r = monthRange(month);
     const p = monthRange(shiftMonth(month, -1));
-    Promise.all([listEntries(r.start, r.end), listEntries(p.start, p.end), listBudgets(), getSummary(month)])
-      .then(([e, prev, b, s]) => {
+    Promise.all([listEntries(r.start, r.end), listEntries(p.start, p.end), listBudgets(), getSummary(month), listDebts().catch(() => [] as Entry[])])
+      .then(([e, prev, b, s, d]) => {
         if (cancelled) return;
+        setDebts(d);
         setEntries(e);
         setPrevious(prev);
         setBudgets(b);
@@ -50,8 +52,8 @@ export default function MonthPage() {
   }, [month]);
 
   const stats = useMemo(
-    () => buildMonthStats({ month, mode: settings.mode, entries, previousEntries: previous, budgets, today: new Date() }),
-    [month, settings.mode, entries, previous, budgets],
+    () => buildMonthStats({ month, mode: settings.mode, entries, previousEntries: previous, budgets, today: new Date(), debts }),
+    [month, settings.mode, entries, previous, budgets, debts],
   );
 
   const hasMoney = Object.keys(stats.currencies).length > 0;

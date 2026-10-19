@@ -44,6 +44,8 @@ const FLOW: Record<string, "in" | "out" | "debt" | "none"> = {
   gift_out: "out",
   owed_to_me: "debt",
   i_owe: "debt",
+  repaid_to_me: "in",
+  i_repaid: "out",
   note: "none",
 };
 
@@ -158,22 +160,37 @@ export function findLines(rows: Row[], input: Filters & { sort?: string; limit?:
 }
 
 export function getDebts(rows: Row[]) {
-  const out: Record<string, Record<string, { total: number; currency: string; since: string; lines: number }>> = { owed_to_me: {}, i_owe: {} };
+  type P = { owed: number; paid_back: number; still_owed: number; currency: string; since: string; last_payment: string | null };
+  const out: Record<"owed_to_me" | "i_owe", Record<string, P>> = { owed_to_me: {}, i_owe: {} };
   for (const r of rows) {
-    if ((r.kind !== "owed_to_me" && r.kind !== "i_owe") || r.settled_at || r.amount == null || !r.currency) continue;
+    if (r.amount == null || !r.currency) continue;
+    const side = r.kind === "owed_to_me" || r.kind === "repaid_to_me" ? "owed_to_me" : r.kind === "i_owe" || r.kind === "i_repaid" ? "i_owe" : null;
+    if (!side) continue;
     const key = `${r.person ?? "(no name)"} (${r.currency})`;
-    const d = (out[r.kind][key] ??= { total: 0, currency: r.currency, since: r.entry_date, lines: 0 });
-    d.total = round(d.total + r.amount);
-    d.lines++;
-    if (r.entry_date < d.since) d.since = r.entry_date;
+    const d = (out[side][key] ??= { owed: 0, paid_back: 0, still_owed: 0, currency: r.currency, since: r.entry_date, last_payment: null });
+    if (r.kind === "owed_to_me" || r.kind === "i_owe") {
+      d.owed = round(d.owed + r.amount);
+      if (r.settled_at) d.paid_back = round(d.paid_back + r.amount);
+      if (r.entry_date < d.since) d.since = r.entry_date;
+    } else {
+      d.paid_back = round(d.paid_back + r.amount);
+      if (!d.last_payment || r.entry_date > d.last_payment) d.last_payment = r.entry_date;
+    }
+    d.still_owed = Math.max(0, round(d.owed - d.paid_back));
   }
-  return { people_who_owe_me: out.owed_to_me, people_i_owe: out.i_owe };
+  const open = (m: Record<string, P>) => Object.fromEntries(Object.entries(m).filter(([, v]) => v.still_owed > 0));
+  const done = (m: Record<string, P>) => Object.keys(m).filter((k) => m[k].still_owed <= 0);
+  return {
+    people_who_owe_me: open(out.owed_to_me),
+    people_i_owe: open(out.i_owe),
+    fully_paid_back: { to_me: done(out.owed_to_me), by_me: done(out.i_owe) },
+  };
 }
 
 const FILTER_PROPS = {
   start_date: { type: "string", description: "First day to include, YYYY-MM-DD. Defaults to the 1st of this month." },
   end_date: { type: "string", description: "Last day to include, YYYY-MM-DD. Defaults to today." },
-  kind: { type: "string", enum: ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "i_owe", "note"] },
+  kind: { type: "string", enum: ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "note"] },
   flow: { type: "string", enum: ["in", "out"], description: "in = sales/income + gifts received; out = purchases + expenses + gifts given." },
   category: {
     type: "string",
@@ -211,7 +228,7 @@ const TOOLS = [
   },
   {
     name: "get_debts",
-    description: "Lists money people still owe the user and money the user still owes others (not yet marked as paid), grouped by person.",
+    description: "Each person's debt balance: what was owed, what has been paid back, and what is still owed, for people who owe the user and people the user owes.",
     input_schema: { type: "object", properties: {} },
   },
 ];
@@ -225,8 +242,9 @@ About this user: name ${s.name || "unknown"}; uses Flowz for ${s.mode === "busin
 main currency ${s.currency}. Today is ${s.today}. Their notebook data starts ${s.earliest ?? "today (nothing written yet)"}.
 
 Line types: sale (money in from selling/earning), gift_in (gift received), purchase (stock/goods bought),
-expense (everyday spending), gift_out (gift given), owed_to_me / i_owe (debts, not counted as money in or out),
-note (no money).
+expense (everyday spending), gift_out (gift given), owed_to_me / i_owe (new debts, not counted as money in or out),
+repaid_to_me (someone paid back what they owed: money in), i_repaid (the user paid back a debt: money out),
+note (no money). A person's balance is what they owed minus what they paid back; use get_debts for it.
 
 How to answer:
 - Get every number from the tools. Never add, subtract or estimate figures yourself; if you need a

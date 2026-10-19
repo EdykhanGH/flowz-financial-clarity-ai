@@ -45,8 +45,11 @@ describe("Ask Flowz tools", () => {
     expect(f.lines.map((l) => l.amount)).toEqual([45000, 20000]);
   });
 
-  it("groups open debts by person and skips paid ones", () => {
-    const d = getDebts(rows);
-    expect(d.people_who_owe_me).toEqual({ "Chioma (NGN)": { total: 7000, currency: "NGN", since: "2026-10-03", lines: 2 } });
+  it("works out balances after repayments and skips paid ones", () => {
+    const d = getDebts([...rows, r("2026-10-06", "Chioma paid back 3k", "repaid_to_me", 3000, { person: "Chioma" })]);
+    expect(d.people_who_owe_me).toEqual({
+      "Chioma (NGN)": { owed: 7000, paid_back: 3000, still_owed: 4000, currency: "NGN", since: "2026-10-03", last_payment: "2026-10-06" },
+    });
+    expect(d.fully_paid_back.to_me).toEqual(["Emeka (NGN)"]);
   });
 });

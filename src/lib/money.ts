@@ -1,5 +1,5 @@
 import { CATEGORY_BY_ID, KINDS, type Kind } from "./kinds";
-import type { Currency } from "./parse";
+import type { Currency, DebtContext } from "./parse";
 
 export const CURRENCIES: Currency[] = ["NGN", "USD"];
 export const CURRENCY_SYMBOL: Record<Currency, string> = { NGN: "₦", USD: "$" };
@@ -64,7 +64,9 @@ export function totalsByCurrency(entries: Entry[]): Partial<Record<Currency, Tot
     if (flow === "in") t.in += e.amount;
     if (flow === "out") t.out += e.amount;
     if (e.kind === "owed_to_me" && !e.settled_at) t.owedToMe += e.amount;
+    if (e.kind === "repaid_to_me") t.owedToMe = Math.max(0, t.owedToMe - e.amount);
     if (e.kind === "i_owe" && !e.settled_at) t.iOwe += e.amount;
+    if (e.kind === "i_repaid") t.iOwe = Math.max(0, t.iOwe - e.amount);
     t.net = t.in - t.out;
   }
   return out;
@@ -99,6 +101,8 @@ export function buildMonthStats(args: {
   previousEntries: Entry[];
   budgets: Budget[];
   today: Date;
+  /** All debt lines ever written, so balances aren't limited to this month. */
+  debts?: Entry[];
 }): MonthStats {
   const { month, mode, entries, previousEntries, budgets, today } = args;
   const [y, m] = month.split("-").map(Number);
@@ -160,13 +164,11 @@ export function buildMonthStats(args: {
     };
   }
 
-  const people = { owesMe: [] as MonthStats["people"]["owesMe"], iOwe: [] as MonthStats["people"]["iOwe"] };
-  for (const e of entries) {
-    if (e.settled_at || e.amount == null || !e.currency) continue;
-    const name = e.person ?? "Someone";
-    if (e.kind === "owed_to_me") people.owesMe.push({ name, amount: e.amount, currency: e.currency });
-    if (e.kind === "i_owe") people.iOwe.push({ name, amount: e.amount, currency: e.currency });
-  }
+  const book = buildDebtBook(args.debts ?? entries);
+  const people = {
+    owesMe: book.owedToMe.filter((p) => p.balance > 0).map((p) => ({ name: p.name, amount: p.balance, currency: p.currency })),
+    iOwe: book.iOwe.filter((p) => p.balance > 0).map((p) => ({ name: p.name, amount: p.balance, currency: p.currency })),
+  };
 
   return {
     month,
@@ -177,4 +179,61 @@ export function buildMonthStats(args: {
     daysLeft,
     people,
   };
+}
+
+// ---------- debt book ----------
+
+export interface PersonBalance {
+  key: string; // lower-case name, used to match lines to the same person
+  name: string;
+  currency: Currency;
+  owed: number; // everything written as owed
+  repaid: number; // paid back so far (repayment lines, plus lines ticked as paid)
+  balance: number; // still to pay
+  lines: Entry[]; // debt and repayment lines, newest first
+}
+
+export interface DebtBook {
+  owedToMe: PersonBalance[];
+  iOwe: PersonBalance[];
+}
+
+/** Each person's running balance: what was owed minus what was paid back. */
+export function buildDebtBook(entries: Entry[]): DebtBook {
+  const groups = { owedToMe: new Map<string, PersonBalance>(), iOwe: new Map<string, PersonBalance>() };
+  const sorted = [...entries].sort((a, b) => b.entry_date.localeCompare(a.entry_date) || b.position - a.position);
+  for (const e of sorted) {
+    if (e.amount == null || !e.currency) continue;
+    const side = e.kind === "owed_to_me" || e.kind === "repaid_to_me" ? "owedToMe" : e.kind === "i_owe" || e.kind === "i_repaid" ? "iOwe" : null;
+    if (!side) continue;
+    const name = e.person?.trim() || "Someone";
+    const key = `${name.toLowerCase()}|${e.currency}`;
+    const p = groups[side].get(key) ?? { key: name.toLowerCase(), name, currency: e.currency, owed: 0, repaid: 0, balance: 0, lines: [] };
+    if (e.kind === "owed_to_me" || e.kind === "i_owe") {
+      p.owed += e.amount;
+      if (e.settled_at) p.repaid += e.amount;
+    } else p.repaid += e.amount;
+    p.balance = Math.max(0, Math.round((p.owed - p.repaid) * 100) / 100);
+    p.lines.push(e);
+    groups[side].set(key, p);
+  }
+  const order = (a: PersonBalance, b: PersonBalance) => b.balance - a.balance || a.name.localeCompare(b.name);
+  return { owedToMe: [...groups.owedToMe.values()].sort(order), iOwe: [...groups.iOwe.values()].sort(order) };
+}
+
+/** The shape the line reader needs: who still owes what, by lower-case name. */
+export function debtContext(book: DebtBook): DebtContext {
+  const toMap = (list: PersonBalance[]) => {
+    const m = new Map<string, number>();
+    for (const p of list) if (p.balance > 0 && p.name !== "Someone") m.set(p.key, (m.get(p.key) ?? 0) + p.balance);
+    return m;
+  };
+  return { owedToMe: toMap(book.owedToMe), iOwe: toMap(book.iOwe) };
+}
+
+/** Balance for one person after all the given lines, e.g. to show "Joy owes ₦20k now". */
+export function balanceFor(book: DebtBook, side: "owedToMe" | "iOwe", person: string | null, currency: Currency | null) {
+  if (!person || !currency) return null;
+  const p = book[side].find((x) => x.key === person.toLowerCase() && x.currency === currency);
+  return p ? p.balance : null;
 }

@@ -15,7 +15,7 @@ Built to be simple enough for anyone, business owner or not.
 | **Notebook** | Every past page, by month, with search. |
 | **Summary** | Monthly totals, comparison with last month, where money went, budgets, an AI-written summary with a tip, and **Ask Flowz**: a chat where users ask questions about their own notebook. |
 | **Budgets** | Monthly spending limits per category with progress bars. |
-| **Owed** | Everyone who owes you and everyone you owe, collected automatically from your pages. Tick them off when paid. |
+| **Owed** | A debt book: each person's balance (owed minus paid back), with history and a **Record payment** button. Built automatically from your pages. |
 
 How a line is understood lives in `src/lib/parse.ts` and `src/lib/language.ts` (runs on the phone — instant, free, no internet needed).
 It understands British and American English, Nigerian Pidgin, short forms and common typos:
@@ -23,6 +23,10 @@ It understands British and American English, Nigerian Pidgin, short forms and co
 `dash my pikin 2k`, `recieved 5000`, `trasport 1500`, `gas $40`, `groceries 60 bucks`.
 Amounts: `45,000`, `₦45k`, `N4500`, `#4,500`, `1.5m`, `$250`, `15 dollars`, `two thousand five hundred naira`,
 `3 shirts at 5000 each`, `4 x 2500`.
+
+**Reading in context**: Flowz keeps a debt book while you write. "Joy bought 50k rice on credit" means Joy owes you;
+"Joy paid back 30k" (or just "Joy paid 30k", since Joy owes you) is a repayment that leaves ₦20k. Lines the phone finds
+unclear are also read by AI (`read-lines` function) with the debt book as context; offline, the phone's reading is kept.
 
 **Daily reminder**: at a time the user picks (default 8pm), on days they haven't written anything,
 Flowz sends a phone notification and shows a banner inside the app.
@@ -51,6 +55,7 @@ In **Authentication → URL Configuration**, set the Site URL to where the app i
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy monthly-summary
 supabase functions deploy ask-flowz
+supabase functions deploy read-lines
 ```
 Each user can refresh a month's summary up to 15 times; limits are in the function.
 

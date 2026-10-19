@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
-import { deleteEntries, listEntries, upsertEntries } from "@/lib/api";
+import { deleteEntries, listDebts, listEntries, readLinesWithAI, upsertEntries } from "@/lib/api";
 import { addDays, greeting, prettyDay, todayISO } from "@/lib/dates";
 import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
-import { formatMoney, totalsByCurrency, type Entry } from "@/lib/money";
-import { parseLine, type Currency } from "@/lib/parse";
+import { balanceFor, buildDebtBook, debtContext, formatMoney, totalsByCurrency, type DebtBook, type Entry } from "@/lib/money";
+import { needsCloserLook, parseLine, type Currency, type DebtContext } from "@/lib/parse";
 import KindSheet, { type LinePatch } from "@/components/KindSheet";
 import TotalsCard from "@/components/TotalsCard";
 import { ReminderNudge } from "@/components/Reminders";
@@ -20,10 +20,24 @@ export default function DayPage() {
   return <DayEditor key={day} date={day} />;
 }
 
-type Line = Entry & { confident?: boolean };
+type Line = Entry & { confident?: boolean; ai?: boolean };
+
+interface Draft {
+  at: number;
+  lines: Line[];
+}
 type SaveState = "idle" | "pending" | "saving" | "saved" | "offline";
 
-const EXAMPLES = ["Sold 3 bags of rice 45,000", "Bought fuel 8,500", "Gave mum 10k", "Transport 1,200", "Chioma owes me 5,000", "Money enter 15k", "Emeka dey owe me 4k"];
+const EXAMPLES = [
+  "Sold 3 bags of rice 45,000",
+  "Bought fuel 8,500",
+  "Gave mum 10k",
+  "Transport 1,200",
+  "Joy bought 50k rice on credit",
+  "Joy paid back 30k for rice",
+  "Money enter 15k",
+  "Emeka dey owe me 4k",
+];
 
 function blankLine(date: string): Line {
   return {
@@ -42,19 +56,20 @@ function blankLine(date: string): Line {
 }
 
 /** Re-read a line after its text changed. Choices the user made by hand are kept. */
-function withText(line: Line, text: string, defaultCurrency: Currency): Line {
-  const p = parseLine(text, defaultCurrency);
+function withText(line: Line, text: string, defaultCurrency: Currency, ctx?: DebtContext): Line {
+  const p = parseLine(text, defaultCurrency, ctx);
   if (line.kind_locked) {
     return {
       ...line,
       text,
       amount: p.amount,
       currency: p.amount == null ? null : line.currency ?? p.currency,
-      person: p.person ?? line.person,
+      person: line.person ?? p.person,
       confident: true,
+      ai: false,
     };
   }
-  return { ...line, text, amount: p.amount, currency: p.currency, kind: p.kind, category: p.category, person: p.person, confident: p.confident };
+  return { ...line, text, amount: p.amount, currency: p.currency, kind: p.kind, category: p.category, person: p.person, confident: p.confident, ai: false };
 }
 
 function withTrailingBlank(lines: Line[], date: string) {
@@ -89,24 +104,51 @@ function DayEditor({ date }: { date: string }) {
   const timer = useRef<number>();
   const inputs = useRef(new Map<string, HTMLInputElement>());
   const pendingFocus = useRef<{ id: string; caret: number } | null>(null);
+  const [otherDebts, setOtherDebts] = useState<Entry[]>([]); // debt lines from other days
+  const otherDebtsRef = useRef<Entry[]>([]);
+  const touched = useRef(new Set<string>()); // lines edited in this visit
+  const aiAsked = useRef(new Map<string, string>()); // line id → text already sent to the AI
 
   linesRef.current = lines;
+  otherDebtsRef.current = otherDebts;
+
+  /** The debt book as it stands without one line, so that line can be read in context. */
+  const contextWithout = useCallback((id: string, list: Line[]) => {
+    return debtContext(buildDebtBook([...otherDebtsRef.current, ...list.filter((l) => l.id !== id && l.text.trim())]));
+  }, []);
+
+  const read = useCallback(
+    (l: Line, text: string) => {
+      touched.current.add(l.id);
+      return withText(l, text, cur, contextWithout(l.id, linesRef.current));
+    },
+    [cur, contextWithout],
+  );
 
   // ---------- load ----------
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const rows = (await listEntries(date, date)) as Line[];
+        const [rows, debts] = await Promise.all([
+          listEntries(date, date) as Promise<Line[]>,
+          listDebts().catch(() => [] as Entry[]),
+        ]);
         if (cancelled) return;
         rows.forEach((r, i) => saved.current.set(r.id, snapshot(r, i)));
+        setOtherDebts(debts.filter((d) => d.entry_date !== date));
 
         let start = rows;
         let fromDraft = false;
         try {
-          const draft = localStorage.getItem(draftKey);
-          if (draft) {
-            start = JSON.parse(draft) as Line[];
+          const raw = localStorage.getItem(draftKey);
+          if (raw) {
+            const parsed = JSON.parse(raw) as Draft | Line[];
+            const draft: Draft = Array.isArray(parsed) ? { at: 0, lines: parsed } : parsed;
+            // Lines added elsewhere after the draft (e.g. "Record payment") are kept.
+            const inDraft = new Set(draft.lines.map((l) => l.id));
+            const newer = rows.filter((r) => !inDraft.has(r.id) && r.updated_at && Date.parse(r.updated_at) > draft.at);
+            start = [...draft.lines, ...newer];
             fromDraft = true;
           }
         } catch {
@@ -149,7 +191,7 @@ function DayEditor({ date }: { date: string }) {
 
     setSaveState("saving");
     try {
-      await upsertEntries(changed.map(({ confident: _c, ...r }) => r));
+      await upsertEntries(changed.map(({ confident: _c, ai: _a, ...r }) => r));
       await deleteEntries(removed);
       changed.forEach((r) => saved.current.set(r.id, snapshot(r, r.position)));
       removed.forEach((id) => saved.current.delete(id));
@@ -174,7 +216,8 @@ function DayEditor({ date }: { date: string }) {
   const scheduleSave = useCallback(
     (next: Line[]) => {
       try {
-        localStorage.setItem(draftKey, JSON.stringify(next.filter((l) => l.text.trim())));
+        const draft: Draft = { at: Date.now(), lines: next.filter((l) => l.text.trim()) };
+        localStorage.setItem(draftKey, JSON.stringify(draft));
       } catch {
         // storage full or blocked; the server save still runs
       }
@@ -221,7 +264,7 @@ function DayEditor({ date }: { date: string }) {
   });
 
   function setText(id: string, text: string) {
-    update((prev) => prev.map((l) => (l.id === id ? withText(l, text, cur) : l)));
+    update((prev) => prev.map((l) => (l.id === id ? read(l, text) : l)));
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>, index: number) {
@@ -240,11 +283,11 @@ function DayEditor({ date }: { date: string }) {
       }
       const before = el.value.slice(0, caret);
       const after = el.value.slice(el.selectionEnd ?? caret);
-      const fresh = withText(blankLine(date), after, cur);
+      const fresh = read(blankLine(date), after);
       pendingFocus.current = { id: fresh.id, caret: 0 };
       update((prev) => {
         const next = [...prev];
-        next[index] = withText(line, before, cur);
+        next[index] = read(line, before);
         next.splice(index + 1, 0, fresh);
         return next;
       });
@@ -254,7 +297,7 @@ function DayEditor({ date }: { date: string }) {
       pendingFocus.current = { id: prevLine.id, caret: prevLine.text.length };
       update((prev) => {
         const next = [...prev];
-        next[index - 1] = withText(prevLine, prevLine.text + line.text, cur);
+        next[index - 1] = read(prevLine, prevLine.text + line.text);
         next.splice(index, 1);
         return next;
       });
@@ -281,12 +324,12 @@ function DayEditor({ date }: { date: string }) {
     parts[0] = before + parts[0];
     parts[parts.length - 1] += after;
     const line = lines[index];
-    const created = parts.slice(1).map((t) => withText(blankLine(date), t, cur));
+    const created = parts.slice(1).map((t) => read(blankLine(date), t));
     const last = created[created.length - 1];
     if (last) pendingFocus.current = { id: last.id, caret: last.text.length - after.length };
     update((prev) => {
       const next = [...prev];
-      next[index] = withText(line, parts[0], cur);
+      next[index] = read(line, parts[0]);
       next.splice(index + 1, 0, ...created);
       return next;
     });
@@ -297,10 +340,66 @@ function DayEditor({ date }: { date: string }) {
   }
 
   function resetLine(id: string) {
-    update((prev) => prev.map((l) => (l.id === id ? withText({ ...l, kind_locked: false }, l.text, cur) : l)));
+    update((prev) => prev.map((l) => (l.id === id ? read({ ...l, kind_locked: false }, l.text) : l)));
   }
 
   const totals = useMemo(() => totalsByCurrency(lines), [lines]);
+  // For each repayment line: what is still owed right after that line.
+  const leftAfter = useMemo(() => {
+    const before = otherDebts.filter((d) => d.entry_date < date);
+    const out = new Map<string, number>();
+    lines.forEach((l, i) => {
+      if ((l.kind !== "repaid_to_me" && l.kind !== "i_repaid") || !l.person || !l.currency) return;
+      const book = buildDebtBook([...before, ...lines.slice(0, i + 1).filter((x) => x.text.trim())]);
+      const left = balanceFor(book, l.kind === "repaid_to_me" ? "owedToMe" : "iOwe", l.person, l.currency);
+      if (left != null) out.set(l.id, left);
+    });
+    return out;
+  }, [otherDebts, lines, date]);
+
+  // ---------- AI reading of unclear lines ----------
+  useEffect(() => {
+    if (!loaded.current) return;
+    const t = window.setTimeout(async () => {
+      const candidates = linesRef.current.filter(
+        (l) =>
+          l.text.trim() &&
+          touched.current.has(l.id) &&
+          !l.kind_locked &&
+          !l.ai &&
+          aiAsked.current.get(l.id) !== l.text &&
+          needsCloserLook(l.text, { amount: l.amount, currency: l.currency, kind: l.kind, category: l.category, person: l.person, confident: l.confident ?? true }),
+      );
+      if (candidates.length === 0) return;
+      const asked = new Map(candidates.slice(0, 10).map((l) => [l.id, l.text]));
+      asked.forEach((text, id) => aiAsked.current.set(id, text));
+      const results = await readLinesWithAI(
+        [...asked].map(([id, text]) => ({ id, text })),
+        compactBook(buildDebtBook([...otherDebtsRef.current, ...linesRef.current.filter((l) => l.text.trim() && !asked.has(l.id))])),
+        todayISO(),
+      );
+      if (!results?.length) return;
+      const byId = new Map(results.map((r) => [r.id, r]));
+      const current = linesRef.current;
+      const next = current.map((l) => {
+        const r = byId.get(l.id);
+        if (!r || l.kind_locked || l.text !== asked.get(l.id)) return l; // changed since we asked
+        const noMoney = r.kind === "note" || r.amount == null;
+        return {
+          ...l,
+          kind: r.kind,
+          amount: noMoney ? null : r.amount,
+          currency: noMoney ? null : r.currency ?? l.currency ?? cur,
+          category: r.category,
+          person: r.person,
+          confident: r.confident,
+          ai: true,
+        };
+      });
+      if (next.some((l, i) => l !== current[i])) update(() => next);
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [lines, cur, update]);
   const editingLine = lines.find((l) => l.id === editing) ?? null;
   const isToday = date === todayISO();
   const filled = lines.filter((l) => l.text.trim()).length;
@@ -370,7 +469,7 @@ function DayEditor({ date }: { date: string }) {
                   autoCapitalize="sentences"
                   aria-label={`Line ${i + 1}`}
                 />
-                <LineChip line={line} mode={mode} onClick={() => setEditing(line.id)} />
+                <LineChip line={line} mode={mode} left={leftAfter.get(line.id) ?? null} onClick={() => setEditing(line.id)} />
               </li>
             ))}
           </ul>
@@ -399,7 +498,7 @@ function DayEditor({ date }: { date: string }) {
           </ul>
           <p className="flex gap-2 text-muted">
             <Lightbulb className="h-4 w-4 shrink-0 text-sun" />
-            “10k”, “ten thousand” and “#10,000” all mean ₦10,000. Add $ or “dollars” for dollars. Tap a coloured tag to change it.
+            “10k”, “ten thousand” and “#10,000” all mean ₦10,000. Add $ or “dollars” for dollars. When someone pays back, Flowz takes it off what they owe. Tap a coloured tag to change it.
           </p>
         </div>
       )}
@@ -421,23 +520,36 @@ function DayEditor({ date }: { date: string }) {
   );
 }
 
-function LineChip({ line, mode, onClick }: { line: Line; mode: "personal" | "business"; onClick: () => void }) {
+/** The debt book in a small shape for the AI: who owes what. */
+function compactBook(book: DebtBook) {
+  const pick = (list: DebtBook["owedToMe"]) =>
+    list.filter((p) => p.balance > 0).slice(0, 40).map((p) => ({ name: p.name, still_owes: p.balance, currency: p.currency }));
+  return { people_who_owe_me: pick(book.owedToMe), people_i_owe: pick(book.iOwe) };
+}
+
+function LineChip({ line, mode, left, onClick }: { line: Line; mode: "personal" | "business"; left: number | null; onClick: () => void }) {
   if (line.amount == null || !line.currency) return null;
   const info = KINDS[line.kind];
   const sign = info.flow === "in" ? "+" : info.flow === "out" ? "−" : "";
+  const emoji = info.flow === "out" && line.kind !== "i_repaid" ? CATEGORY_BY_ID[line.category ?? "other"]?.emoji ?? info.emoji : info.emoji;
+  const who = line.person ? `${line.person}: ` : "";
   return (
     <button
       onClick={onClick}
-      title={`${kindLabel(line.kind, mode)} — tap to change`}
+      title={`${kindLabel(line.kind, mode)}${left != null ? ` — ${who}${left > 0 ? `${formatMoney(left, line.currency)} still owed` : "paid off"}` : ""} — tap to change`}
       className={clsx(
         "flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold transition hover:brightness-95",
         info.chip,
         line.confident === false && "outline-dashed outline-2 outline-offset-1 outline-sun",
       )}
     >
-      <span aria-hidden>{info.flow === "out" ? CATEGORY_BY_ID[line.category ?? "other"]?.emoji ?? info.emoji : info.emoji}</span>
+      <span aria-hidden>{emoji}</span>
       {sign}
       {formatMoney(line.amount, line.currency, { compact: true })}
+      {(line.kind === "repaid_to_me" || line.kind === "i_repaid") && left != null && (
+        <span className="font-bold opacity-75">· {left > 0 ? `${formatMoney(left, line.currency, { compact: true })} left` : "paid off ✓"}</span>
+      )}
+      {line.ai && <Sparkles className="h-3 w-3 opacity-60" aria-label="read by AI" />}
       {line.confident === false && <span aria-label="please check">?</span>}
     </button>
   );

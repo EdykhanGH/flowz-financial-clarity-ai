@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Mode } from "./kinds";
+import { DEBT_KINDS, type Kind, type Mode } from "./kinds";
 import type { Budget, Entry, MonthStats } from "./money";
 import type { Currency } from "./parse";
 
@@ -112,7 +112,7 @@ export async function listDebts(): Promise<Entry[]> {
     await supabase
       .from("entries")
       .select(ENTRY_COLUMNS)
-      .in("kind", ["owed_to_me", "i_owe"])
+      .in("kind", DEBT_KINDS)
       .not("amount", "is", null)
       .order("entry_date", { ascending: false }),
   ) as Entry[];
@@ -185,4 +185,32 @@ export async function askFlowz(question: string, history: ChatMessage[], today: 
     throw new Error(message);
   }
   return (data as { answer: string }).answer;
+}
+
+// ---------- AI reading of hard lines ----------
+
+export interface AiReading {
+  id: string;
+  kind: Kind;
+  amount: number | null;
+  currency: Currency | null;
+  category: string | null;
+  person: string | null;
+  confident: boolean;
+}
+
+/** Asks the AI to read lines the phone found unclear. Returns null when offline or unavailable. */
+export async function readLinesWithAI(
+  lines: { id: string; text: string }[],
+  book: unknown,
+  today: string,
+): Promise<AiReading[] | null> {
+  if (lines.length === 0 || (typeof navigator !== "undefined" && !navigator.onLine)) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke("read-lines", { body: { lines, book, today } });
+    if (error) return null;
+    return (data as { lines: AiReading[] }).lines ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -56,14 +56,14 @@ export function reset() {
 // Example pages for the days before today, so every screen has something to show.
 const DAYS: string[][] = [
   ["Sold rice and beans 38,500", "Bought 2 cartons of indomie 18,000", "Transport to market 1,500", "Lunch 2,000"],
-  ["Sales today 52,000", "Fuel for gen 6,000", "Mama Bisi owes me 4,500"],
+  ["Sales today 52,000", "Fuel for gen 6,000", "Mama Bisi owes me 4,500", "Joy bought 50k rice on credit"],
   ["Sold 3 bags of garri 27,000", "MTN data 3k", "Gave mum 10k", "Call supplier about sugar price"],
   ["Sales 41,200", "Bought sugar and milk 22,500", "Okada 800", "Lunch 1,800"],
   ["Shop rent 30,000", "Sold 5 crates of eggs at 4,800 each", "Uncle gave me 20k"],
   ["Sales today 47,600", "Paid apprentice 15,000", "Fuel 5,500", "Client paid $120"],
   ["Sold provisions 33,900", "Light bill 7,000", "I owe Tunde 12,000", "Suya 1,500"],
   ["Sales 58,300", "Bought 3 bags of rice 135,000", "Transport 2,000"],
-  ["Sold oil and tomatoes 29,400", "Tithe 5,000", "Lunch 2,500", "Chioma owes me 6,000"],
+  ["Sold oil and tomatoes 29,400", "Tithe 5,000", "Lunch 2,500", "Chioma owes me 6,000", "Joy paid back 30k for rice"],
   ["Sales today 44,100", "Bought detergent stock 16,800", "Keke 600", "Netflix 15 dollars"],
 ];
 

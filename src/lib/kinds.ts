@@ -8,6 +8,8 @@ export type Kind =
   | "gift_out" // money you gave someone
   | "owed_to_me" // someone owes you
   | "i_owe" // you owe someone
+  | "repaid_to_me" // someone paid back money they owed you (money in, lowers their balance)
+  | "i_repaid" // you paid back money you owed (money out, lowers your balance)
   | "note"; // just a note, no money
 
 export type Mode = "personal" | "business";
@@ -64,6 +66,18 @@ export const KINDS: Record<Kind, KindInfo> = {
     flow: "debt",
     chip: "bg-sun-soft text-amber-700",
   },
+  repaid_to_me: {
+    label: { business: "Paid back", personal: "Paid back" },
+    emoji: "💵",
+    flow: "in",
+    chip: "bg-brand-soft text-brand-dark",
+  },
+  i_repaid: {
+    label: { business: "I paid back", personal: "I paid back" },
+    emoji: "↩️",
+    flow: "out",
+    chip: "bg-sky-soft text-sky",
+  },
   note: {
     label: { business: "Note", personal: "Note" },
     emoji: "📝",
@@ -79,7 +93,9 @@ export const KIND_ORDER: Kind[] = [
   "gift_in",
   "gift_out",
   "owed_to_me",
+  "repaid_to_me",
   "i_owe",
+  "i_repaid",
   "note",
 ];
 
@@ -122,3 +138,6 @@ export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
 export function categoryLabel(id: string | null | undefined) {
   return CATEGORY_BY_ID[id ?? "other"]?.label ?? "Other";
 }
+
+/** Kinds that belong to the debt book. */
+export const DEBT_KINDS: Kind[] = ["owed_to_me", "repaid_to_me", "i_owe", "i_repaid"];

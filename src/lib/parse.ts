@@ -115,12 +115,28 @@ export function detectCategory(t: string): string | null {
   return null;
 }
 
+/** What each person still owes (or is owed), so a line can be read in context. Keys are lower-case names. */
+export interface DebtContext {
+  owedToMe: Map<string, number>;
+  iOwe: Map<string, number>;
+}
+
+/** Finds a person in the debt book, allowing "Bisi" to match "Mama Bisi" when that is the only match. */
+export function lookupPerson(book: Map<string, number> | undefined, name: string | null): string | null {
+  if (!book || !name) return null;
+  const key = name.toLowerCase();
+  if (book.has(key)) return key;
+  const matches = [...book.keys()].filter((k) => k.split(/\s+/).includes(key) || key.split(/\s+/).includes(k));
+  return matches.length === 1 ? matches[0] : null;
+}
+
 const TITLE = "(?:mr\\.?|mrs\\.?|miss|mama|baba|aunty|auntie|uncle|bro|sis|alhaji|alhaja|madam|oga|iya|chief|dr\\.?)";
 const NAME = `((?:${TITLE}\\s+)?[a-z][a-z'-]*)`;
 const NOT_NAMES = new Set([
   "i", "me", "my", "we", "you", "he", "she", "they", "the", "a", "an", "someone", "somebody",
   "customer", "customers", "sold", "bought", "paid", "still", "and", "for", "of", "to", "from",
-  "him", "her", "them", "it", "today", "yesterday", "money",
+  "him", "her", "them", "it", "today", "yesterday", "money", "back", "on", "credit", "goods",
+  "rice", "transport", "fuel", "stock", "salary", "rent", "food", "bill", "school", "staff",
 ]);
 
 function cleanName(raw: string | undefined): string | null {
@@ -138,7 +154,33 @@ function findPerson(t: string, patterns: RegExp[]): string | null {
   return null;
 }
 
+const BUYER_VERBS = "(?:bought|took|received|carried|picked|ordered|collected|got|carry|take|pick|order)";
+const ON_CREDIT = /\b(?:on|for|with|as|by)\s+(?:credit|trust|tab|account|loan)\b|\bcredit\b(?!\s+alert)|\b(?:pay|paying)\s+(?:later|tomorrow|next\s+(?:week|month)|at\s+month\s+end)\b|\bunpaid\b|\bnot\s+(?:yet\s+)?paid\b|\byet\s+to\s+pay\b/;
+
 function detectKind(t: string, category: string | null): { kind: Kind; confident: boolean; person: string | null } {
+  // Paying back a debt
+  if (/\bpaid back\b/.test(t)) {
+    const toWhom = t.match(new RegExp(`\\bpaid back to ${NAME}`))?.[1];
+    if (toWhom === "me" || /\bpaid back to me\b/.test(t)) {
+      return { kind: "repaid_to_me", confident: true, person: findPerson(t, [new RegExp(`^${NAME}\\s`), new RegExp(`\\bfrom ${NAME}`)]) };
+    }
+    if (/^(?:i\b|paid back\b)/.test(t) || toWhom || /\bmy (?:debt|loan|balance)\b/.test(t)) {
+      return {
+        kind: "i_repaid",
+        confident: true,
+        person: findPerson(t, [new RegExp(`\\bpaid back to ${NAME}`), new RegExp(`\\bto ${NAME}`), new RegExp(`\\bpaid back ${NAME}`)]),
+      };
+    }
+    return { kind: "repaid_to_me", confident: true, person: findPerson(t, [new RegExp(`^${NAME}\\s+paid back`), new RegExp(`\\bfrom ${NAME}`), new RegExp(`^${NAME}\\s`)]) };
+  }
+  // Someone took goods on credit: "Joy bought 50k rice on credit" → Joy owes me
+  if (ON_CREDIT.test(t)) {
+    const buyer = cleanName(t.match(new RegExp(`^${NAME}\\s+(?:still\\s+)?${BUYER_VERBS}\\b`))?.[1]);
+    if (buyer) return { kind: "owed_to_me", confident: true, person: buyer };
+    if ((/^(?:i|we)\b|\bbought on credit\b/.test(t) || new RegExp(`^${BUYER_VERBS}\\b`).test(t)) && !/\bsold\b/.test(t)) {
+      return { kind: "i_owe", confident: true, person: findPerson(t, [new RegExp(`\\bfrom ${NAME}`), new RegExp(`\\bowe ${NAME}`)]) };
+    }
+  }
   // Money you owe someone
   if (/\bi owe\b|\bi'?m owing\b|\bi am owing\b|\bi borrowed\b|\bloan from\b|\bbought on credit\b|\bcredit from\b|\bowe\b.*\bbalance\b/.test(t)) {
     return {
@@ -176,6 +218,11 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
       person: findPerson(t, [new RegExp(`\\bgave ${NAME}`), new RegExp(`\\bto ${NAME}`), new RegExp(`\\bdashed ${NAME}`)]),
     };
   }
+  // "Ada paid 20k": someone paying you is money in
+  const payer = cleanName(t.match(new RegExp(`^${NAME}\\s+(?:paid|sent|transferred|settled)\\b(?!\\s+(?:for|the|my|our|school|rent|bill))`))?.[1]);
+  if (payer && !/\b(?:salary|salaries|wages?|staff|workers?)\b/.test(t)) {
+    return { kind: "sale", confident: true, person: payer };
+  }
   // Paying staff is spending, even though it mentions salary
   if (/\b(?:paid|pay)\b.*\b(?:salary|salaries|wages?|staff|workers?|apprentice)\b/.test(t)) {
     return { kind: "expense", confident: true, person: null };
@@ -185,7 +232,11 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
     return {
       kind: "sale",
       confident: true,
-      person: findPerson(t, [new RegExp(`^${NAME}\\s+paid me`), new RegExp(`\\bfrom ${NAME}`), new RegExp(`\\bsold to ${NAME}`)]),
+      person: findPerson(t, [
+        new RegExp(`^${NAME}\\s+(?:paid|sent|transferred|settled)\\b`),
+        new RegExp(`\\bfrom ${NAME}`),
+        new RegExp(`\\bsold to ${NAME}`),
+      ]),
     };
   }
   // Buying: stock is a purchase, everyday things are spending
@@ -199,7 +250,42 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
   return { kind: "expense", confident: false, person: null };
 }
 
-export function parseLine(text: string, defaultCurrency: Currency = "NGN"): ParsedLine {
+const titleCase = (name: string) => name.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+/**
+ * Uses the debt book to read a line in context:
+ * "Joy paid 20k" is a repayment when Joy owes you; "Paid Tunde 5k" is a repayment when you owe Tunde.
+ */
+function applyContext(t: string, r: { kind: Kind; person: string | null; confident: boolean }, ctx: DebtContext) {
+  let { kind, person, confident } = r;
+  const subject = findPerson(t, [new RegExp(`^${NAME}\\s`)]);
+  const object = findPerson(t, [new RegExp(`\\bpaid ${NAME}`), new RegExp(`\\bgave ${NAME}`), new RegExp(`\\bto ${NAME}`)]);
+  // "Joy paid 20k" / "collected 8k from Joy" while Joy owes you → Joy paid back
+  if ((kind === "sale" || kind === "expense") && !/\bsold\b|\bsales?\b/.test(t)) {
+    const who = lookupPerson(ctx.owedToMe, kind === "sale" ? person ?? subject : subject);
+    if (who) {
+      kind = "repaid_to_me";
+      person = titleCase(who);
+      confident = true;
+    }
+  }
+  // "Paid Tunde 5k" while you owe Tunde → you paid back
+  if (kind === "expense" || kind === "gift_out") {
+    const who = lookupPerson(ctx.iOwe, person ?? object);
+    if (who) {
+      kind = "i_repaid";
+      person = titleCase(who);
+      confident = true;
+    }
+  }
+  // Use the spelling already in the book, so "joy" and "Joy" are the same person.
+  const book = kind === "owed_to_me" || kind === "repaid_to_me" ? ctx.owedToMe : kind === "i_owe" || kind === "i_repaid" ? ctx.iOwe : null;
+  const known = book ? lookupPerson(book, person) : null;
+  if (known) person = titleCase(known);
+  return { kind, person, confident };
+}
+
+export function parseLine(text: string, defaultCurrency: Currency = "NGN", ctx?: DebtContext): ParsedLine {
   const normalised = numberWordsToDigits(text)
     .replace(/(\d)\s*[x×*]\s*(?=[₦$#]?\s*\d)/g, "$1 x ")
     .replace(/(\d)(naira|ngn|usd|dollars?|bucks|thousand|million|grand)\b/gi, "$1 $2");
@@ -213,7 +299,11 @@ export function parseLine(text: string, defaultCurrency: Currency = "NGN"): Pars
   }
 
   const category = detectCategory(t);
-  const { kind, confident, person } = detectKind(t, category);
+  let read = detectKind(t, category);
+  if (ctx) read = applyContext(t, read, ctx);
+  const { kind, person } = read;
+  // A repayment without a name can't be matched to anyone's debt, so ask the user to check it.
+  const confident = read.confident && !((kind === "repaid_to_me" || kind === "i_repaid") && !person);
   const flowCategory =
     kind === "purchase" ? "stock" : kind === "expense" || kind === "gift_out" ? category ?? "other" : null;
 
@@ -225,4 +315,14 @@ export function parseLine(text: string, defaultCurrency: Currency = "NGN"): Pars
     person,
     confident,
   };
+}
+
+/** Words that suggest a line depends on context, so it's worth a closer (AI) read. */
+export function needsCloserLook(text: string, parsed: ParsedLine): boolean {
+  if (!parsed.confident) return true;
+  if (parsed.amount == null) return /\d/.test(text) && /\b(?:owe|credit|paid|pay|back|balance|borrow|lend|lent|loan)\b/i.test(text);
+  const t = text.toLowerCase();
+  if (/\b(?:credit|trust|back|balance|remain|remaining|owe|owes|owing|borrow|borrowed|lend|lent|loan|later|part|half|refund|return|returned|settle|settled|debt|deposit|instal+ment|still|left)\b/.test(t)) return true;
+  if (t.split(/\s+/).length > 10) return true;
+  return (t.match(/\d[\d,.]*\s*k?\b/g) ?? []).length >= 3;
 }

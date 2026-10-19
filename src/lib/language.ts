@@ -141,6 +141,14 @@ const PHRASES: [RegExp, string | ((...args: string[]) => string)][] = [
   [/\bi\s+(?:borrow|borrowed)\s+(?!from\b|money from\b)/g, "i lent "],
   [/\b(?:lend|lended|loaned|loan(?=\s+(?!from\b)[a-z]+\s+\d))\b/g, "lent"],
 
+  // --- paying back a debt ---
+  // "Joy paid me back", "Joy return my money", "Joy cleared her balance", "part payment"
+  [/\b(?:pay|pays|paid|payed|pd|return|returns|returned|refund|refunds|refunded|settle|settles|settled|clear|clears|cleared|complete|completed|balance|balanced|repay|repays|repaid)\s+(?:me\s+)?(?:back|my money|the money|his debt|her debt|their debt|the debt|debt|his balance|her balance|their balance|the balance|balance|remaining|the remaining|what (?:she|he|they) owe[sd]?)\b/g, "paid back"],
+  [/\b(?:repay|repays|repaid|repayment|payback|pay-back)\b/g, "paid back"],
+  [/\b(?:made|make|paid|pay)?\s*(?:a\s+)?(?:part|half|small)[\s-]*payment\b|\binstal+ments?\b/g, " paid back"],
+  // "I paid Tunde back 5k" → "i paid back to tunde 5k"
+  [/\b(?:paid|pay|payed|return(?:ed)?|refund(?:ed)?|gave|give)\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*)?)\s+back\b/g, "paid back to $1"],
+
   // --- gifts you received ---
   [/\b(give|gave|giv|dash|dashed|send|sent|bless|blessed|gift|gifted|transfer|transferred|surprise|surprised)\s+me\b/g, (_m: string, v: string) => `${giftInVerb(v)} me`],
   [/\b(?:gift|present)\s+(?:from|by)\b/g, "gift from"],

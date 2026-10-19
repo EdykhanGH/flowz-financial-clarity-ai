@@ -2,7 +2,7 @@
 // common questions with simple rules over the same data, so the screen can be tried offline.
 
 import { CATEGORY_BY_ID, KINDS } from "../lib/kinds";
-import { formatMoney, type Entry } from "../lib/money";
+import { buildDebtBook, formatMoney, type Entry } from "../lib/money";
 import { addDays, fromISODate, monthKey, prettyMonth, shiftMonth, shortDay, toISODate } from "../lib/dates";
 import { detectCategory, type Currency } from "../lib/parse";
 
@@ -56,20 +56,15 @@ export function demoAnswer(question: string, all: Entry[], today: string): strin
   const flow = (e: Entry) => KINDS[e.kind].flow;
 
   // Debts
-  if (/\bowe|owing|debt|borrow|credit\b/.test(q)) {
+  if (/\bowe|owing|debt|borrow|credit|paid back|balance\b/.test(q)) {
     const mine = /\bi owe\b|do i owe|am i owing|i dey owe|my debts?/.test(q);
-    const kind = mine ? "i_owe" : "owed_to_me";
-    const open = all.filter((e) => e.kind === kind && !e.settled_at && e.amount != null);
+    const book = buildDebtBook(all);
+    const open = (mine ? book.iOwe : book.owedToMe).filter((p) => p.balance > 0);
     if (!open.length) return mine ? "You don't owe anyone right now. 🎉" : "Nobody owes you money right now.";
-    const people = new Map<string, Partial<Record<Currency, number>>>();
-    for (const e of open) {
-      const name = e.person ?? "Someone";
-      const t = people.get(name) ?? {};
-      t[e.currency!] = (t[e.currency!] ?? 0) + e.amount!;
-      people.set(name, t);
-    }
-    const lines = [...people.entries()].map(([name, t]) => `- ${name}: ${money(t)}`);
-    return `${mine ? "You still owe:" : "These people still owe you:"}\n${lines.join("\n")}\nTotal: ${money(sumBy(open, () => true))}.`;
+    const lines = open.map((p) => `- ${p.name}: ${formatMoney(p.balance, p.currency)}${p.repaid > 0 ? ` (paid back ${formatMoney(p.repaid, p.currency)} of ${formatMoney(p.owed, p.currency)})` : ""}`);
+    const total: Partial<Record<Currency, number>> = {};
+    for (const p of open) total[p.currency] = (total[p.currency] ?? 0) + p.balance;
+    return `${mine ? "You still owe:" : "These people still owe you:"}\n${lines.join("\n")}\nTotal: ${money(total)}.`;
   }
 
   // Compare with last month

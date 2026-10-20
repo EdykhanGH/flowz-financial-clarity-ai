@@ -57,6 +57,11 @@ export async function listEntries(start: string, end: string): Promise<Entry[]> 
   return load().entries.filter((e) => e.entry_date >= start && e.entry_date <= end).sort(byDateThenPosition);
 }
 
+export async function listAllEntries(end: string): Promise<Entry[]> {
+  await wait();
+  return load().entries.filter((e) => e.entry_date <= end).sort(byDateThenPosition);
+}
+
 export async function upsertEntries(rows: Entry[]) {
   await wait();
   const data = load();

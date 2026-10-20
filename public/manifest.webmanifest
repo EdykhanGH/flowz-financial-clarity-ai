@@ -1,7 +1,7 @@
 {
-  "name": "Flowz — money notebook",
+  "name": "Flowz — Your interactive accounts notebook",
   "short_name": "Flowz",
-  "description": "Write down what you sold, bought and spent. Flowz does the maths.",
+  "description": "Your interactive accounts notebook. Write down what you sold, bought and spent. Flowz does the maths.",
   "id": "/",
   "start_url": "/today",
   "scope": "/",

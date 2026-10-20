@@ -19,7 +19,7 @@ export default function AppShell() {
   const { signOut } = useAuth();
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-paper/90 px-4 py-3 backdrop-blur">
+      <header className="no-print sticky top-0 z-30 flex items-center justify-between bg-paper/90 px-4 py-3 backdrop-blur">
         <Link to="/today" aria-label="Flowz home">
           <Logo />
         </Link>
@@ -29,7 +29,7 @@ export default function AppShell() {
       </header>
 
       {DEMO && (
-        <div className="mx-4 mb-2 flex items-center justify-between gap-3 rounded-2xl bg-sun-soft px-4 py-2 text-xs font-bold text-amber-800">
+        <div className="no-print mx-4 mb-2 flex items-center justify-between gap-3 rounded-2xl bg-sun-soft px-4 py-2 text-xs font-bold text-amber-800">
           <span>Demo: the earlier days are sample data, saved only in this browser.</span>
           <button onClick={signOut} className="shrink-0 underline">Start over</button>
         </div>
@@ -41,7 +41,7 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-safe backdrop-blur">
+      <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-safe backdrop-blur">
         <ul className="mx-auto grid max-w-2xl grid-cols-5">
           {tabs.map(({ to, label, icon: Icon }) => (
             <li key={to}>

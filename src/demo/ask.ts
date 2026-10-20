@@ -3,40 +3,9 @@
 
 import { CATEGORY_BY_ID, KINDS } from "../lib/kinds";
 import { buildDebtBook, formatMoney, type Entry } from "../lib/money";
-import { addDays, fromISODate, monthKey, prettyMonth, shiftMonth, shortDay, toISODate } from "../lib/dates";
+import { monthKey, shortDay } from "../lib/dates";
+import { periodOf } from "../lib/periods";
 import { detectCategory, type Currency } from "../lib/parse";
-
-interface Period {
-  start: string;
-  end: string;
-  label: string;
-}
-
-const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-
-function periodOf(q: string, today: string): Period {
-  if (/\btoday\b/.test(q)) return { start: today, end: today, label: "today" };
-  if (/\byesterday\b/.test(q)) {
-    const y = addDays(today, -1);
-    return { start: y, end: y, label: "yesterday" };
-  }
-  const monday = addDays(today, -((fromISODate(today).getDay() + 6) % 7));
-  if (/\blast week\b/.test(q)) return { start: addDays(monday, -7), end: addDays(monday, -1), label: "last week" };
-  if (/\bthis week\b/.test(q)) return { start: monday, end: today, label: "this week" };
-  if (/\blast month\b/.test(q)) {
-    const m = shiftMonth(monthKey(today), -1);
-    return { start: `${m}-01`, end: toISODate(new Date(+m.slice(0, 4), +m.slice(5), 0)), label: "last month" };
-  }
-  if (/\bthis year\b/.test(q)) return { start: `${today.slice(0, 4)}-01-01`, end: today, label: "this year" };
-  const named = MONTHS.findIndex((name) => q.includes(name));
-  if (named >= 0) {
-    let year = +today.slice(0, 4);
-    if (named + 1 > +today.slice(5, 7)) year -= 1;
-    const m = `${year}-${String(named + 1).padStart(2, "0")}`;
-    return { start: `${m}-01`, end: toISODate(new Date(year, named + 1, 0)), label: `in ${prettyMonth(m)}` };
-  }
-  return { start: `${monthKey(today)}-01`, end: today, label: "this month" };
-}
 
 function sumBy(entries: Entry[], test: (e: Entry) => boolean) {
   const out: Partial<Record<Currency, number>> = {};
@@ -52,6 +21,7 @@ function money(sums: Partial<Record<Currency, number>>) {
 export function demoAnswer(question: string, all: Entry[], today: string): string {
   const q = question.toLowerCase();
   const p = periodOf(q, today);
+  p.label = /^\d|^[A-Z]|^Q/.test(p.label) ? `in ${p.label}` : p.label;
   const inPeriod = all.filter((e) => e.entry_date >= p.start && e.entry_date <= p.end);
   const flow = (e: Entry) => KINDS[e.kind].flow;
 

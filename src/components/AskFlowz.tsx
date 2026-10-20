@@ -1,9 +1,31 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { MessageCircleQuestion, SendHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileText, MessageCircleQuestion, SendHorizontal } from "lucide-react";
 import clsx from "clsx";
 import { askFlowz, type ChatMessage } from "@/lib/api";
 import { todayISO } from "@/lib/dates";
+import { periodOf } from "@/lib/periods";
 import { Spinner } from "./ui";
+
+type Message = ChatMessage & { link?: { to: string; label: string } };
+
+/** "Prepare a profit and loss for September" → the statement, worked out exactly in the app. */
+function statementRequest(q: string, today: string): Message | null {
+  const t = q.toLowerCase();
+  const bs = /balance\s*sheet|statement of financial position|net worth|what (?:is )?my business (?:is )?worth/.test(t);
+  const pl = /profit\s*(?:and|&|n)\s*loss|\bp\s*&\s*l\b|\bp and l\b|\bpnl\b|income statement|income and (?:expenditure|spending)|account statement|statement of account|financial statement|accounts? for/.test(t);
+  if (!bs && !pl) return null;
+  const p = periodOf(q, today);
+  const end = p.end > today ? today : p.end;
+  const type = bs && !pl ? "bs" : "pl";
+  const name = type === "bs" ? "Balance Sheet" : "Profit & Loss";
+  const when = type === "bs" ? `as at ${end}` : `for ${p.label}`;
+  return {
+    role: "assistant",
+    text: `Here is your ${name} ${when}, worked out from your notebook. It also tells you if anything is missing for it to be accurate.${bs && pl ? " Your Balance Sheet is on the next tab." : ""}`,
+    link: { to: `/statements?type=${type}&start=${p.start}&end=${end}`, label: `Open ${name}` },
+  };
+}
 
 const SUGGESTIONS = [
   "How much did I spend on transport this month?",
@@ -11,11 +33,12 @@ const SUGGESTIONS = [
   "What was my best day this month?",
   "Am I doing better than last month?",
   "What was my biggest expense?",
+  "Prepare a profit and loss for last month",
 ];
 
 /** Chat box under the monthly summary: ask questions about your own notebook. */
 export default function AskFlowz() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +51,14 @@ export default function AskFlowz() {
   async function ask(text: string) {
     const q = text.trim();
     if (!q || busy) return;
-    const history = messages.slice(-8);
+    const history = messages.slice(-8).map(({ role, text }) => ({ role, text }));
     setMessages((m) => [...m, { role: "user", text: q }]);
     setQuestion("");
+    const statement = statementRequest(q, todayISO());
+    if (statement) {
+      setMessages((m) => [...m, statement]);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -77,6 +105,11 @@ export default function AskFlowz() {
               )}
             >
               {m.text}
+              {m.link && (
+                <Link to={m.link.to} className="btn-primary mt-3 flex w-full py-2 text-sm">
+                  <FileText className="h-4 w-4" /> {m.link.label}
+                </Link>
+              )}
             </div>
           </div>
         ))}

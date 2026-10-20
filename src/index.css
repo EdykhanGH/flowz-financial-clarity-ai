@@ -24,3 +24,11 @@
 }
 
 .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }
+
+/* Statements print cleanly: only the statement itself. */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .print-sheet { box-shadow: none !important; border: 0 !important; }
+  main { padding: 0 !important; }
+}

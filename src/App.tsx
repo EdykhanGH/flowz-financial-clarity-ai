@@ -12,6 +12,7 @@ import MonthPage from "./pages/MonthPage";
 import Budgets from "./pages/Budgets";
 import Owed from "./pages/Owed";
 import SettingsPage from "./pages/SettingsPage";
+import Statements from "./pages/Statements";
 
 function RequireSetup({ children }: { children: ReactNode }) {
   const { session, settings, loading } = useAuth();
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/owed" element={<Owed />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/statements" element={<Statements />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

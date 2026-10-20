@@ -238,7 +238,7 @@ export function checkCompleteness(
     }
     if (share < 0.6) {
       notes.push(`You wrote in Flowz on ${recorded} of ${days} days. Days with nothing written may be missing sales or spending.`);
-      score += share < 0.4 ? 3 : 2;
+      score += share < 0.25 ? 4 : share < 0.4 ? 3 : 2;
     } else if (share < 0.9) {
       notes.push(`You wrote in Flowz on ${recorded} of ${days} days.`);
       score += 1;

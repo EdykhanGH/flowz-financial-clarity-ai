@@ -1,4 +1,4 @@
-# Flowz — Your interactive account notebook
+# Flowz — Your interactive accounts notebook
 
 Flowz digitises the paper notebook people use to jot down the day's money.
 You write lines in plain words — *"Sold 3 bags of rice 45,000"*, *"Gave mum 10k"*,

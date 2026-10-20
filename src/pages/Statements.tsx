@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, Copy, Info, Printer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, Copy, FileSpreadsheet, FileText, Info } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { listAllEntries } from "@/lib/api";
@@ -18,6 +18,15 @@ import {
   type ProfitAndLoss,
 } from "@/lib/statements";
 import { ErrorNote, Spinner } from "@/components/ui";
+import {
+  balanceSheetRows,
+  downloadExcel,
+  downloadPdf,
+  profitAndLossRows,
+  statementText,
+  TAGLINE,
+  type StatementDoc,
+} from "@/lib/exportStatement";
 
 type Kind = "pl" | "bs";
 type Inputs = { openingStock: string; closingStock: string; openingCash: string; stock: string; otherAssets: string; otherLiabilities: string };
@@ -133,14 +142,45 @@ export default function Statements() {
   const title = kind === "pl" ? (settings.mode === "business" ? "Profit and Loss Statement" : "Income and Spending Statement") : "Balance Sheet";
   const periodText = kind === "pl" ? `${longDate(start)} to ${longDate(end > today ? today : end)}` : `As at ${longDate(end > today ? today : end)}`;
 
+  const asOf = end > today ? today : end;
+  const doc: StatementDoc = {
+    owner,
+    title,
+    period: periodText,
+    currency,
+    rows: kind === "pl" ? profitAndLossRows(pl) : balanceSheetRows(bs),
+    basis:
+      kind === "pl"
+        ? "Cash basis: money is counted when you wrote it as received or paid. Sales on credit count when they are paid back."
+        : bs.cashEstimated
+          ? "Cash is worked out from your notebook since your first day in Flowz, without the cash you started with."
+          : "Cash is the cash you started with plus everything written in your notebook since.",
+    check,
+    preparedOn: longDate(today),
+    fileStem: kind === "pl" ? `flowz-${settings.mode === "business" ? "profit-and-loss" : "income-and-spending"}-${start}-to-${asOf}` : `flowz-balance-sheet-${asOf}`,
+  };
+  const [busy, setBusy] = useState<null | "pdf" | "xlsx">(null);
+
   async function copyText() {
-    const text = kind === "pl" ? plText(pl, title, owner, periodText) : bsText(bs, owner, periodText);
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(statementText(doc));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setError("Couldn't copy on this device.");
+    }
+  }
+
+  async function download(type: "pdf" | "xlsx") {
+    setBusy(type);
+    setError(null);
+    try {
+      await (type === "pdf" ? downloadPdf(doc) : downloadExcel(doc));
+    } catch (e) {
+      console.error(e);
+      setError("Couldn't make the file. Please check your internet connection and try again.");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -242,26 +282,29 @@ export default function Statements() {
             </header>
             {kind === "pl" ? <PLTable pl={pl} /> : <BSTable bs={bs} />}
             <footer className="mt-5 space-y-1 border-t border-line pt-3 text-xs text-muted">
-              <p>
-                {kind === "pl"
-                  ? "Cash basis: money is counted when you wrote it as received or paid. Sales on credit count when they are paid back."
-                  : bs.cashEstimated
-                    ? "Cash is worked out from your notebook since your first day in Flowz, without the cash you started with."
-                    : "Cash is the cash you started with plus everything written in your notebook since."}
-              </p>
-              <p>Prepared with Flowz · Your interactive account notebook · {longDate(today)}</p>
+              <p>{doc.basis}</p>
+              <p>Prepared with Flowz · {TAGLINE} · {doc.preparedOn}</p>
             </footer>
           </section>
 
-          <div className="no-print grid grid-cols-2 gap-2">
-            <button className="btn-soft" onClick={copyText}>
-              <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy as text"}
-            </button>
-            {!DEMO && (
-              <button className="btn-soft" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" /> Print or save PDF
-              </button>
+          <div className="no-print space-y-2">
+            {DEMO ? (
+              <p className="rounded-2xl bg-sun-soft px-4 py-3 text-sm font-semibold text-amber-800">
+                Demo: in the real app you can download this statement as a PDF or an Excel file.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn-primary" onClick={() => download("pdf")} disabled={busy !== null}>
+                  {busy === "pdf" ? <Spinner /> : <FileText className="h-4 w-4" />} Download PDF
+                </button>
+                <button className="btn-primary" onClick={() => download("xlsx")} disabled={busy !== null}>
+                  {busy === "xlsx" ? <Spinner /> : <FileSpreadsheet className="h-4 w-4" />} Download Excel
+                </button>
+              </div>
             )}
+            <button className="btn-soft w-full" onClick={copyText}>
+              <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy as text (for WhatsApp)"}
+            </button>
           </div>
         </>
       )}
@@ -402,45 +445,3 @@ function BSTable({ bs }: { bs: BalanceSheet }) {
   );
 }
 
-function plText(pl: ProfitAndLoss, title: string, owner: string, period: string) {
-  const c = pl.currency;
-  const m = (n: number | null) => (n == null ? "not entered" : formatMoney(n, c));
-  const out = [owner, title, period, ""];
-  out.push("INCOME", ...pl.income.map((l) => `  ${l.label}: ${m(l.amount)}`), `  Total: ${m(pl.totalIncome)}`, "");
-  if (pl.mode === "business") {
-    out.push("COST OF STOCK SOLD", `  Stock at start: ${m(pl.stock.opening)}`, `  Stock bought: ${m(pl.stock.purchases)}`, `  Stock left at end: ${m(pl.stock.closing)}`, `  Cost of stock sold: ${m(pl.stock.cost)}`, `GROSS PROFIT: ${m(pl.grossProfit)}`, "");
-  }
-  out.push(pl.mode === "business" ? "EXPENSES" : "SPENDING", ...pl.expenses.map((l) => `  ${l.label}: ${m(l.amount)}`), `  Total: ${m(pl.totalExpenses)}`, "");
-  out.push(`${pl.mode === "business" ? (pl.netProfit >= 0 ? "NET PROFIT" : "NET LOSS") : "WHAT YOU KEPT"}: ${m(pl.netProfit)}`);
-  if (pl.personal.length) out.push("", "Personal spending (not in profit):", ...pl.personal.map((l) => `  ${l.label}: ${m(l.amount)}`));
-  out.push("", "Prepared with Flowz · Your interactive account notebook");
-  return out.join("\n");
-}
-
-function bsText(bs: BalanceSheet, owner: string, period: string) {
-  const c = bs.currency;
-  const m = (n: number | null) => (n == null ? "not entered" : formatMoney(n, c));
-  return [
-    owner,
-    "Balance Sheet",
-    period,
-    "",
-    "ASSETS",
-    `  Cash: ${m(bs.cash)}${bs.cashEstimated ? " (estimated)" : ""}`,
-    `  Money people owe you: ${m(bs.totalReceivables)}`,
-    ...bs.receivables.map((r) => `    ${r.label}: ${m(r.amount)}`),
-    `  Stock: ${m(bs.stock)}`,
-    `  Things you own: ${m(bs.otherAssets)}`,
-    `  Total assets: ${m(bs.totalAssets)}`,
-    "",
-    "LIABILITIES",
-    `  Money you owe people: ${m(bs.totalPayables)}`,
-    ...bs.payables.map((r) => `    ${r.label}: ${m(r.amount)}`),
-    `  Other debts: ${m(bs.otherLiabilities)}`,
-    `  Total liabilities: ${m(bs.totalLiabilities)}`,
-    "",
-    `WHAT IT'S WORTH: ${m(bs.worth)}`,
-    "",
-    "Prepared with Flowz · Your interactive account notebook",
-  ].join("\n");
-}

@@ -13,7 +13,7 @@ const css = files.filter((f) => f.endsWith(".css")).map((f) => readFileSync(path
 const icon = `data:image/svg+xml;base64,${readFileSync("public/icon.svg").toString("base64")}`;
 
 const page = `<title>Flowz</title>
-<meta name="description" content="Flowz — Your interactive account notebook" />
+<meta name="description" content="Flowz — Your interactive accounts notebook" />
 <link rel="icon" href="${icon}" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

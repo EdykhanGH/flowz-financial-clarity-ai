@@ -14,7 +14,7 @@ export default function Welcome() {
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 py-6">
       <div>
         <Logo />
-        <p className="mt-1 text-sm font-bold text-muted">Your interactive account notebook</p>
+        <p className="mt-1 text-sm font-bold text-muted">Your interactive accounts notebook</p>
       </div>
       <section className="mt-10">
         <h1 className="text-4xl font-extrabold leading-tight">

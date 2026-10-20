@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, FileText, RefreshCw, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { generateSummary, getSummary, listBudgets, listDebts, listEntries, type Summary } from "@/lib/api";
@@ -106,6 +106,18 @@ export default function MonthPage() {
         </EmptyState>
       ) : (
         <>
+          <Link
+            to={`/statements?type=pl&start=${month}-01&end=${monthRange(month).end > todayISO() ? todayISO() : monthRange(month).end}`}
+            className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sky-soft text-sky"><FileText className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-extrabold">{settings.mode === "business" ? "Profit & Loss and Balance Sheet" : "Income & Spending and Balance Sheet"}</span>
+              <span className="block text-sm text-muted">Simple account statements from your notebook, for any period</span>
+            </span>
+            <ChevronRight className="h-5 w-5 text-muted" />
+          </Link>
+
           {/* Smart summary */}
           <section className="card overflow-hidden">
             <div className="flex items-center justify-between bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-white">

@@ -143,7 +143,7 @@ export function ReminderBanner() {
 
   if (!due) return null;
   return (
-    <Link to="/today" className="mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-brand px-4 py-3 text-white shadow-card">
+    <Link to="/today" className="no-print mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-brand px-4 py-3 text-white shadow-card">
       <BellRing className="h-5 w-5 shrink-0" />
       <span className="flex-1 text-sm font-bold">You haven't written today's money yet. Tap to open today's page.</span>
     </Link>

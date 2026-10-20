@@ -83,6 +83,25 @@ export async function listEntries(start: string, end: string): Promise<Entry[]> 
   ) as Entry[];
 }
 
+/** Every line up to a date (for statements), fetched in pages so long histories aren't cut off. */
+export async function listAllEntries(end: string): Promise<Entry[]> {
+  const out: Entry[] = [];
+  for (let page = 0; page < 50; page++) {
+    const rows = check(
+      await supabase
+        .from("entries")
+        .select(ENTRY_COLUMNS)
+        .lte("entry_date", end)
+        .order("entry_date", { ascending: true })
+        .order("position", { ascending: true })
+        .range(page * 1000, page * 1000 + 999),
+    ) as Entry[];
+    out.push(...rows.map((r) => ({ ...r, amount: r.amount == null ? null : Number(r.amount) })));
+    if (rows.length < 1000) break;
+  }
+  return out;
+}
+
 export async function upsertEntries(rows: Entry[]) {
   if (rows.length === 0) return;
   const clean = rows.map(({ created_at: _c, updated_at: _u, ...rest }) => rest);

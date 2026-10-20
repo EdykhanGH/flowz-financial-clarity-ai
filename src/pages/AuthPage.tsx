@@ -68,7 +68,10 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 py-6">
-      <Link to="/"><Logo /></Link>
+      <Link to="/" className="block">
+        <Logo />
+        <span className="mt-1 block text-sm font-bold text-muted">Your interactive account notebook</span>
+      </Link>
       <div className="my-auto py-10">
         <h1 className="text-3xl font-extrabold">{isSignup ? "Create your notebook" : "Welcome back"}</h1>
         <p className="mt-2 text-muted">

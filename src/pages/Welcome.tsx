@@ -12,7 +12,10 @@ const sample = [
 export default function Welcome() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 py-6">
-      <Logo />
+      <div>
+        <Logo />
+        <p className="mt-1 text-sm font-bold text-muted">Your interactive account notebook</p>
+      </div>
       <section className="mt-10">
         <h1 className="text-4xl font-extrabold leading-tight">
           Write it down.
@@ -20,7 +23,7 @@ export default function Welcome() {
           <span className="text-brand">Flowz does the maths.</span>
         </h1>
         <p className="mt-4 text-lg text-muted">
-          Your money notebook. Jot what you sold, bought, spent or gave, just like on paper. Flowz adds it up and tells you how your month is going.
+          Jot what you sold, bought, spent or gave, just like on paper. Flowz adds it up, keeps track of who owes you, and turns your notes into simple account statements.
         </p>
       </section>
 

@@ -1,4 +1,4 @@
-# Flowz — your money notebook
+# Flowz — Your interactive account notebook
 
 Flowz digitises the paper notebook people use to jot down the day's money.
 You write lines in plain words — *"Sold 3 bags of rice 45,000"*, *"Gave mum 10k"*,
@@ -15,6 +15,7 @@ Built to be simple enough for anyone, business owner or not.
 | **Notebook** | Every past page, by month, with search. |
 | **Summary** | Monthly totals, comparison with last month, where money went, budgets, an AI-written summary with a tip, and **Ask Flowz**: a chat where users ask questions about their own notebook. |
 | **Budgets** | Monthly spending limits per category with progress bars. |
+| **Statements** | Profit & Loss (or Income & Spending) for any period and a Balance Sheet at any date, built from your notebook, with a plain check of whether the data is complete enough. Ask Flowz opens them too ("prepare a profit and loss for September"). Copy as text or print / save as PDF. |
 | **Owed** | A debt book: each person's balance (owed minus paid back), with history and a **Record payment** button. Built automatically from your pages. |
 
 How a line is understood lives in `src/lib/parse.ts` and `src/lib/language.ts` (runs on the phone — instant, free, no internet needed).

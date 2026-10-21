@@ -50,7 +50,10 @@ function toIso(v: unknown): string | null {
 }
 
 export async function readStatement(file: File): Promise<Txn[]> {
-  const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+  // CSV cells stay as text so dd/mm/yyyy dates aren't misread as US mm/dd.
+  const wb = /\.csv$/i.test(file.name)
+    ? XLSX.read(await file.text(), { type: "string", raw: true })
+    : XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const grid = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true, defval: "" });
 

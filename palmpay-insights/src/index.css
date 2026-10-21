@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background: #f6f3fb;
+  color: #1e1530;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card {
+  @apply rounded-2xl bg-white shadow-card;
+}
+
+.chip {
+  @apply rounded-full px-3 py-1.5 text-sm font-semibold transition;
+}

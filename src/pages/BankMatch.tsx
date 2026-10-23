@@ -369,6 +369,11 @@ export default function BankMatch() {
 
           <section className="space-y-3">
             {picker}
+            {sampleStatement && (
+              <button className="btn-soft w-full" onClick={trySample} disabled={Boolean(reading)}>
+                <Sparkles className="h-4 w-4" /> Try a sample statement
+              </button>
+            )}
             <Collapsible title={`Uploaded statements (${statements.length})`}>
               {statements.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 px-4 py-3">

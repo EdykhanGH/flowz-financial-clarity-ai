@@ -23,7 +23,9 @@ export default defineConfig(({ mode }) => {
         { find: "@", replacement: src },
       ],
     },
-    build: demo ? { outDir: "dist-demo", assetsInlineLimit: 100_000, cssCodeSplit: false } : undefined,
+    build: demo
+      ? { outDir: "dist-demo", assetsInlineLimit: 100_000, cssCodeSplit: false, rollupOptions: { output: { inlineDynamicImports: true } } }
+      : undefined,
     server: { host: true, port: 8080 },
   };
 });

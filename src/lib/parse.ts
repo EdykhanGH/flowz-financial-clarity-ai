@@ -219,7 +219,7 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
     };
   }
   // "Ada paid 20k": someone paying you is money in
-  const payer = cleanName(t.match(new RegExp(`^${NAME}\\s+(?:paid|sent|transferred|settled)\\b(?!\\s+(?:for|the|my|our|school|rent|bill))`))?.[1]);
+  const payer = cleanName(t.match(new RegExp(`^${NAME}\\s+(?:paid|pay|pays|sent|transferred|settled)\\b(?!\\s+(?:for|the|my|our|school|rent|bill))`))?.[1]);
   if (payer && !/\b(?:salary|salaries|wages?|staff|workers?)\b/.test(t)) {
     return { kind: "sale", confident: true, person: payer };
   }

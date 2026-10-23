@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, Copy, FileSpreadsheet, FileText, Info } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
-import { listAllEntries } from "@/lib/api";
+import { listAllEntries, listBankRules, listBankStatements, listBankTxns, type BankStatement } from "@/lib/api";
+import { buildMatchReport, type BankRule, type BankTxn } from "@/lib/bankMatch";
 import { fromISODate, todayISO } from "@/lib/dates";
 import { CURRENCY_SYMBOL, formatMoney, type Entry } from "@/lib/money";
 import { parseLine, type Currency } from "@/lib/parse";
@@ -82,6 +83,15 @@ export default function Statements() {
       .finally(() => setLoading(false));
   }, [end, today]);
 
+  // Bank Match: how much of the bank statement for this period is in the notebook.
+  const [bank, setBank] = useState<{ txns: BankTxn[]; rules: BankRule[]; statements: BankStatement[] } | null>(null);
+  useEffect(() => {
+    const until = end > today ? today : end;
+    Promise.all([listBankTxns(start, until), listBankRules(), listBankStatements()])
+      .then(([txns, rules, statements]) => setBank({ txns, rules, statements }))
+      .catch(() => setBank(null)); // Bank Match is optional
+  }, [start, end, today]);
+
   const currencies = useMemo(() => {
     const set = new Set(entries.filter((e) => e.amount != null && e.currency).map((e) => e.currency as Currency));
     return set.size ? [...set] : [settings.default_currency];
@@ -128,6 +138,21 @@ export default function Statements() {
     [entries, kind, start, end, currency, settings.mode, today, nums.openingStock, nums.closingStock, nums.openingCash],
   );
 
+  const bankNote = useMemo(() => {
+    if (kind !== "pl" || !bank) return null;
+    const txns = bank.txns.filter((t) => t.currency === currency);
+    if (!txns.length) return null;
+    const report = buildMatchReport(txns, entries, { rules: bank.rules });
+    const until = end > today ? today : end;
+    const covering = bank.statements.filter((st) => st.currency === currency && st.period_start && st.period_end && st.period_start <= until && st.period_end >= start);
+    const from = covering.reduce((m, st) => (st.period_start! < m ? st.period_start! : m), until);
+    const to = covering.reduce((m, st) => (st.period_end! > m ? st.period_end! : m), start);
+    const banks = [...new Set(covering.map((st) => st.bank_name).filter(Boolean))].join(", ");
+    const partly = from > start || to < until ? ` Statements cover ${longDate(from > start ? from : start)} to ${longDate(to < until ? to : until)}.` : "";
+    return `Bank-checked${banks ? ` against ${banks}` : ""}: ${report.score}% of ${report.total} bank transactions in this period are in the notebook or explained.${partly}`;
+  }, [kind, bank, currency, entries, start, end, today]);
+  const checked = bankNote ? { ...check, notes: [...check.notes, bankNote] } : check;
+
   const set = (patch: Record<string, string>) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([k, v]) => next.set(k, v));
@@ -155,7 +180,7 @@ export default function Statements() {
         : bs.cashEstimated
           ? "Cash is worked out from your notebook since your first day in Flowz, without the cash you started with."
           : "Cash is the cash you started with plus everything written in your notebook since.",
-    check,
+    check: checked,
     preparedOn: longDate(today),
     fileStem: kind === "pl" ? `flowz-${settings.mode === "business" ? "profit-and-loss" : "income-and-spending"}-${start}-to-${asOf}` : `flowz-balance-sheet-${asOf}`,
   };
@@ -245,7 +270,7 @@ export default function Statements() {
         <div className="grid h-48 place-items-center text-brand"><Spinner className="h-8 w-8" /></div>
       ) : (
         <>
-          <CompletenessBox check={check} />
+          <CompletenessBox check={checked} />
 
           <div className="no-print card overflow-hidden">
             <button className="flex w-full items-center justify-between px-4 py-3 text-left font-extrabold" onClick={() => setShowInputs((s) => !s)}>

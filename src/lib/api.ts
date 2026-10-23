@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 import { DEBT_KINDS, type Kind, type Mode } from "./kinds";
 import type { Budget, Entry, MonthStats } from "./money";
 import type { Currency } from "./parse";
+import type { BankRule, BankTxn } from "./bankMatch";
+import { statementPeriod, withFingerprints, type ReadStatement, type StatementTxn } from "./bankStatement";
 
 export interface Settings {
   user_id: string;
@@ -233,3 +235,119 @@ export async function readLinesWithAI(
     return null;
   }
 }
+
+// ---------- Bank Match ----------
+
+export interface BankStatement {
+  id: string;
+  file_name: string;
+  bank_name: string | null;
+  currency: Currency;
+  period_start: string | null;
+  period_end: string | null;
+  created_at: string;
+}
+
+const TXN_COLUMNS = "id, statement_id, txn_date, amount, direction, currency, description, balance, entry_id, status";
+
+export async function listBankStatements(): Promise<BankStatement[]> {
+  return check(
+    await supabase.from("bank_statements").select("id, file_name, bank_name, currency, period_start, period_end, created_at").order("period_end", { ascending: false }),
+  ) as BankStatement[];
+}
+
+/** Saves a statement and its transactions. Transactions already uploaded before are skipped. */
+export async function saveBankStatement(
+  meta: { file_name: string; bank_name: string | null; currency: Currency },
+  txns: StatementTxn[],
+): Promise<{ added: number; skipped: number }> {
+  const period = statementPeriod(txns);
+  const statement = check(
+    await supabase
+      .from("bank_statements")
+      .insert({ ...meta, period_start: period.start, period_end: period.end })
+      .select("id")
+      .single(),
+  ) as { id: string };
+  let added = 0;
+  const rows = withFingerprints(txns).map((t) => ({ ...t, statement_id: statement.id, currency: meta.currency }));
+  for (let i = 0; i < rows.length; i += 500) {
+    const inserted = check(
+      await supabase.from("bank_transactions").upsert(rows.slice(i, i + 500), { onConflict: "user_id,fingerprint", ignoreDuplicates: true }).select("id"),
+    ) as { id: string }[];
+    added += inserted.length;
+  }
+  if (added === 0) await supabase.from("bank_statements").delete().eq("id", statement.id);
+  return { added, skipped: rows.length - added };
+}
+
+export async function listBankTxns(start: string, end: string): Promise<BankTxn[]> {
+  const out: BankTxn[] = [];
+  for (let page = 0; page < 20; page++) {
+    const rows = check(
+      await supabase
+        .from("bank_transactions")
+        .select(TXN_COLUMNS)
+        .gte("txn_date", start)
+        .lte("txn_date", end)
+        .order("txn_date", { ascending: true })
+        .order("created_at", { ascending: true })
+        .range(page * 1000, page * 1000 + 999),
+    ) as BankTxn[];
+    out.push(...rows.map((r) => ({ ...r, amount: Number(r.amount), balance: r.balance == null ? null : Number(r.balance) })));
+    if (rows.length < 1000) break;
+  }
+  return out;
+}
+
+/** Links transactions to a notebook line (or unlinks with null). */
+export async function linkBankTxns(ids: string[], entryId: string | null) {
+  if (ids.length) check(await supabase.from("bank_transactions").update({ entry_id: entryId }).in("id", ids));
+}
+
+export async function setBankTxnStatus(ids: string[], status: BankTxn["status"]) {
+  if (ids.length) check(await supabase.from("bank_transactions").update({ status }).in("id", ids));
+}
+
+export async function deleteBankStatement(id: string) {
+  check(await supabase.from("bank_statements").delete().eq("id", id));
+}
+
+export async function listBankRules(): Promise<BankRule[]> {
+  return check(await supabase.from("bank_rules").select("id, phrase").order("created_at")) as BankRule[];
+}
+
+export async function addBankRule(phrase: string) {
+  check(await supabase.from("bank_rules").upsert({ phrase }, { onConflict: "user_id,phrase", ignoreDuplicates: true }));
+}
+
+export async function deleteBankRule(id: string) {
+  check(await supabase.from("bank_rules").delete().eq("id", id));
+}
+
+export interface AiStatementPart {
+  readable: boolean;
+  problem: string | null;
+  bank_name: string | null;
+  currency: Currency;
+  transactions: { date: string; description: string; amount: number; direction: "in" | "out"; balance: number | null }[];
+}
+
+/** Asks the AI to read part of a PDF statement (a few pages) or a photo of one. */
+export async function readStatementPart(data: string, mediaType: string, pages: number, today: string): Promise<AiStatementPart> {
+  const { data: result, error } = await supabase.functions.invoke("read-statement", { body: { data, media_type: mediaType, pages, today } });
+  if (error) {
+    let message = "Flowz couldn't read this statement right now. Please try again.";
+    try {
+      const body = await (error as { context?: Response }).context?.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // keep the friendly default
+    }
+    throw new Error(message);
+  }
+  return result as AiStatementPart;
+}
+
+/** Only the demo has a sample statement; the real app reads the user's own. */
+export const sampleStatement: (() => Promise<ReadStatement>) | null = null;

@@ -1,14 +1,17 @@
 // Demo version of src/lib/api.ts with the same functions, backed by the browser-only store.
 
-import type { Settings, Summary } from "../lib/api";
+import type { BankStatement, Settings, Summary } from "../lib/api";
+import { cashDirection, type BankRule, type BankTxn } from "../lib/bankMatch";
+import { statementPeriod, withFingerprints, type ReadStatement, type StatementTxn } from "../lib/bankStatement";
+import { addDays, todayISO } from "../lib/dates";
 import { formatMoney, type Budget, type Entry, type MonthStats } from "../lib/money";
 import type { Currency } from "../lib/parse";
 import { load, save, seedBudgets, seedEntries } from "./store";
 import { demoAnswer } from "./ask";
 import { DEBT_KINDS } from "../lib/kinds";
 
-export type { Settings, Summary };
-export type { ChatMessage, AiReading } from "../lib/api";
+export type { BankStatement, Settings, Summary };
+export type { ChatMessage, AiReading, AiStatementPart } from "../lib/api";
 
 const wait = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const byDateThenPosition = (a: Entry, b: Entry) => a.entry_date.localeCompare(b.entry_date) || a.position - b.position;
@@ -201,4 +204,122 @@ export async function askFlowz(question: string, _history: unknown[], today: str
 /** The demo has no AI; lines are read by the phone's rules only. */
 export async function readLinesWithAI(): Promise<null> {
   return null;
+}
+
+// ---------- Bank Match ----------
+
+export async function listBankStatements(): Promise<BankStatement[]> {
+  await wait();
+  return [...(load().bankStatements ?? [])].sort((a, b) => (b.period_end ?? "").localeCompare(a.period_end ?? ""));
+}
+
+export async function saveBankStatement(meta: { file_name: string; bank_name: string | null; currency: Currency }, txns: StatementTxn[]) {
+  await wait(300);
+  const data = load();
+  const period = statementPeriod(txns);
+  const statement: BankStatement = { id: crypto.randomUUID(), ...meta, period_start: period.start, period_end: period.end, created_at: new Date().toISOString() };
+  const existing = data.bankTxns ?? [];
+  const seen = new Set(existing.map((t) => t.fingerprint));
+  const fresh = withFingerprints(txns)
+    .filter((t) => !seen.has(t.fingerprint))
+    .map((t) => ({ ...t, id: crypto.randomUUID(), statement_id: statement.id, currency: meta.currency, entry_id: null, status: "open" as const }));
+  save({
+    ...data,
+    bankStatements: fresh.length ? [...(data.bankStatements ?? []), statement] : data.bankStatements ?? [],
+    bankTxns: [...existing, ...fresh],
+  });
+  return { added: fresh.length, skipped: txns.length - fresh.length };
+}
+
+export async function listBankTxns(start: string, end: string): Promise<BankTxn[]> {
+  await wait();
+  return (load().bankTxns ?? []).filter((t) => t.txn_date >= start && t.txn_date <= end).sort((a, b) => a.txn_date.localeCompare(b.txn_date));
+}
+
+function updateTxns(ids: string[], change: Partial<BankTxn>) {
+  const data = load();
+  save({ ...data, bankTxns: (data.bankTxns ?? []).map((t) => (ids.includes(t.id) ? { ...t, ...change } : t)) });
+}
+
+export async function linkBankTxns(ids: string[], entryId: string | null) {
+  await wait();
+  updateTxns(ids, { entry_id: entryId });
+}
+
+export async function setBankTxnStatus(ids: string[], status: BankTxn["status"]) {
+  await wait();
+  updateTxns(ids, { status });
+}
+
+export async function deleteBankStatement(id: string) {
+  await wait();
+  const data = load();
+  save({
+    ...data,
+    bankStatements: (data.bankStatements ?? []).filter((s) => s.id !== id),
+    bankTxns: (data.bankTxns ?? []).filter((t) => t.statement_id !== id),
+  });
+}
+
+export async function listBankRules(): Promise<BankRule[]> {
+  await wait();
+  return load().bankRules ?? [];
+}
+
+export async function addBankRule(phrase: string) {
+  await wait();
+  const data = load();
+  const rules = data.bankRules ?? [];
+  if (!rules.some((r) => r.phrase.toLowerCase() === phrase.toLowerCase())) save({ ...data, bankRules: [...rules, { id: crypto.randomUUID(), phrase }] });
+}
+
+export async function deleteBankRule(id: string) {
+  await wait();
+  const data = load();
+  save({ ...data, bankRules: (data.bankRules ?? []).filter((r) => r.id !== id) });
+}
+
+/** The demo has no AI, so PDFs and photos can't be read; spreadsheets and the sample statement work. */
+export async function readStatementPart(): Promise<never> {
+  await wait(400);
+  throw new Error("The demo reads Excel and CSV statements, or tap \"Try a sample statement\". In the real app, Flowz also reads PDFs and screenshots.");
+}
+
+/** A bank statement made from the demo notebook: most transfers match, a few are missing, plus bank charges. */
+export async function sampleStatement(): Promise<ReadStatement> {
+  await wait(1200);
+  const today = todayISO();
+  const start = addDays(today, -30);
+  const entries = load().entries.filter((e) => e.entry_date >= start && e.entry_date < today && e.amount != null && e.currency === "NGN");
+  const txns: StatementTxn[] = [];
+  const ref = (i: number) => String(100_000_000 + i * 7919).slice(0, 9);
+  entries.forEach((e, i) => {
+    const dir = cashDirection(e);
+    if (!dir || i % 3 === 2) return; // about a third were cash
+    const name = (e.person ?? ["AMAKA OBI", "BAYO ADE", "IFEOMA NWOSU"][i % 3]).toUpperCase();
+    if (e.kind === "sale" && e.amount! >= 30_000) {
+      // A day's sales usually arrive as several transfers.
+      const first = Math.round(e.amount! * 0.4 / 100) * 100;
+      txns.push({ txn_date: e.entry_date, amount: first, direction: "in", description: `TRF FROM ${name}/${ref(i)}`, balance: null });
+      txns.push({ txn_date: e.entry_date, amount: Math.round(e.amount! * 0.35 / 100) * 100, direction: "in", description: `NIP FRM CUSTOMER ${ref(i + 1)}`, balance: null });
+      return;
+    }
+    const description =
+      dir === "in" ? `TRF FROM ${name}/${ref(i)}` : e.kind === "purchase" ? `TRF TO WHOLESALE DEPOT/${ref(i)}` : `POS PURCHASE ${ref(i)} LAGOS`;
+    txns.push({ txn_date: e.entry_date, amount: e.amount!, direction: dir, description, balance: null });
+  });
+  const extra: [number, "in" | "out", number, string][] = [
+    [-3, "in", 12_000, "TRF FROM CHIDI OKAFOR/0123456789"],
+    [-9, "in", 7_500, "NIP FRM KEMI ADEYEMI-GTB TRANSFER"],
+    [-15, "in", 25_000, "TRF FROM EMEKA STORES/0099887766"],
+    [-6, "out", 20_000, "TRF TO MUM/2233445566"],
+    [-12, "out", 4_500, "TRF TO MTN DATA PURCHASE"],
+    [-2, "out", 4, "SMS ALERT CHARGES"],
+    [-10, "out", 4, "SMS ALERT CHARGES"],
+    [-5, "out", 10.75, "TRANSFER CHARGE"],
+    [-20, "out", 50, "ELECTRONIC MONEY TRANSFER LEVY"],
+  ];
+  for (const [back, direction, amount, description] of extra) txns.push({ txn_date: addDays(today, back), amount, direction, description, balance: null });
+  txns.sort((a, b) => a.txn_date.localeCompare(b.txn_date));
+  return { bank_name: "GTBank", currency: "NGN", transactions: txns };
 }

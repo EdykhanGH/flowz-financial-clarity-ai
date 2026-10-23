@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { Eye, EyeOff, X } from "lucide-react";
 import clsx from "clsx";
 import iconUrl from "@/assets/icon.svg";
 
@@ -74,6 +74,25 @@ export function EmptyState({ emoji, title, children }: { emoji: string; title: s
       <div className="mb-3 text-5xl">{emoji}</div>
       <h3 className="text-lg font-extrabold">{title}</h3>
       {children && <div className="mt-2 text-muted">{children}</div>}
+    </div>
+  );
+}
+
+/** A password box with an eye button to show or hide what's typed. */
+export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <input {...props} type={shown ? "text" : "password"} className={clsx("field pr-12", className)} />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        className="absolute inset-y-0 right-1 my-auto grid h-10 w-10 place-items-center rounded-full text-muted hover:bg-line/50 hover:text-ink"
+        aria-label={shown ? "Hide password" : "Show password"}
+        aria-pressed={shown}
+      >
+        {shown ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+      </button>
     </div>
   );
 }

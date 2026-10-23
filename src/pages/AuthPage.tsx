@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { ErrorNote, Logo, Spinner } from "@/components/ui";
+import { ErrorNote, Logo, PasswordInput, Spinner } from "@/components/ui";
 
 export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
   const [email, setEmail] = useState("");
@@ -90,13 +90,11 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
           </div>
           <div>
             <label className="label" htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete={isSignup ? "new-password" : "current-password"}
               required
               minLength={6}
-              className="field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isSignup ? "At least 6 characters" : "Your password"}

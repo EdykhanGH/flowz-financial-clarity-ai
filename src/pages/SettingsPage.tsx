@@ -6,7 +6,7 @@ import { saveSettings } from "@/lib/api";
 import type { Mode } from "@/lib/kinds";
 import type { Currency } from "@/lib/parse";
 import { supabase } from "@/lib/supabase";
-import { ErrorNote, Spinner } from "@/components/ui";
+import { ErrorNote, PasswordInput, Spinner } from "@/components/ui";
 import { ReminderSettings } from "@/components/Reminders";
 import { deviceTimeZone } from "@/lib/reminders";
 
@@ -133,7 +133,7 @@ function PasswordCard() {
   return (
     <form id="password" onSubmit={submit} className={clsx("card space-y-3 p-5", highlight && "ring-2 ring-brand")}>
       <label className="label" htmlFor="new-password">{highlight ? "Choose a new password" : "Change password"}</label>
-      <input id="new-password" type="password" minLength={6} required autoComplete="new-password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" />
+      <PasswordInput id="new-password" minLength={6} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" />
       {error && <ErrorNote>{error}</ErrorNote>}
       {message && <p className="text-sm font-bold text-brand">{message}</p>}
       <button className="btn-soft w-full" disabled={busy}>{busy ? <Spinner /> : "Update password"}</button>

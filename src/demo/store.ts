@@ -1,6 +1,7 @@
 // Demo data kept in this browser only. Falls back to memory when storage is blocked.
 
-import type { Settings, Summary } from "../lib/api";
+import type { BankStatement, Settings, Summary } from "../lib/api";
+import type { BankRule, BankTxn } from "../lib/bankMatch";
 import type { Budget, Entry } from "../lib/money";
 import { addDays, todayISO } from "../lib/dates";
 import { parseLine } from "../lib/parse";
@@ -16,6 +17,9 @@ export interface DemoData {
   entries: Entry[];
   budgets: Budget[];
   summaries: Record<string, Summary>;
+  bankStatements?: BankStatement[];
+  bankTxns?: (BankTxn & { fingerprint: string })[];
+  bankRules?: BankRule[];
 }
 
 const KEY = "flowz-demo-v1";

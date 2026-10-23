@@ -17,6 +17,7 @@ Built to be simple enough for anyone, business owner or not.
 | **Budgets** | Monthly spending limits per category with progress bars. |
 | **Statements** | Profit & Loss (or Income & Spending) for any period and a Balance Sheet at any date, built from your notebook, with a plain check of whether the data is complete enough. Ask Flowz opens them too ("prepare a profit and loss for September"). Copy as text or print / save as PDF. |
 | **Owed** | A debt book: each person's balance (owed minus paid back), with history and a **Record payment** button. Built automatically from your pages. |
+| **Bank Match** | Upload a bank statement (PDF, Excel, CSV or screenshots). Flowz matches it with the notebook and lists what's in the bank but not in the notebook, with one-tap **Add**, **Written** (link to a line) and **Not business** (optionally "always ignore transfers to MUM"). Bank charges can be added as one line. Notebook lines with no bank transaction are fine — they may be cash. Statements show how much was bank-checked. |
 
 How a line is understood lives in `src/lib/parse.ts` and `src/lib/language.ts` (runs on the phone — instant, free, no internet needed).
 It understands British and American English, Nigerian Pidgin, short forms and common typos:
@@ -28,6 +29,11 @@ Amounts: `45,000`, `₦45k`, `N4500`, `#4,500`, `1.5m`, `$250`, `15 dollars`, `t
 **Reading in context**: Flowz keeps a debt book while you write. "Joy bought 50k rice on credit" means Joy owes you;
 "Joy paid back 30k" (or just "Joy paid 30k", since Joy owes you) is a repayment that leaves ₦20k. Lines the phone finds
 unclear are also read by AI (`read-lines` function) with the debt book as context; offline, the phone's reading is kept.
+
+**Bank Match**: Excel and CSV statements are read on the phone (`src/lib/bankStatement.ts`). PDFs are split into
+4-page parts and photos are shrunk, then read by AI (`read-statement` function). Matching (`src/lib/bankMatch.ts`) pairs each bank
+transaction with a line of the same amount and direction within 3 days, lets several transfers sit inside a daily total
+("Sales today 52,000"), and never matches lines that say "cash". Uploading the same statement twice doesn't double count.
 
 **Daily reminder**: at a time the user picks (default 8pm), on days they haven't written anything,
 Flowz sends a phone notification and shows a banner inside the app.
@@ -45,7 +51,8 @@ Flowz sends a phone notification and shows a banner inside the app.
 ### 1. Database
 Run the files in `supabase/migrations/` (in order) against your Supabase project —
 either paste each one into **Supabase dashboard → SQL Editor** and run it, or `supabase db push`.
-They only create new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`, `push_subscriptions`); they don't touch old ones.
+They only create new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`, `push_subscriptions`, `ai_usage`,
+`bank_statements`, `bank_transactions`, `bank_rules`); they don't touch old ones.
 
 ### 2. Auth
 In **Authentication → URL Configuration**, set the Site URL to where the app is hosted and add
@@ -57,6 +64,7 @@ supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy monthly-summary
 supabase functions deploy ask-flowz
 supabase functions deploy read-lines
+supabase functions deploy read-statement
 ```
 Each user can refresh a month's summary up to 15 times; limits are in the function.
 

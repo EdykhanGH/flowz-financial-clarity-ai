@@ -6,7 +6,8 @@ import { statementPeriod, withFingerprints, type ReadStatement, type StatementTx
 import { addDays, todayISO } from "../lib/dates";
 import { formatMoney, type Budget, type Entry, type MonthStats } from "../lib/money";
 import type { Currency } from "../lib/parse";
-import { load, save, seedBudgets, seedEntries } from "./store";
+import { load, save, seedBudgets, seedEntries, seedItems } from "./store";
+import type { InventoryItem } from "../lib/inventory";
 import { demoAnswer } from "./ask";
 import { DEBT_KINDS } from "../lib/kinds";
 
@@ -42,6 +43,7 @@ export async function saveSettings(userId: string, values: Partial<Omit<Settings
     settings,
     entries: firstTime ? seedEntries(userId, settings.default_currency) : data.entries,
     budgets: firstTime ? seedBudgets(settings.default_currency) : data.budgets,
+    items: firstTime ? seedItems(settings.default_currency) : data.items,
   });
   return settings;
 }
@@ -322,4 +324,32 @@ export async function sampleStatement(): Promise<ReadStatement> {
   for (const [back, direction, amount, description] of extra) txns.push({ txn_date: addDays(today, back), amount, direction, description, balance: null });
   txns.sort((a, b) => a.txn_date.localeCompare(b.txn_date));
   return { bank_name: "GTBank", currency: "NGN", transactions: txns };
+}
+
+// ---------- inventory ----------
+
+export async function listItems(): Promise<InventoryItem[]> {
+  await wait();
+  return [...(load().items ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function saveItem(item: InventoryItem) {
+  await wait();
+  const data = load();
+  save({ ...data, items: [...(data.items ?? []).filter((i) => i.id !== item.id), item] });
+}
+
+export async function deleteItem(id: string) {
+  await wait();
+  const data = load();
+  save({
+    ...data,
+    items: (data.items ?? []).filter((i) => i.id !== id),
+    entries: data.entries.map((e) => (e.item_id === id ? { ...e, item_id: null } : e)),
+  });
+}
+
+export async function listStockLines(since: string): Promise<Entry[]> {
+  await wait();
+  return load().entries.filter((e) => e.item_id && e.entry_date >= since).sort(byDateThenPosition);
 }

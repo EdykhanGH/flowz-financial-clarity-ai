@@ -17,6 +17,8 @@ export interface Entry {
   person: string | null;
   kind_locked: boolean;
   settled_at: string | null;
+  item_id?: string | null; // the inventory item this line moved, if any
+  item_qty?: number | null; // how many single units moved
   created_at?: string;
   updated_at?: string;
 }

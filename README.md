@@ -17,6 +17,7 @@ Built to be simple enough for anyone, business owner or not.
 | **Budgets** | Monthly spending limits per category with progress bars. |
 | **Statements** | Profit & Loss (or Income & Spending) for any period and a Balance Sheet at any date, built from your notebook, with a plain check of whether the data is complete enough. Ask Flowz opens them too ("prepare a profit and loss for September"). Copy as text or print / save as PDF. |
 | **Owed** | A debt book: each person's balance (owed minus paid back), with history and a **Record payment** button. Built automatically from your pages. |
+| **Inventory** | Opened from the small **Inventory** button on the notebook page. Add goods with the unit they're sold in (pack, bottle, bag), what they come in (carton of 40), buying and selling prices per unit and per carton, stock now and a low-stock warning. Lines like *"Sold 3 indomie"*, *"Bought 2 cartons of indomie"* or *"Joy took 1 bag of rice on credit"* get their money from the prices (a written amount wins) and move the stock; each line shows what's left. |
 | **Bank Match** | Upload a bank statement (PDF, Excel, CSV or screenshots). Flowz matches it with the notebook and lists what's in the bank but not in the notebook, with one-tap **Add**, **Written** (link to a line) and **Not business** (optionally "always ignore transfers to MUM"). Bank charges can be added as one line. Notebook lines with no bank transaction are fine — they may be cash. Statements show how much was bank-checked. |
 
 How a line is understood lives in `src/lib/parse.ts` and `src/lib/language.ts` (runs on the phone — instant, free, no internet needed).
@@ -52,7 +53,7 @@ Flowz sends a phone notification and shows a banner inside the app.
 Run the files in `supabase/migrations/` (in order) against your Supabase project —
 either paste each one into **Supabase dashboard → SQL Editor** and run it, or `supabase db push`.
 They only create new tables (`user_settings`, `entries`, `budget_limits`, `monthly_summaries`, `push_subscriptions`, `ai_usage`,
-`bank_statements`, `bank_transactions`, `bank_rules`); they don't touch old ones.
+`bank_statements`, `bank_transactions`, `bank_rules`, `inventory_items`) and add columns to `entries`; they don't remove anything.
 
 ### 2. Auth
 In **Authentication → URL Configuration**, set the Site URL to where the app is hosted and add

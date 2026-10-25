@@ -496,8 +496,8 @@ function DayEditor({ date }: { date: string }) {
           <span>{filled ? `${filled} line${filled === 1 ? "" : "s"}` : "Write anything — one thing per line"}</span>
           <span className="flex items-center gap-3">
             <SaveBadge state={saveState} />
-            <Link to="/inventory" className="flex items-center gap-1.5 rounded-full bg-sky-soft px-3.5 py-1.5 text-sm font-extrabold text-sky hover:brightness-95">
-              <Package className="h-4 w-4" /> Inventory
+            <Link to="/inventory" className="flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-sky hover:brightness-95">
+              <Package className="h-3.5 w-3.5" /> Inventory
             </Link>
           </span>
         </div>

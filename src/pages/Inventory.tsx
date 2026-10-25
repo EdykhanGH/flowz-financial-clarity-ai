@@ -124,6 +124,7 @@ export default function Inventory() {
         open={editing !== null}
         currency={settings.default_currency}
         left={editing && editing !== "new" ? levels.get(editing.id) ?? 0 : 0}
+        known={items}
         onClose={() => setEditing(null)}
         onSave={save}
         onDelete={remove}
@@ -215,8 +216,14 @@ function ItemCard({ item, left, moves, onEdit }: { item: InventoryItem; left: nu
   );
 }
 
-const UNIT_SUGGESTIONS = ["piece", "pack", "bottle", "bag", "sachet", "tin", "crate", "kg"];
-const PACK_SUGGESTIONS = ["carton", "pack", "crate", "bag", "dozen", "box"];
+const UNIT_SUGGESTIONS = ["piece", "pack", "bottle", "bag", "sachet", "tin", "crate", "kg", "litre", "yard"];
+const PACK_SUGGESTIONS = ["carton", "pack", "crate", "bag", "sack", "dozen", "box", "bundle"];
+
+/** The usual choices plus any the user typed for their other items, so their own words come back. */
+function withOwn(defaults: string[], own: (string | null)[]) {
+  const extra = own.map((w) => w?.trim().toLowerCase()).filter((w): w is string => Boolean(w) && !defaults.includes(w!));
+  return [...defaults, ...new Set(extra)];
+}
 
 const toText = (n: number | null | undefined) => (n == null ? "" : String(n));
 const toNumber = (s: string) => {
@@ -229,6 +236,7 @@ function ItemSheet({
   open,
   currency,
   left,
+  known,
   onClose,
   onSave,
   onDelete,
@@ -237,12 +245,12 @@ function ItemSheet({
   open: boolean;
   currency: Currency;
   left: number;
+  known: InventoryItem[];
   onClose: () => void;
   onSave: (item: InventoryItem) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [f, setF] = useState<Record<string, string>>({});
-  const [usesPack, setUsesPack] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -250,12 +258,11 @@ function ItemSheet({
     if (!open) return;
     const upp = item?.units_per_pack ?? null;
     const packs = upp && left > 0 ? Math.floor(left / upp) : 0;
-    setUsesPack(Boolean(item?.pack_name));
     setF({
       name: item?.name ?? "",
       other_names: item?.other_names ?? "",
       unit_name: item?.unit_name ?? "piece",
-      pack_name: item?.pack_name ?? "carton",
+      pack_name: item?.pack_name ?? "",
       units_per_pack: toText(upp),
       cost_unit: toText(item?.cost_unit),
       cost_pack: toText(item?.cost_pack),
@@ -270,9 +277,12 @@ function ItemSheet({
 
   if (!open) return null;
   const set = (k: string) => (e: { target: { value: string } }) => setF((prev) => ({ ...prev, [k]: e.target.value }));
-  const unit = f.unit_name?.trim() || "piece";
-  const pack = f.pack_name?.trim() || "carton";
+  const unit = f.unit_name?.trim().toLowerCase() || "piece";
+  const pack = f.pack_name?.trim().toLowerCase() ?? "";
+  const usesPack = Boolean(pack) && pack !== unit;
   const upp = usesPack ? toNumber(f.units_per_pack ?? "") : null;
+  const units = withOwn(UNIT_SUGGESTIONS, known.map((i) => i.unit_name));
+  const packs = withOwn(PACK_SUGGESTIONS, known.map((i) => i.pack_name));
   const sym = currency === "USD" ? "$" : "₦";
   const counted = (upp ?? 0) * (toNumber(f.stock_packs ?? "") ?? 0) + (toNumber(f.stock_units ?? "") ?? 0);
 
@@ -288,6 +298,7 @@ function ItemSheet({
 
   async function submit() {
     if (!f.name?.trim()) return setError("Give the item a name.");
+    if (!f.unit_name?.trim()) return setError("Type how you sell it, e.g. roll or yard.");
     if (usesPack && !upp) return setError(`How many ${unit}s are in one ${pack}?`);
     setBusy(true);
     try {
@@ -296,8 +307,8 @@ function ItemSheet({
         id: item?.id ?? crypto.randomUUID(),
         name: f.name.trim(),
         other_names: f.other_names?.trim() || null,
-        unit_name: unit.toLowerCase(),
-        pack_name: usesPack ? pack.toLowerCase() : null,
+        unit_name: unit,
+        pack_name: usesPack ? pack : null,
         units_per_pack: upp,
         cost_unit: toNumber(f.cost_unit ?? ""),
         cost_pack: usesPack ? toNumber(f.cost_pack ?? "") : null,
@@ -326,28 +337,35 @@ function ItemSheet({
           <input id="other" className="field" value={f.other_names ?? ""} onChange={set("other_names")} />
         </Field>
 
-        <Field label="You sell it by the" htmlFor="unit">
-          <input id="unit" className="field" value={f.unit_name ?? ""} onChange={set("unit_name")} placeholder="piece" />
-          <Chips options={UNIT_SUGGESTIONS} value={unit} onPick={(v) => setF((p) => ({ ...p, unit_name: v }))} />
-        </Field>
+        <div>
+          <span className="label">How do you sell one?</span>
+          <Choice
+            id="unit"
+            options={units}
+            value={f.unit_name ?? ""}
+            onChange={(v) => setF((p) => ({ ...p, unit_name: v }))}
+            placeholder="Type it, e.g. roll"
+          />
+        </div>
 
-        <label className="flex items-center gap-3 font-bold">
-          <input type="checkbox" className="h-5 w-5 accent-brand" checked={usesPack} onChange={(e) => setUsesPack(e.target.checked)} />
-          It comes in cartons or packs
-        </label>
-        {usesPack && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Comes in a" htmlFor="pack">
-              <input id="pack" className="field" value={f.pack_name ?? ""} onChange={set("pack_name")} placeholder="carton" />
-            </Field>
-            <Field label={`${unit}s in one ${pack}`} htmlFor="upp">
-              <input id="upp" className="field" inputMode="decimal" value={f.units_per_pack ?? ""} onChange={set("units_per_pack")} placeholder="e.g. 40" />
-            </Field>
-            <div className="col-span-2 -mt-1">
-              <Chips options={PACK_SUGGESTIONS} value={pack} onPick={(v) => setF((p) => ({ ...p, pack_name: v }))} />
+        <div>
+          <span className="label">How do you buy it?</span>
+          <Choice
+            id="pack"
+            options={packs.filter((o) => o !== unit)}
+            none="One by one"
+            value={f.pack_name ?? ""}
+            onChange={(v) => setF((p) => ({ ...p, pack_name: v, units_per_pack: v === "dozen" && !p.units_per_pack ? "12" : p.units_per_pack }))}
+            placeholder="Type it, e.g. bale"
+          />
+          {usesPack && (
+            <div className="mt-3">
+              <Field label={`How many ${unit}s in one ${pack}?`} htmlFor="upp">
+                <input id="upp" className="field" inputMode="decimal" value={f.units_per_pack ?? ""} onChange={set("units_per_pack")} placeholder="e.g. 40" />
+              </Field>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <PriceRow
           title="Buying price"
@@ -428,19 +446,56 @@ function Unit({ suffix, children }: { suffix: string; children: ReactNode }) {
   );
 }
 
-function Chips({ options, value, onPick }: { options: string[]; value: string; onPick: (v: string) => void }) {
+/** Pick one of the usual words, or tap "Other" and type your own. `none` adds a "nothing" choice first. */
+function Choice({
+  id,
+  options,
+  value,
+  none,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  options: string[];
+  value: string;
+  none?: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  const v = value.trim().toLowerCase();
+  const [picked, setPicked] = useState(false);
+  // A word that isn't in the list (typed before) shows in the box, ready to change.
+  const typing = picked || (Boolean(v) && !options.includes(v));
+  const chip = (selected: boolean) =>
+    clsx("rounded-full border-2 px-3 py-1.5 text-sm font-bold transition", selected ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-muted hover:text-ink");
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button
-          key={o}
-          type="button"
-          onClick={() => onPick(o)}
-          className={clsx("rounded-full border-2 px-3 py-1 text-xs font-bold", o === value ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-muted")}
-        >
-          {o}
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {none && (
+          <button type="button" className={chip(!typing && !v)} onClick={() => { setPicked(false); onChange(""); }}>
+            {none}
+          </button>
+        )}
+        {options.map((o) => (
+          <button key={o} type="button" className={chip(!typing && v === o)} onClick={() => { setPicked(false); onChange(o); }}>
+            {o}
+          </button>
+        ))}
+        <button type="button" className={chip(typing)} onClick={() => { setPicked(true); onChange(""); }}>
+          Other…
         </button>
-      ))}
+      </div>
+      {typing && (
+        <input
+          id={id}
+          className="field mt-2"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoFocus
+          aria-label={placeholder}
+        />
+      )}
     </div>
   );
 }

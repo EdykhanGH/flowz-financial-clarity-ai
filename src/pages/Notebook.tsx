@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Package, Search, X } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { listEntries, searchEntries } from "@/lib/api";
@@ -59,7 +59,12 @@ export default function Notebook() {
 
   return (
     <div className="space-y-4">
-      <h1 className="pt-1 text-2xl font-extrabold">My notebook</h1>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <h1 className="text-2xl font-extrabold">My notebook</h1>
+        <Link to="/inventory" className="flex items-center gap-1.5 rounded-full bg-sky-soft px-3 py-1.5 text-sm font-bold text-sky hover:brightness-95">
+          <Package className="h-4 w-4" /> Inventory
+        </Link>
+      </div>
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />

@@ -2,6 +2,7 @@
 
 import type { BankStatement, Settings, Summary } from "../lib/api";
 import type { BankRule, BankTxn } from "../lib/bankMatch";
+import type { InventoryItem } from "../lib/inventory";
 import type { Budget, Entry } from "../lib/money";
 import { addDays, todayISO } from "../lib/dates";
 import { parseLine } from "../lib/parse";
@@ -20,6 +21,7 @@ export interface DemoData {
   bankStatements?: BankStatement[];
   bankTxns?: (BankTxn & { fingerprint: string })[];
   bankRules?: BankRule[];
+  items?: InventoryItem[];
 }
 
 const KEY = "flowz-demo-v1";
@@ -108,5 +110,18 @@ export function seedBudgets(currency: Settings["default_currency"]): Budget[] {
     { id: crypto.randomUUID(), category: "food", amount: 20_000 * scale, currency },
     { id: crypto.randomUUID(), category: "transport", amount: 12_000 * scale, currency },
     { id: crypto.randomUUID(), category: "fuel", amount: 25_000 * scale, currency },
+  ];
+}
+
+/** A few goods to show inventory: counted when the demo starts, so new lines move the stock. */
+export function seedItems(currency: Settings["default_currency"]): InventoryItem[] {
+  const s = currency === "USD" ? 0.001 : 1;
+  const now = new Date().toISOString();
+  const base = { other_names: null, pack_name: null, units_per_pack: null, cost_unit: null, cost_pack: null, sell_unit: null, sell_pack: null, currency, counted_at: now, low_stock_units: null };
+  return [
+    { ...base, id: crypto.randomUUID(), name: "Indomie", other_names: "noodles", unit_name: "pack", pack_name: "carton", units_per_pack: 40, cost_pack: 13_600 * s, sell_unit: 400 * s, sell_pack: 15_000 * s, stock_units: 130, low_stock_units: 40 },
+    { ...base, id: crypto.randomUUID(), name: "Rice", unit_name: "bag", cost_unit: 12_500 * s, sell_unit: 15_000 * s, stock_units: 18, low_stock_units: 5 },
+    { ...base, id: crypto.randomUUID(), name: "Garri", unit_name: "bag", cost_unit: 7_000 * s, sell_unit: 9_000 * s, stock_units: 4, low_stock_units: 5 },
+    { ...base, id: crypto.randomUUID(), name: "Eggs", other_names: "egg", unit_name: "crate", cost_unit: 4_000 * s, sell_unit: 4_800 * s, stock_units: 25, low_stock_units: 6 },
   ];
 }

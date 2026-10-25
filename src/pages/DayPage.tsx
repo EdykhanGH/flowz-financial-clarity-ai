@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Sparkles } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Package, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
-import { deleteEntries, listDebts, listEntries, readLinesWithAI, upsertEntries } from "@/lib/api";
+import { deleteEntries, listDebts, listEntries, listItems, listStockLines, readLinesWithAI, upsertEntries } from "@/lib/api";
 import { addDays, greeting, prettyDay, todayISO } from "@/lib/dates";
 import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
 import { balanceFor, buildDebtBook, debtContext, formatMoney, totalsByCurrency, type DebtBook, type Entry } from "@/lib/money";
 import { needsCloserLook, parseLine, type Currency, type DebtContext } from "@/lib/parse";
+import { afterCount, isLow, readWithStock, stockDirection, type InventoryItem } from "@/lib/inventory";
 import KindSheet, { type LinePatch } from "@/components/KindSheet";
 import TotalsCard from "@/components/TotalsCard";
 import { ReminderNudge } from "@/components/Reminders";
@@ -56,11 +57,13 @@ function blankLine(date: string): Line {
 }
 
 /** Re-read a line after its text changed. Choices the user made by hand are kept. */
-function withText(line: Line, text: string, defaultCurrency: Currency, ctx?: DebtContext): Line {
-  const p = parseLine(text, defaultCurrency, ctx);
+function withText(line: Line, text: string, defaultCurrency: Currency, ctx: DebtContext | undefined, items: InventoryItem[]): Line {
+  const p = readWithStock(text, items, defaultCurrency, ctx);
+  const stock = { item_id: p.item_id, item_qty: p.item_qty };
   if (line.kind_locked) {
     return {
       ...line,
+      ...stock,
       text,
       amount: p.amount,
       currency: p.amount == null ? null : line.currency ?? p.currency,
@@ -69,7 +72,7 @@ function withText(line: Line, text: string, defaultCurrency: Currency, ctx?: Deb
       ai: false,
     };
   }
-  return { ...line, text, amount: p.amount, currency: p.currency, kind: p.kind, category: p.category, person: p.person, confident: p.confident, ai: false };
+  return { ...line, ...stock, text, amount: p.amount, currency: p.currency, kind: p.kind, category: p.category, person: p.person, confident: p.confident, ai: false };
 }
 
 function withTrailingBlank(lines: Line[], date: string) {
@@ -79,7 +82,7 @@ function withTrailingBlank(lines: Line[], date: string) {
 
 /** What we compare to decide whether a row needs saving. */
 function snapshot(l: Entry, position: number) {
-  return JSON.stringify([l.text, l.amount, l.currency, l.kind, l.category, l.person, l.kind_locked, position]);
+  return JSON.stringify([l.text, l.amount, l.currency, l.kind, l.category, l.person, l.kind_locked, l.item_id ?? null, l.item_qty ?? null, position]);
 }
 
 function DayEditor({ date }: { date: string }) {
@@ -108,6 +111,10 @@ function DayEditor({ date }: { date: string }) {
   const otherDebtsRef = useRef<Entry[]>([]);
   const touched = useRef(new Set<string>()); // lines edited in this visit
   const aiAsked = useRef(new Map<string, string>()); // line id → text already sent to the AI
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const itemsRef = useRef<InventoryItem[]>([]);
+  itemsRef.current = items;
+  const [stockLines, setStockLines] = useState<Entry[]>([]); // lines on other days that moved stock
 
   linesRef.current = lines;
   otherDebtsRef.current = otherDebts;
@@ -120,7 +127,7 @@ function DayEditor({ date }: { date: string }) {
   const read = useCallback(
     (l: Line, text: string) => {
       touched.current.add(l.id);
-      return withText(l, text, cur, contextWithout(l.id, linesRef.current));
+      return withText(l, text, cur, contextWithout(l.id, linesRef.current), itemsRef.current);
     },
     [cur, contextWithout],
   );
@@ -167,6 +174,25 @@ function DayEditor({ date }: { date: string }) {
       cancelled = true;
     };
   }, [date, draftKey]);
+
+  // Inventory: items to recognise in lines, and what moved their stock on other days.
+  useEffect(() => {
+    let cancelled = false;
+    listItems()
+      .then(async (list) => {
+        if (cancelled || !list.length) return;
+        setItems(list);
+        const since = list.reduce((min, i) => (i.counted_at.slice(0, 10) < min ? i.counted_at.slice(0, 10) : min), "9999-12-31");
+        const moved = await listStockLines(since);
+        if (!cancelled) setStockLines(moved.filter((e) => e.entry_date !== date));
+      })
+      .catch(() => {
+        // inventory is optional
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   // ---------- save ----------
   const persist = useCallback(async () => {
@@ -357,6 +383,29 @@ function DayEditor({ date }: { date: string }) {
     return out;
   }, [otherDebts, lines, date]);
 
+  // For each line that moved stock: how many are left right after it.
+  const stockAfter = useMemo(() => {
+    const out = new Map<string, { left: number; low: boolean; unit: string }>();
+    if (!items.length) return out;
+    const byId = new Map(items.map((i) => [i.id, i]));
+    const level = new Map(items.map((i) => [i.id, i.stock_units]));
+    const move = (e: Entry) => {
+      const item = e.item_id ? byId.get(e.item_id) : undefined;
+      if (!item || !e.item_qty || !afterCount(e, item)) return null;
+      level.set(item.id, (level.get(item.id) ?? 0) + stockDirection(e.kind) * e.item_qty);
+      return item;
+    };
+    stockLines.filter((e) => e.entry_date < date).forEach(move);
+    lines.forEach((l) => {
+      const item = l.text.trim() ? move(l) : null;
+      if (item) {
+        const left = Math.round((level.get(item.id) ?? 0) * 100) / 100;
+        out.set(l.id, { left, low: isLow(item, left), unit: item.unit_name });
+      }
+    });
+    return out;
+  }, [items, stockLines, lines, date]);
+
   // ---------- AI reading of unclear lines ----------
   useEffect(() => {
     if (!loaded.current) return;
@@ -367,6 +416,7 @@ function DayEditor({ date }: { date: string }) {
           touched.current.has(l.id) &&
           !l.kind_locked &&
           !l.ai &&
+          !l.item_id &&
           aiAsked.current.get(l.id) !== l.text &&
           needsCloserLook(l.text, { amount: l.amount, currency: l.currency, kind: l.kind, category: l.category, person: l.person, confident: l.confident ?? true }),
       );
@@ -444,7 +494,12 @@ function DayEditor({ date }: { date: string }) {
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-4 py-2 text-xs font-bold text-muted">
           <span>{filled ? `${filled} line${filled === 1 ? "" : "s"}` : "Write anything — one thing per line"}</span>
-          <SaveBadge state={saveState} />
+          <span className="flex items-center gap-3">
+            <SaveBadge state={saveState} />
+            <Link to="/inventory" className="flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-sky hover:brightness-95">
+              <Package className="h-3.5 w-3.5" /> Inventory
+            </Link>
+          </span>
         </div>
 
         {loading ? (
@@ -469,7 +524,7 @@ function DayEditor({ date }: { date: string }) {
                   autoCapitalize="sentences"
                   aria-label={`Line ${i + 1}`}
                 />
-                <LineChip line={line} mode={mode} left={leftAfter.get(line.id) ?? null} onClick={() => setEditing(line.id)} />
+                <LineChip line={line} mode={mode} left={leftAfter.get(line.id) ?? null} stock={stockAfter.get(line.id) ?? null} onClick={() => setEditing(line.id)} />
               </li>
             ))}
           </ul>
@@ -527,8 +582,34 @@ function compactBook(book: DebtBook) {
   return { people_who_owe_me: pick(book.owedToMe), people_i_owe: pick(book.iOwe) };
 }
 
-function LineChip({ line, mode, left, onClick }: { line: Line; mode: "personal" | "business"; left: number | null; onClick: () => void }) {
-  if (line.amount == null || !line.currency) return null;
+function LineChip({
+  line,
+  mode,
+  left,
+  stock,
+  onClick,
+}: {
+  line: Line;
+  mode: "personal" | "business";
+  left: number | null;
+  stock: { left: number; low: boolean; unit: string } | null;
+  onClick: () => void;
+}) {
+  const stockNote = stock && (
+    <span className={clsx("font-bold", stock.low ? "text-coral" : "opacity-75")}>
+      · <Package className="inline h-3 w-3" aria-label="stock" /> {stock.left} left{stock.low ? " ⚠️" : ""}
+    </span>
+  );
+  if (line.amount == null || !line.currency) {
+    // An item with no price set: the stock still moves.
+    if (!stock) return null;
+    return (
+      <button onClick={onClick} className={clsx("flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold", KINDS[line.kind].chip)}>
+        {stockDirection(line.kind) < 0 ? "−" : "+"}
+        {line.item_qty} {stockNote}
+      </button>
+    );
+  }
   const info = KINDS[line.kind];
   const sign = info.flow === "in" ? "+" : info.flow === "out" ? "−" : "";
   const emoji = info.flow === "out" && line.kind !== "i_repaid" ? CATEGORY_BY_ID[line.category ?? "other"]?.emoji ?? info.emoji : info.emoji;
@@ -549,6 +630,7 @@ function LineChip({ line, mode, left, onClick }: { line: Line; mode: "personal" 
       {(line.kind === "repaid_to_me" || line.kind === "i_repaid") && left != null && (
         <span className="font-bold opacity-75">· {left > 0 ? `${formatMoney(left, line.currency, { compact: true })} left` : "paid off ✓"}</span>
       )}
+      {stockNote}
       {line.ai && <Sparkles className="h-3 w-3 opacity-60" aria-label="read by AI" />}
       {line.confident === false && <span aria-label="please check">?</span>}
     </button>

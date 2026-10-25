@@ -3,6 +3,7 @@ import { DEBT_KINDS, type Kind, type Mode } from "./kinds";
 import type { Budget, Entry, MonthStats } from "./money";
 import type { Currency } from "./parse";
 import type { BankRule, BankTxn } from "./bankMatch";
+import type { InventoryItem } from "./inventory";
 import { statementPeriod, withFingerprints, type ReadStatement, type StatementTxn } from "./bankStatement";
 
 export interface Settings {
@@ -25,7 +26,7 @@ export interface Summary {
 }
 
 const ENTRY_COLUMNS =
-  "id, entry_date, position, text, amount, currency, kind, category, person, kind_locked, settled_at, created_at, updated_at";
+  "id, entry_date, position, text, amount, currency, kind, category, person, kind_locked, settled_at, item_id, item_qty, created_at, updated_at";
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
@@ -351,3 +352,52 @@ export async function readStatementPart(data: string, mediaType: string, pages: 
 
 /** Only the demo has a sample statement; the real app reads the user's own. */
 export const sampleStatement: (() => Promise<ReadStatement>) | null = null;
+
+// ---------- inventory ----------
+
+const ITEM_COLUMNS =
+  "id, name, other_names, unit_name, pack_name, units_per_pack, cost_unit, cost_pack, sell_unit, sell_pack, currency, stock_units, counted_at, low_stock_units";
+
+const num = (v: unknown) => (v == null ? null : Number(v));
+
+export async function listItems(): Promise<InventoryItem[]> {
+  const rows = check(await supabase.from("inventory_items").select(ITEM_COLUMNS).order("name")) as InventoryItem[];
+  return rows.map((r) => ({
+    ...r,
+    units_per_pack: num(r.units_per_pack),
+    cost_unit: num(r.cost_unit),
+    cost_pack: num(r.cost_pack),
+    sell_unit: num(r.sell_unit),
+    sell_pack: num(r.sell_pack),
+    stock_units: Number(r.stock_units),
+    low_stock_units: num(r.low_stock_units),
+  }));
+}
+
+export async function saveItem(item: InventoryItem) {
+  check(await supabase.from("inventory_items").upsert({ ...item, updated_at: new Date().toISOString() }));
+}
+
+export async function deleteItem(id: string) {
+  check(await supabase.from("inventory_items").delete().eq("id", id));
+}
+
+/** Notebook lines that moved stock, from a date on (to work out what's left). */
+export async function listStockLines(since: string): Promise<Entry[]> {
+  const out: Entry[] = [];
+  for (let page = 0; page < 20; page++) {
+    const rows = check(
+      await supabase
+        .from("entries")
+        .select(ENTRY_COLUMNS)
+        .not("item_id", "is", null)
+        .gte("entry_date", since)
+        .order("entry_date", { ascending: true })
+        .order("position", { ascending: true })
+        .range(page * 1000, page * 1000 + 999),
+    ) as Entry[];
+    out.push(...rows.map((r) => ({ ...r, amount: num(r.amount), item_qty: num(r.item_qty) })));
+    if (rows.length < 1000) break;
+  }
+  return out;
+}

@@ -36,6 +36,10 @@ unclear are also read by AI (`read-lines` function) with the debt book as contex
 transaction with a line of the same amount and direction within 3 days, lets several transfers sit inside a daily total
 ("Sales today 52,000"), and never matches lines that say "cash". Uploading the same statement twice doesn't double count.
 
+**Speaking instead of typing**: the microphone on the empty line uses the phone's own speech-to-text
+(Web Speech API, Nigerian English). Each pause, or saying "next line", becomes a line that is read like a typed one
+(`src/lib/speech.ts`). Free, and it stops by itself after a couple of silent pauses.
+
 **Daily reminder**: at a time the user picks (default 8pm), on days they haven't written anything,
 Flowz sends a phone notification and shows a banner inside the app.
 

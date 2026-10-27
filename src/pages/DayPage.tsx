@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Package, Sparkles } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Mic, Package, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { deleteEntries, listDebts, listEntries, listItems, listStockLines, readLinesWithAI, upsertEntries } from "@/lib/api";
@@ -9,6 +9,7 @@ import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
 import { balanceFor, buildDebtBook, debtContext, formatMoney, totalsByCurrency, type DebtBook, type Entry } from "@/lib/money";
 import { needsCloserLook, parseLine, type Currency, type DebtContext } from "@/lib/parse";
 import { afterCount, isLow, readWithStock, stockDirection, type InventoryItem } from "@/lib/inventory";
+import { spokenLines, useDictation } from "@/lib/speech";
 import KindSheet, { type LinePatch } from "@/components/KindSheet";
 import TotalsCard from "@/components/TotalsCard";
 import { ReminderNudge } from "@/components/Reminders";
@@ -361,6 +362,25 @@ function DayEditor({ date }: { date: string }) {
     });
   }
 
+  // Speaking: each pause (or "next line") becomes a line, read just like a typed one.
+  const addSpoken = useCallback(
+    (said: string) => {
+      const parts = spokenLines(said);
+      if (!parts.length) return;
+      update((prev) => {
+        const next = [...prev];
+        for (const text of parts) {
+          const last = next[next.length - 1];
+          if (last && !last.text.trim()) next[next.length - 1] = read(last, text);
+          else next.push(read(blankLine(date), text));
+        }
+        return next;
+      });
+    },
+    [update, read, date],
+  );
+  const voice = useDictation(addSpoken);
+
   function patchLine(id: string, patch: LinePatch) {
     update((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch, confident: true } : l)));
   }
@@ -524,12 +544,49 @@ function DayEditor({ date }: { date: string }) {
                   autoCapitalize="sentences"
                   aria-label={`Line ${i + 1}`}
                 />
-                <LineChip line={line} mode={mode} left={leftAfter.get(line.id) ?? null} stock={stockAfter.get(line.id) ?? null} onClick={() => setEditing(line.id)} />
+                {i === lines.length - 1 && !line.text ? (
+                  <button
+                    onClick={voice.listening ? voice.stop : voice.start}
+                    className={clsx(
+                      "grid h-9 w-9 shrink-0 place-items-center rounded-full transition",
+                      voice.listening ? "animate-pulse bg-coral text-white" : "bg-brand-soft text-brand-dark hover:brightness-95",
+                    )}
+                    aria-label={voice.listening ? "Stop speaking" : "Speak instead of typing"}
+                    title={voice.listening ? "Stop" : "Speak instead of typing"}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <LineChip line={line} mode={mode} left={leftAfter.get(line.id) ?? null} stock={stockAfter.get(line.id) ?? null} onClick={() => setEditing(line.id)} />
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {voice.error && (
+        <button className="w-full text-left" onClick={voice.clearError}>
+          <ErrorNote>{voice.error}</ErrorNote>
+        </button>
+      )}
+
+      {/* Listening: what's being heard, above the menu */}
+      {voice.listening && (
+        <div className="fixed inset-x-0 bottom-[84px] z-30 mx-auto max-w-2xl px-4" role="status" aria-live="polite">
+          <div className="card flex items-center gap-3 p-4 ring-2 ring-coral/40">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-coral" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-extrabold">Listening… say one thing, then pause</span>
+              <span className="block truncate font-hand text-xl text-muted">{voice.interim || "e.g. “Sold three bags of rice forty five thousand”"}</span>
+            </span>
+            <button className="btn-primary shrink-0 px-4 py-2" onClick={voice.stop}>Done</button>
+          </div>
+        </div>
+      )}
 
       {/* Help */}
       <button onClick={() => setShowHelp((s) => !s)} className="flex w-full items-center gap-2 text-sm font-bold text-muted hover:text-ink">
@@ -538,6 +595,7 @@ function DayEditor({ date }: { date: string }) {
       {showHelp && (
         <div className="card space-y-3 p-4 text-sm">
           <p>Write one thing per line, the way you would on paper, in everyday English or Pidgin. Put the amount anywhere in the line.</p>
+          <p className="flex gap-2"><Mic className="h-4 w-4 shrink-0 text-brand" /> Or tap the microphone on the empty line and speak. Each pause starts a new line, or say “next line”.</p>
           <ul className="space-y-1.5">
             {EXAMPLES.map((ex) => {
               const p = parseLine(ex, cur);

@@ -15,6 +15,8 @@ import SettingsPage from "./pages/SettingsPage";
 import Statements from "./pages/Statements";
 import BankMatch from "./pages/BankMatch";
 import Inventory from "./pages/Inventory";
+import Privacy from "./pages/Privacy";
+import DeleteAccount from "./pages/DeleteAccount";
 
 function RequireSetup({ children }: { children: ReactNode }) {
   const { session, settings, loading } = useAuth();
@@ -47,6 +49,9 @@ export default function App() {
       <Route path="/signin" element={<PublicOnly><AuthPage mode="signin" /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><AuthPage mode="signup" /></PublicOnly>} />
       <Route path="/setup" element={<SetupRoute />} />
+      {/* Open to everyone, signed in or not (Google Play links to both). */}
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/delete-account" element={<DeleteAccount />} />
       <Route element={<RequireSetup><AppShell /></RequireSetup>}>
         <Route path="/today" element={<DayPage />} />
         <Route path="/day/:date" element={<DayPage />} />

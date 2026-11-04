@@ -68,6 +68,9 @@ export default function Welcome() {
       <div className="mt-auto space-y-3 pt-10">
         <Link to="/signup" className="btn-primary w-full text-lg">Start my notebook — it's free</Link>
         <Link to="/signin" className="btn-ghost w-full">I already have an account</Link>
+        <p className="pt-2 text-center text-xs font-bold text-muted">
+          <Link to="/privacy" className="underline hover:text-ink">Privacy policy</Link>
+        </p>
       </div>
     </div>
   );

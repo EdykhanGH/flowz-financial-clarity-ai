@@ -7,6 +7,7 @@ import { addDays, todayISO } from "../lib/dates";
 import { formatMoney, type Budget, type Entry, type MonthStats } from "../lib/money";
 import type { Currency } from "../lib/parse";
 import { load, save, seedBudgets, seedEntries, seedItems } from "./store";
+import { supabase } from "./supabase";
 import type { InventoryItem } from "../lib/inventory";
 import { demoAnswer } from "./ask";
 import { DEBT_KINDS } from "../lib/kinds";
@@ -352,4 +353,13 @@ export async function deleteItem(id: string) {
 export async function listStockLines(since: string): Promise<Entry[]> {
   await wait();
   return load().entries.filter((e) => e.item_id && e.entry_date >= since).sort(byDateThenPosition);
+}
+
+// ---------- account ----------
+
+/** The demo keeps everything in this browser: deleting clears it and signs out. */
+export async function deleteAccount(confirm: string) {
+  await wait(500);
+  if (confirm !== "DELETE") throw new Error("Type DELETE to confirm.");
+  await supabase.auth.signOut();
 }

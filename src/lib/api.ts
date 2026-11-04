@@ -74,16 +74,25 @@ export async function hasEntriesOn(date: string): Promise<boolean> {
 
 // ---------- entries ----------
 
+/** Lines between two dates, fetched in pages so a busy month isn't cut off at 1,000 lines. */
 export async function listEntries(start: string, end: string): Promise<Entry[]> {
-  return check(
-    await supabase
-      .from("entries")
-      .select(ENTRY_COLUMNS)
-      .gte("entry_date", start)
-      .lte("entry_date", end)
-      .order("entry_date", { ascending: true })
-      .order("position", { ascending: true }),
-  ) as Entry[];
+  const out: Entry[] = [];
+  for (let page = 0; page < 50; page++) {
+    const rows = check(
+      await supabase
+        .from("entries")
+        .select(ENTRY_COLUMNS)
+        .gte("entry_date", start)
+        .lte("entry_date", end)
+        .order("entry_date", { ascending: true })
+        .order("position", { ascending: true })
+        .order("id", { ascending: true })
+        .range(page * 1000, page * 1000 + 999),
+    ) as Entry[];
+    out.push(...rows);
+    if (rows.length < 1000) break;
+  }
+  return out;
 }
 
 /** Every line up to a date (for statements), fetched in pages so long histories aren't cut off. */
@@ -129,15 +138,24 @@ export async function searchEntries(q: string): Promise<Entry[]> {
   ) as Entry[];
 }
 
+/** Every debt and repayment line, fetched in pages so a busy debt book isn't cut off at 1,000 lines. */
 export async function listDebts(): Promise<Entry[]> {
-  return check(
-    await supabase
-      .from("entries")
-      .select(ENTRY_COLUMNS)
-      .in("kind", DEBT_KINDS)
-      .not("amount", "is", null)
-      .order("entry_date", { ascending: false }),
-  ) as Entry[];
+  const out: Entry[] = [];
+  for (let page = 0; page < 50; page++) {
+    const rows = check(
+      await supabase
+        .from("entries")
+        .select(ENTRY_COLUMNS)
+        .in("kind", DEBT_KINDS)
+        .not("amount", "is", null)
+        .order("entry_date", { ascending: false })
+        .order("id", { ascending: true })
+        .range(page * 1000, page * 1000 + 999),
+    ) as Entry[];
+    out.push(...rows.map((r) => ({ ...r, amount: r.amount == null ? null : Number(r.amount) })));
+    if (rows.length < 1000) break;
+  }
+  return out;
 }
 
 export async function setSettled(id: string, settled: boolean) {
@@ -400,4 +418,22 @@ export async function listStockLines(since: string): Promise<Entry[]> {
     if (rows.length < 1000) break;
   }
   return out;
+}
+
+// ---------- account ----------
+
+/** Deletes the account and all its data, then signs out. `confirm` must be "DELETE". */
+export async function deleteAccount(confirm: string) {
+  const { error } = await supabase.functions.invoke("delete-account", { body: { confirm } });
+  if (error) {
+    let message = "We couldn't delete your account right now. Please try again, or email hello@flowz.ng.";
+    try {
+      const body = await (error as { context?: Response }).context?.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // keep the friendly default
+    }
+    throw new Error(message);
+  }
+  await supabase.auth.signOut();
 }

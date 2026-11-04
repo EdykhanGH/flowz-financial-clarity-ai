@@ -9,6 +9,8 @@
 import webpush from "npm:web-push@3";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+const BATCH = 25; // users reminded at the same time
+
 interface SettingsRow {
   user_id: string;
   display_name: string;
@@ -48,28 +50,40 @@ Deno.serve(async (req) => {
   );
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: users, error } = await db
-    .from("user_settings")
-    .select("user_id, display_name, reminder_time, time_zone, last_reminded_on")
-    .eq("reminder_enabled", true);
-  if (error) return new Response(error.message, { status: 500 });
+
+  // Everyone with reminders on, read in pages (a single read stops at 1,000 rows).
+  const users: SettingsRow[] = [];
+  for (let page = 0; page < 200; page++) {
+    const { data, error } = await db
+      .from("user_settings")
+      .select("user_id, display_name, reminder_time, time_zone, last_reminded_on")
+      .eq("reminder_enabled", true)
+      .order("user_id")
+      .range(page * 1000, page * 1000 + 999);
+    if (error) return new Response(error.message, { status: 500 });
+    users.push(...((data ?? []) as SettingsRow[]));
+    if ((data ?? []).length < 1000) break;
+  }
+
+  // Due from the chosen time until midnight, once per day.
+  const due = users
+    .map((u) => ({ u, now: localNow(u.time_zone) }))
+    .filter(({ u, now }) => {
+      const [h, m] = u.reminder_time.split(":").map(Number);
+      return now.minutes >= h * 60 + m && u.last_reminded_on !== now.date;
+    });
 
   let sent = 0;
-  for (const u of (users ?? []) as SettingsRow[]) {
-    const now = localNow(u.time_zone);
-    const [h, m] = u.reminder_time.split(":").map(Number);
-    // Due from the chosen time until midnight, once per day.
-    if (now.minutes < h * 60 + m || u.last_reminded_on === now.date) continue;
-
+  async function remind(u: SettingsRow, today: string) {
     // Already wrote today? Then no need to nudge.
     const { count } = await db
       .from("entries")
       .select("id", { count: "exact", head: true })
       .eq("user_id", u.user_id)
-      .eq("entry_date", now.date);
+      .eq("entry_date", today);
 
-    await db.from("user_settings").update({ last_reminded_on: now.date }).eq("user_id", u.user_id);
-    if ((count ?? 0) > 0) continue;
+    await db.from("user_settings").update({ last_reminded_on: today }).eq("user_id", u.user_id);
+    if ((count ?? 0) > 0) return;
 
     const { data: subs } = await db.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("user_id", u.user_id);
     const payload = JSON.stringify({
@@ -90,5 +104,16 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ checked: users?.length ?? 0, sent }), { headers: { "Content-Type": "application/json" } });
+  // Many at a time, and stop well before the function's time limit. Anyone left over
+  // is still due, so the next run (15 minutes later) picks them up.
+  const started = Date.now();
+  let done = 0;
+  for (let i = 0; i < due.length && Date.now() - started < 100_000; i += BATCH) {
+    const batch = due.slice(i, i + BATCH);
+    const results = await Promise.allSettled(batch.map(({ u, now }) => remind(u, now.date)));
+    results.forEach((r) => r.status === "rejected" && console.error("reminder failed", r.reason));
+    done += batch.length;
+  }
+
+  return new Response(JSON.stringify({ checked: users.length, due: due.length, done, sent }), { headers: { "Content-Type": "application/json" } });
 });

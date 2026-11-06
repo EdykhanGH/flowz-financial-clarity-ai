@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth, useUser } from "@/hooks/useAuth";
 import { saveSettings } from "@/lib/api";
@@ -9,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { ErrorNote, PasswordInput, Spinner } from "@/components/ui";
 import { ReminderSettings } from "@/components/Reminders";
 import { deviceTimeZone } from "@/lib/reminders";
+import { DeleteAccountCard } from "./DeleteAccount";
 
 export default function SettingsPage() {
   const { userId, settings } = useUser();
@@ -100,6 +102,12 @@ export default function SettingsPage() {
           <LogOut className="h-5 w-5" /> Sign out
         </button>
       </div>
+
+      <DeleteAccountCard />
+
+      <p className="text-center text-sm text-muted">
+        <Link to="/privacy" className="font-bold underline hover:text-ink">Privacy policy</Link>
+      </p>
     </div>
   );
 }

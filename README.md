@@ -83,7 +83,14 @@ Put the same public key in `.env` as `VITE_VAPID_PUBLIC_KEY`. Turn on the `pg_cr
 then run `supabase/cron/reminders.sql` (with your project ref and CRON_SECRET filled in) in the SQL Editor.
 On iPhone, notifications work after the user adds Flowz to their home screen.
 
-### 5. Run the app
+### 5. Account deletion
+```sh
+supabase functions deploy delete-account
+```
+Settings → Delete my account (and the public `/delete-account` page) call it. Every table cascades from the login, so
+deleting the login removes all of a user's data. The privacy policy is at `/privacy`.
+
+### 6. Run the app
 ```sh
 cp .env.example .env   # fill in your Supabase URL and anon (public) key
 npm install

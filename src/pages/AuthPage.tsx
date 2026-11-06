@@ -117,6 +117,12 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
             {isSignup ? "Sign in" : "Create one"}
           </Link>
         </p>
+        {isSignup && (
+          <p className="mt-3 text-center text-xs text-muted">
+            By creating an account you agree to how Flowz handles your data in our{" "}
+            <Link to="/privacy" className="font-bold underline">privacy policy</Link>.
+          </p>
+        )}
       </div>
     </div>
   );

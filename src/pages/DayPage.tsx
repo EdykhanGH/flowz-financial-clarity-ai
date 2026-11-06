@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import DownloadNotebook from "@/components/DownloadNotebook";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, CloudOff, HelpCircle, Lightbulb, Mic, Package, Sparkles } from "lucide-react";
 import clsx from "clsx";
@@ -516,6 +517,7 @@ function DayEditor({ date }: { date: string }) {
           <span>{filled ? `${filled} line${filled === 1 ? "" : "s"}` : "Write anything — one thing per line"}</span>
           <span className="flex items-center gap-3">
             <SaveBadge state={saveState} />
+            <DownloadNotebook day={date} />
             <Link to="/inventory" className="flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-sky hover:brightness-95">
               <Package className="h-3.5 w-3.5" /> Inventory
             </Link>

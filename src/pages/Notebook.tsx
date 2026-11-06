@@ -9,6 +9,7 @@ import { KINDS } from "@/lib/kinds";
 import { formatMoney, totalsByCurrency, type Entry } from "@/lib/money";
 import type { Currency } from "@/lib/parse";
 import TotalsCard from "@/components/TotalsCard";
+import DownloadNotebook from "@/components/DownloadNotebook";
 import { EmptyState, ErrorNote, Spinner } from "@/components/ui";
 
 export default function Notebook() {
@@ -59,7 +60,10 @@ export default function Notebook() {
 
   return (
     <div className="space-y-4">
-      <h1 className="pt-1 text-2xl font-extrabold">My notebook</h1>
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <h1 className="text-2xl font-extrabold">My notebook</h1>
+        <DownloadNotebook month={month} className="text-sm font-bold" />
+      </div>
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />

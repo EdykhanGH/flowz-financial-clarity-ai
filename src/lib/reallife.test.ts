@@ -130,3 +130,19 @@ describe("statements with refunds, savings and owner's money", () => {
     expect(stats.currencies.NGN!.topSpending.map((s) => s.amount)).toEqual([2_000]);
   });
 });
+
+describe("notebook download", () => {
+  it("lists every written line with its type and totals per currency", async () => {
+    const { notebookRows, notebookTotals } = await import("./exportNotebook");
+    let n = 0;
+    const entries = ["Sold rice 45,000", "Transport 2,000", "Client paid $100", "Call Tunde", ""].map(
+      (text) => ({ id: String(n++), entry_date: "2026-11-03", position: n, text, kind_locked: false, settled_at: null, ...parseLine(text, "NGN") }) as Entry,
+    );
+    const doc = { owner: "Chi", mode: "business" as const, start: "2026-11-01", end: "2026-11-06", entries, preparedOn: "today" };
+    const rows = notebookRows(doc);
+    expect(rows).toHaveLength(4);
+    expect(rows.map((r) => r.sign)).toEqual(["+", "-", "+", ""]);
+    expect(rows[3].type).toBe("Note");
+    expect(notebookTotals(doc).map((t) => [t.currency, t.in, t.out])).toEqual([["NGN", 45_000, 2_000], ["USD", 100, 0]]);
+  });
+});

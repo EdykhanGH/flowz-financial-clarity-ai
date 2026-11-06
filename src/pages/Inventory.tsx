@@ -216,7 +216,7 @@ function ItemCard({ item, left, moves, onEdit }: { item: InventoryItem; left: nu
   );
 }
 
-const UNIT_SUGGESTIONS = ["piece", "pack", "bottle", "bag", "sachet", "tin", "crate", "kg", "litre", "yard"];
+const UNIT_SUGGESTIONS = ["piece", "pack", "bottle", "bag", "cup", "mudu", "derica", "paint", "sachet", "tin", "crate", "kg", "litre", "yard"];
 const PACK_SUGGESTIONS = ["carton", "pack", "crate", "bag", "sack", "dozen", "box", "bundle"];
 
 /** The usual choices plus any the user typed for their other items, so their own words come back. */

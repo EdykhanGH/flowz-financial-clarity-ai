@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ErrorNote, Logo, PasswordInput, Spinner } from "@/components/ui";
@@ -10,7 +10,33 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<null | "confirm" | "reset">(null);
+  const [resent, setResent] = useState(false);
   const isSignup = mode === "signup";
+  const navigate = useNavigate();
+
+  // /signin and /signup share this screen, so clear the "check your email" state when switching.
+  useEffect(() => {
+    setSent(null);
+    setError(null);
+    setResent(false);
+  }, [mode]);
+
+  function backToSignIn() {
+    setSent(null);
+    setError(null);
+    setResent(false);
+    setPassword("");
+    navigate("/signin");
+  }
+
+  async function resend() {
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}/setup` } });
+    setBusy(false);
+    if (error) setError(friendly(error.message));
+    else setResent(true);
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -24,6 +50,11 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
           options: { emailRedirectTo: `${window.location.origin}/setup` },
         });
         if (error) throw error;
+        // Supabase doesn't send a link, or say so, when the email already has an account.
+        if (data.user && data.user.identities?.length === 0) {
+          setError("You already have an account with this email. Sign in, or tap “Forgot password” on the sign-in page.");
+          return;
+        }
         if (!data.session) setSent("confirm");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -61,7 +92,16 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
             ? <>We sent a link to <b>{email}</b>. Tap it to open your Flowz notebook.</>
             : <>We sent a password reset link to <b>{email}</b>.</>}
         </p>
-        <Link to="/signin" className="btn-ghost mt-6">Back to sign in</Link>
+        <p className="mt-3 text-sm text-muted">
+          It can take a few minutes. If you can't find it, check your Spam or Promotions folder for an email from Flowz (hello@flowz.ng).
+        </p>
+        {sent === "confirm" && (
+          <button type="button" onClick={resend} disabled={busy || resent} className="btn-primary mt-6">
+            {busy ? <Spinner /> : resent ? "Sent again. Check your email" : "Send the link again"}
+          </button>
+        )}
+        {error && <div className="mt-3 w-full"><ErrorNote>{error}</ErrorNote></div>}
+        <button type="button" onClick={backToSignIn} className="btn-ghost mt-3">Back to sign in</button>
       </div>
     );
   }
@@ -133,6 +173,8 @@ function friendly(message: string) {
   if (m.includes("invalid login")) return "That email and password don't match. Please try again.";
   if (m.includes("already registered")) return "You already have an account with this email. Try signing in.";
   if (m.includes("email not confirmed")) return "Please confirm your email first — check your inbox for our link.";
+  if (m.includes("rate limit") || m.includes("security purposes") || m.includes("too many")) return "Please wait a minute before asking for another email.";
+  if (m.includes("error sending")) return "We couldn't send the email just now. Please try again in a few minutes.";
   if (m.includes("password")) return message;
   if (m.includes("fetch") || m.includes("network")) return "No internet connection. Please check and try again.";
   return message;

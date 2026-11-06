@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { BarChart3, Clock, FileSpreadsheet, HandCoins, Lock, Mic, Package, PenLine, Sparkles, Wallet } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "@/components/ui";
-import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
+import { CATEGORY_BY_ID, KINDS, NOT_PROFIT_KINDS, kindLabel } from "@/lib/kinds";
 import { formatMoney } from "@/lib/money";
 import { parseLine } from "@/lib/parse";
 
@@ -187,7 +187,7 @@ const SOLVES = [
   { icon: Wallet, problem: "Money disappears", fix: "See what came in, what went out and what you kept. Every day." },
   { icon: HandCoins, problem: "Debts get forgotten", fix: "Write “Joy took rice on credit”. Flowz tracks what she still owes." },
   { icon: Package, problem: "Stock runs out unnoticed", fix: "Sell and buy as usual. Flowz counts your stock and warns when it's low." },
-  { icon: FileSpreadsheet, problem: "No records for a loan", fix: "One tap turns your notebook into a Profit & Loss and Balance Sheet." },
+  { icon: FileSpreadsheet, problem: "No records for a loan", fix: "Ask Adidy for a Profit & Loss, or download any month or year as PDF or Excel." },
 ];
 
 function Solves() {
@@ -215,7 +215,7 @@ function HowItWorks() {
   const steps = [
     { icon: PenLine, title: "Write or speak your day", body: "“Sold 3 bags of rice 45k”. One thing per line, no forms." },
     { icon: Sparkles, title: "Flowz reads every line", body: "Sales, spending, debts and stock are sorted and added up for you." },
-    { icon: BarChart3, title: "See your money clearly", body: "Daily totals, who owes you, and statements you can show the bank." },
+    { icon: BarChart3, title: "See your money clearly", body: "Daily totals, who owes you, and Adidy to answer your money questions." },
   ];
   return (
     <Section>
@@ -238,7 +238,7 @@ function HowItWorks() {
 
 // ---------- try it ----------
 
-const TRY_EXAMPLES = ["Emeka dey owe me 4k", "Money enter 15k", "Fuel for gen 6,000"];
+const TRY_EXAMPLES = ["Emeka dey owe me 4k", "Money enter 15k", "Ajo contribution 5k", "Fuel for gen 6,000"];
 
 function TryIt() {
   const [text, setText] = useState("Sold 3 bags of rice 45k");
@@ -286,6 +286,7 @@ function TryIt() {
                   <dt className="text-muted">{info.flow === "debt" ? "Debt book" : "Money"}</dt>
                   <dd className="text-xl font-extrabold">{info.flow === "in" ? "Coming in" : info.flow === "out" ? "Going out" : info.flow === "debt" ? "Recorded" : "—"}</dd>
                 </div>
+                {NOT_PROFIT_KINDS.includes(read.kind) && <div><dt className="text-muted">Profit</dt><dd className="font-extrabold">Not counted</dd></div>}
                 {category && <div><dt className="text-muted">Spent on</dt><dd className="font-extrabold">{category.emoji} {category.label}</dd></div>}
                 {read.person && <div><dt className="text-muted">Person</dt><dd className="font-extrabold">{read.person}</dd></div>}
               </dl>

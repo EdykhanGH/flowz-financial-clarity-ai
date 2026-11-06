@@ -72,6 +72,7 @@ export function balanceSheetRows(bs: BalanceSheet): StatementRow[] {
     { label: "Money people owe you", amount: bs.totalReceivables, style: "item" },
     ...bs.receivables.map((r) => ({ label: r.label, amount: r.amount, style: "subitem" as const })),
     { label: "Stock", amount: bs.stock, style: "item" },
+    ...(bs.savings > 0 ? [{ label: "Savings (ajo, esusu, savings)", amount: bs.savings, style: "item" as const }] : []),
     { label: "Things you own", amount: bs.otherAssets, style: "item" },
     { label: "Total assets", amount: bs.totalAssets, style: "total" },
     { label: "What you owe (liabilities)", style: "section" },

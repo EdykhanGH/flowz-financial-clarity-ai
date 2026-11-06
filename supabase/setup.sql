@@ -276,3 +276,9 @@ alter table public.entries add column if not exists item_id uuid references publ
 alter table public.entries add column if not exists item_qty numeric(14, 2);
 
 create index if not exists entries_user_item_idx on public.entries (user_id, item_id, entry_date) where item_id is not null;
+
+-- New line types: refunds, ajo/esusu/savings, and the owner's own money in and out.
+alter table public.entries drop constraint if exists entries_kind_check;
+alter table public.entries add constraint entries_kind_check
+  check (kind in ('sale', 'gift_in', 'purchase', 'expense', 'gift_out', 'owed_to_me', 'repaid_to_me', 'i_owe', 'i_repaid',
+                  'refund', 'saving', 'savings_back', 'owner_in', 'owner_out', 'note'));

@@ -38,6 +38,9 @@ Rules:
   Naira and dollars are separate: never add or convert between them.
 - If mode is "personal", talk about income and spending. If "business", talk about sales,
   purchases and expenses.
+- byKind keys: saving (put into ajo/esusu/savings), savings_back (savings collected), owner_in (their own
+  money put in), owner_out (taken for themselves) are part of money in and out but are not sales, income
+  or business spending. refund is money given back to customers and lowers sales.
 - Mention budgets that are nearly used up or over, money people owe them, and the biggest
   change from last month, when the data has them.
 - If very little was recorded, gently encourage them to write in Flowz daily.

@@ -1,13 +1,13 @@
 import clsx from "clsx";
 import { RotateCcw } from "lucide-react";
-import { CATEGORIES, KINDS, KIND_ORDER, kindLabel, type Kind, type Mode } from "@/lib/kinds";
+import { CATEGORIES, KINDS, KIND_ORDER, isSpending, kindLabel, type Kind, type Mode } from "@/lib/kinds";
 import { CURRENCIES, CURRENCY_SYMBOL, formatMoney, type Entry } from "@/lib/money";
 import type { Currency } from "@/lib/parse";
 import { Sheet } from "./ui";
 
 export type LinePatch = Partial<Pick<Entry, "kind" | "category" | "currency" | "kind_locked" | "person">>;
 
-const OUT_WITH_CATEGORY = (k: Kind) => KINDS[k].flow === "out" && k !== "i_repaid";
+const OUT_WITH_CATEGORY = (k: Kind) => isSpending(k) && k !== "i_repaid";
 const WITH_PERSON: Kind[] = ["owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "gift_in", "gift_out"];
 
 export default function KindSheet({

@@ -1,4 +1,4 @@
-import { CATEGORY_BY_ID, KINDS, type Kind } from "./kinds";
+import { CATEGORY_BY_ID, KINDS, isSpending, type Kind } from "./kinds";
 import type { Currency, DebtContext } from "./parse";
 
 export const CURRENCIES: Currency[] = ["NGN", "USD"];
@@ -126,7 +126,7 @@ export function buildMonthStats(args: {
     const spendBy = (list: Entry[]) => {
       const map: Record<string, number> = {};
       for (const e of list) {
-        if (KINDS[e.kind].flow !== "out") continue;
+        if (!isSpending(e.kind)) continue;
         const key = e.category ?? "other";
         map[key] = (map[key] ?? 0) + (e.amount ?? 0);
       }

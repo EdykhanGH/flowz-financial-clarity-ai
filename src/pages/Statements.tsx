@@ -458,6 +458,7 @@ function BSTable({ bs }: { bs: BalanceSheet }) {
         <Row label="Money people owe you" amount={bs.totalReceivables} cur={c} indent />
         {bs.receivables.map((r) => <Row key={r.label} label={`· ${r.label}`} amount={r.amount} cur={c} indent />)}
         <Row label="Stock" amount={bs.stock} cur={c} indent />
+        {bs.savings > 0 && <Row label="Savings (ajo, esusu, savings)" amount={bs.savings} cur={c} indent />}
         <Row label="Things you own" amount={bs.otherAssets} cur={c} indent />
         <Total label="Total assets" amount={bs.totalAssets} cur={c} />
       </Section>

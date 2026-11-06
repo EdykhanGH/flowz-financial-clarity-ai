@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { deleteEntries, listDebts, listEntries, listItems, listStockLines, readLinesWithAI, upsertEntries } from "@/lib/api";
 import { addDays, greeting, prettyDay, todayISO } from "@/lib/dates";
-import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
+import { CATEGORY_BY_ID, KINDS, isSpending, kindLabel } from "@/lib/kinds";
 import { balanceFor, buildDebtBook, debtContext, formatMoney, totalsByCurrency, type DebtBook, type Entry } from "@/lib/money";
 import { needsCloserLook, parseLine, type Currency, type DebtContext } from "@/lib/parse";
 import { afterCount, isLow, readWithStock, stockDirection, type InventoryItem } from "@/lib/inventory";
@@ -670,7 +670,7 @@ function LineChip({
   }
   const info = KINDS[line.kind];
   const sign = info.flow === "in" ? "+" : info.flow === "out" ? "−" : "";
-  const emoji = info.flow === "out" && line.kind !== "i_repaid" ? CATEGORY_BY_ID[line.category ?? "other"]?.emoji ?? info.emoji : info.emoji;
+  const emoji = isSpending(line.kind) && line.kind !== "i_repaid" ? CATEGORY_BY_ID[line.category ?? "other"]?.emoji ?? info.emoji : info.emoji;
   const who = line.person ? `${line.person}: ` : "";
   return (
     <button

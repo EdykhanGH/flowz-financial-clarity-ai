@@ -3,7 +3,7 @@
 // Anything in the notebook but not in the bank is fine — it may have been cash.
 
 import { addDays, fromISODate } from "./dates";
-import type { Kind } from "./kinds";
+import { KINDS, type Kind } from "./kinds";
 import type { Entry } from "./money";
 import { parseLine, type Currency, type DebtContext, type ParsedLine } from "./parse";
 
@@ -58,8 +58,8 @@ export interface MatchReport {
 /** Which way cash moved for a notebook line, or null when no cash moved (a note, a credit sale). */
 export function cashDirection(e: Pick<Entry, "kind" | "text">): "in" | "out" | null {
   const k: Kind = e.kind;
-  if (k === "sale" || k === "gift_in" || k === "repaid_to_me") return "in";
-  if (k === "purchase" || k === "expense" || k === "gift_out" || k === "i_repaid") return "out";
+  if (KINDS[k].flow === "in") return "in";
+  if (KINDS[k].flow === "out") return "out";
   // Lending or borrowing moves cash; selling or buying on credit doesn't.
   if (LOAN_WORDS.test(e.text)) {
     if (k === "owed_to_me") return "out";

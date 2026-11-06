@@ -11,7 +11,7 @@ const MODEL = "claude-opus-5-5";
 const MAX_LINES_PER_DAY = 300;
 const MAX_LINES_PER_CALL = 10;
 
-const KINDS = ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "note"];
+const KINDS = ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "refund", "saving", "savings_back", "owner_in", "owner_out", "note"];
 const CATEGORIES = ["stock", "food", "transport", "fuel", "rent", "bills", "airtime", "wages", "health", "school", "family", "giving", "events", "savings", "repairs", "personal", "other"];
 
 const cors = {
@@ -40,11 +40,19 @@ Types:
 - repaid_to_me: someone paid back part or all of what they owed the writer. Money came in.
 - i_owe: the writer now owes someone (bought on credit, borrowed, took a loan).
 - i_repaid: the writer paid back part or all of a debt. Money went out.
+- refund: the writer gave money back to a customer (refund, returned goods). Money went out.
+- saving: the writer put money into ajo, esusu, adashe, thrift or a savings app/account. Money went out, but it is still theirs.
+- savings_back: the writer collected ajo/esusu or took money out of savings. Money came in, but it isn't income.
+- owner_in: the owner put their own money (capital) into the business. Money came in, but it isn't income.
+- owner_out: the owner took money from the business for personal use (drawings). Money went out, but it isn't a business cost.
 - note: no money, or the money is only mentioned (a price, a plan, a reminder).
 
 Rules:
 - If a person in the debt book pays the writer and the line doesn't say it's a new sale, it's repaid_to_me.
 - If the writer pays someone they owe in the debt book, it's i_repaid.
+- "Borrowed from X" or "loan from X" is i_owe (person X); "X borrowed", "lent X" or "gave X a loan" is owed_to_me (person X).
+- "Paid <supplier> part payment / balance" is i_repaid when it pays off something bought on credit.
+- When one line lists several items each with its own amount ("2 phones 450k and 1 charger 5k"), the amount is their total.
 - When a line has several numbers, pick the money that actually changed hands or became owed,
   not prices, quantities or totals mentioned in passing.
 - If someone took goods partly on credit in one line ("Joy took rice worth 50k, paid 20k"),

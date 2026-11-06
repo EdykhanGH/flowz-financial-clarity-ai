@@ -34,6 +34,7 @@ interface Candidate {
   score: number;
   marked: boolean; // had a currency sign or k/m suffix
   index: number;
+  end: number;
 }
 
 function currencyFrom(token: string | undefined): Currency | null {
@@ -68,7 +69,7 @@ function findCandidates(text: string): Candidate[] {
     if (!currency && !s && QUANTITY_WORDS.has(nextWord)) score -= 60;
     if (!currency && !s && value < 100) score -= 15;
 
-    out.push({ value, currency, score, marked: Boolean(currency || s), index: m.index ?? 0 });
+    out.push({ value, currency, score, marked: Boolean(currency || s), index: m.index ?? 0, end: (m.index ?? 0) + m[0].length });
   }
   return out;
 }
@@ -88,6 +89,17 @@ function pickAmount(text: string): { amount: number | null; currency: Currency |
       (c) => c !== best && !c.marked && Number.isInteger(c.value) && c.value > 0 && c.value < 10_000 && c.index < best.index,
     );
     if (qty) amount = qty.value * best.value;
+  } else {
+    // "Sold 2 phones 450k and 1 charger 5k" → 455k. Not for split payments or balances
+    // ("25k cash and 20k transfer", "paid 25k and balance 25k"), where one amount is the total.
+    const lower = text.toLowerCase();
+    const split = /\b(?:balance|remain(?:ing)?|left|owe[sd]?|owing|credit|half|later|tomorrow|cash|transfer(?:red)?|pos|change|total|each|per|at)\b/.test(lower);
+    const marked = usable.filter((c) => c.marked);
+    const joined =
+      marked.length >= 2 &&
+      marked.every((c) => c.currency === marked[0].currency) &&
+      marked.slice(1).every((c, i) => /\band\b|\+|&/.test(lower.slice(marked[i].end, c.index)));
+    if (!split && joined) amount = marked.reduce((sum, c) => sum + c.value, 0);
   }
 
   return { amount: Math.round(amount * 100) / 100, currency: best.currency };
@@ -157,7 +169,30 @@ function findPerson(t: string, patterns: RegExp[]): string | null {
 const BUYER_VERBS = "(?:bought|took|received|carried|picked|ordered|collected|got|carry|take|pick|order)";
 const ON_CREDIT = /\b(?:on|for|with|as|by)\s+(?:credit|trust|tab|account|loan)\b|\bcredit\b(?!\s+alert)|\b(?:pay|paying)\s+(?:later|tomorrow|next\s+(?:week|month)|at\s+month\s+end)\b|\bunpaid\b|\bnot\s+(?:yet\s+)?paid\b|\byet\s+to\s+pay\b/;
 
+const SAVINGS = /\b(?:ajo|esusu|adashe|thrift|susu|piggyvest|cowrywise|kolo|savings?|saved|fixed deposit)\b/;
+const SAVINGS_BACK = /\b(?:received|withdrew|withdraw|withdrawn|turn|payout|cashed out|broke)\b/;
+const OWNER_IN = /\bown money\b|\bcapital\b|\b(?:put|added|add|brought|injected|inject)\b.*\b(?:into|in|to) (?:the |my |our )?(?:business|shop|store)\b/;
+const OWNER_OUT = /\bdrawings?\b|\b(?:took|take|taken|removed|remove|carried|carry)\b.*\bfrom (?:the |my |our |today'?s )?(?:shop|business|store|sales|till|drawer|cash box|money box)\b/;
+const REFUND = /\brefund(?:ed|s)?\b(?! me\b)(?!.*\bfrom\b)|\b(?:customer|client|buyer)s?\b.*\breturned\b/;
+
 function detectKind(t: string, category: string | null): { kind: Kind; confident: boolean; person: string | null } {
+  const borrowing = /\bloan\b|\bborrow/.test(t);
+  // Ajo, esusu and savings: still your money, so neither spending nor income
+  if (SAVINGS.test(t) && !borrowing) {
+    return { kind: SAVINGS_BACK.test(t) ? "savings_back" : "saving", confident: true, person: null };
+  }
+  // The owner's own money going into, or out of, the business
+  if (OWNER_IN.test(t) && !borrowing && !/\bsold\b|\bsales?\b/.test(t)) return { kind: "owner_in", confident: true, person: null };
+  if (OWNER_OUT.test(t) && !borrowing && !/\bto (?:buy|pay)\b/.test(t)) return { kind: "owner_out", confident: true, person: null };
+  // Money given back to a customer
+  if (REFUND.test(t)) {
+    return { kind: "refund", confident: true, person: findPerson(t, [new RegExp(`\\brefund(?:ed)? ${NAME}`), new RegExp(`\\brefund(?:ed)? to ${NAME}`), new RegExp(`^${NAME}\\s+returned`)]) };
+  }
+  // "Paid supplier 60k part payment", "Paid Tunde balance 5k": paying off what I owe
+  const paidWho = cleanName(t.match(new RegExp(`^paid ${NAME}\\b`))?.[1]);
+  if (paidWho && (/\bpaid back\b/.test(t) || new RegExp(`^paid ${NAME} (?:the |my |his |her )?balance\\b`).test(t))) {
+    return { kind: "i_repaid", confident: true, person: paidWho };
+  }
   // Paying back a debt
   if (/\bpaid back\b/.test(t)) {
     const toWhom = t.match(new RegExp(`\\bpaid back to ${NAME}`))?.[1];
@@ -182,21 +217,28 @@ function detectKind(t: string, category: string | null): { kind: Kind; confident
     }
   }
   // Money you owe someone
-  if (/\bi owe\b|\bi'?m owing\b|\bi am owing\b|\bi borrowed\b|\bloan from\b|\bbought on credit\b|\bcredit from\b|\bowe\b.*\bbalance\b/.test(t)) {
+  if (/\bi owe\b|^owe\b|^owing\b|\bi'?m owing\b|\bi am owing\b|\bi borrowed\b|^borrowed\b|\bloan from\b|\bbought on credit\b|\bcredit from\b|\bowe\b.*\bbalance\b/.test(t) && !/\bfrom me\b/.test(t)) {
     return {
       kind: "i_owe",
       confident: true,
-      person: findPerson(t, [new RegExp(`\\bi owe ${NAME}`), new RegExp(`\\bfrom ${NAME}`), new RegExp(`\\bowing ${NAME}`)]),
+      person: findPerson(t, [
+        new RegExp(`\\bi owe ${NAME}`),
+        new RegExp(`^owe ${NAME}`),
+        new RegExp(`.*\\bfrom (?:my |our |the )?${NAME}`),
+        new RegExp(`\\bowing ${NAME}`),
+      ]),
     };
   }
   // Money someone owes you
-  if (/\bowes? me\b|\bowing me\b|\bi lent\b|\blent\b|\bsold on credit\b|\bon credit to\b|\bborrowed\b|\bstill owes\b/.test(t)) {
+  if (/\bowes? me\b|\bowing me\b|\bi lent\b|\blent\b|\bloaned\b|\b(?:gave|give)\b.*\bloan\b|\bsold on credit\b|\bon credit to\b|\bborrowed\b|\bstill owes\b/.test(t)) {
     return {
       kind: "owed_to_me",
       confident: true,
       person: findPerson(t, [
         new RegExp(`^${NAME}\\s+(?:still\\s+)?(?:owes|owing|borrowed)`),
         new RegExp(`\\blent ${NAME}`),
+        new RegExp(`\\bloaned ${NAME}`),
+        new RegExp(`\\bgave ${NAME}`),
         new RegExp(`\\bcredit to ${NAME}`),
         new RegExp(`\\bto ${NAME}`),
       ]),

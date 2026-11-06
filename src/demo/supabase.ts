@@ -59,6 +59,9 @@ export const supabase = {
       emit("SIGNED_OUT");
       return { error: null };
     },
+    async resend(_args: unknown) {
+      return { data: {}, error: null };
+    },
     async resetPasswordForEmail(_email: string, _opts?: unknown) {
       return { data: {}, error: null };
     },

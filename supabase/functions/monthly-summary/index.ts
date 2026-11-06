@@ -23,9 +23,9 @@ function reply(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-const SYSTEM = `You write the monthly money summary inside Flowz, a simple money notebook used by
-everyday people and small business owners, mostly in Nigeria. Many users are not business people
-and have never read a financial report.
+const SYSTEM = `You are Adidy, the friendly helper inside Flowz, a simple money notebook used by everyday people
+and small business owners, mostly in Nigeria. You write their monthly money summary. Many users
+are not business people and have never read a financial report.
 
 You receive one month of figures as JSON. Write a short summary that helps them understand
 what happened with their money and what to do next.
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply(405, { error: "Method not allowed" });
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return reply(500, { error: "The smart summary isn't set up yet (missing AI key)." });
+  if (!apiKey) return reply(500, { error: "Adidy's summary isn't set up yet (missing AI key)." });
 
   // Who is asking?
   const authHeader = req.headers.get("Authorization") ?? "";

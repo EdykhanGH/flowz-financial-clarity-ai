@@ -689,7 +689,7 @@ function LineChip({
         <span className="font-bold opacity-75">· {left > 0 ? `${formatMoney(left, line.currency, { compact: true })} left` : "paid off ✓"}</span>
       )}
       {stockNote}
-      {line.ai && <Sparkles className="h-3 w-3 opacity-60" aria-label="read by AI" />}
+      {line.ai && <Sparkles className="h-3 w-3 opacity-60" aria-label="read by Adidy" />}
       {line.confident === false && <span aria-label="please check">?</span>}
     </button>
   );

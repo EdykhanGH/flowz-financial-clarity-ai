@@ -1,4 +1,4 @@
-// Demo-only answers for "Ask Flowz". The live app sends questions to an AI; the demo answers
+// Demo-only answers for "Ask Adidy". The live app sends questions to an AI; the demo answers
 // common questions with simple rules over the same data, so the screen can be tried offline.
 
 import { CATEGORY_BY_ID, KINDS } from "../lib/kinds";
@@ -91,5 +91,5 @@ export function demoAnswer(question: string, all: Entry[], today: string): strin
     return `You spent ${money(s)} ${p.label}.${top ? ` The most went on ${CATEGORY_BY_ID[top[0]]?.label.toLowerCase() ?? "other things"} (${formatMoney(top[1], "NGN")}).` : ""}`;
   }
 
-  return "In this demo I can answer simple questions, like “How much did I spend on transport this month?”, “Who owes me money?” or “What was my best day?”. In the real app, the AI understands almost any question about your notebook.";
+  return "In this demo I can answer simple questions, like “How much did I spend on transport this month?”, “Who owes me money?” or “What was my best day?”. In the real app, Adidy understands almost any question about your notebook.";
 }

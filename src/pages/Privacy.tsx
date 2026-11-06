@@ -69,7 +69,7 @@ export default function Privacy() {
         <ul>
           <li>To show your notebook, totals, debt book, budgets, inventory and statements{FEATURES.bankMatch ? " and Bank Match" : ""}.</li>
           <li>To send you sign-up, password and reminder messages.</li>
-          <li>For AI features (the monthly summary, Ask Flowz, reading unclear lines and reading PDF or photo statements): only the text or file needed for that request is sent to our AI provider.</li>
+          <li>For Adidy, Flowz's AI helper (the monthly summary, Ask Adidy, reading unclear lines and reading PDF or photo statements): only the text or file needed for that request is sent to our AI provider.</li>
           <li>To keep Flowz working and safe, for example fixing errors and stopping abuse.</li>
         </ul>
       </Section>
@@ -79,7 +79,7 @@ export default function Privacy() {
         <ul>
           <li><b>Supabase:</b> stores your account and records, and runs Flowz's server functions.</li>
           <li><b>Vercel:</b> serves the Flowz app to your phone or computer.</li>
-          <li><b>Anthropic (Claude):</b> the AI behind summaries, Ask Flowz and statement reading. Under Anthropic's commercial terms, data sent through its API isn't used to train its models.</li>
+          <li><b>Anthropic (Claude):</b> the AI behind Adidy (summaries, questions and statement reading). Under Anthropic's commercial terms, data sent through its API isn't used to train its models.</li>
           <li><b>Resend:</b> sends sign-up and password emails.</li>
           <li><b>Sentry:</b> receives error reports so we can fix problems (stored in the European Union).</li>
           <li><b>Zoho:</b> our support inbox, if you email us.</li>

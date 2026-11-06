@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   }
 
   webpush.setVapidDetails(
-    Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@flowz.app",
+    Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@flowz.ng",
     Deno.env.get("VAPID_PUBLIC_KEY")!,
     Deno.env.get("VAPID_PRIVATE_KEY")!,
   );

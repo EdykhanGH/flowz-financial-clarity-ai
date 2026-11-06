@@ -16,6 +16,7 @@ import Statements from "./pages/Statements";
 import BankMatch from "./pages/BankMatch";
 import Inventory from "./pages/Inventory";
 import Privacy from "./pages/Privacy";
+import { FEATURES } from "./lib/features";
 import DeleteAccount from "./pages/DeleteAccount";
 
 function RequireSetup({ children }: { children: ReactNode }) {
@@ -62,7 +63,7 @@ export default function App() {
         <Route path="/owed" element={<Owed />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/statements" element={<Statements />} />
-        <Route path="/bank" element={<BankMatch />} />
+        <Route path="/bank" element={FEATURES.bankMatch ? <BankMatch /> : <Navigate to="/month" replace />} />
         <Route path="/inventory" element={<Inventory />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

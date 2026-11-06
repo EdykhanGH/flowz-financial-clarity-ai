@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/lib/features";
 
 export const CONTACT_EMAIL = "hello@flowz.ng";
 const UPDATED = "4 November 2026";
@@ -49,7 +50,7 @@ export default function Privacy() {
           <li><b>Your account:</b> your email address and password. The password is stored scrambled (hashed), so nobody can read it, including us.</li>
           <li><b>Your settings:</b> your name, business name, whether you use Flowz for business or personal money, your main currency, time zone and reminder time.</li>
           <li><b>Your notebook:</b> every line you write or speak, and what Flowz reads from it: amounts, sales and spending, names of people who owe you or whom you owe, budgets, inventory items and stock.</li>
-          <li><b>Bank statements you upload for Bank Match:</b> the transactions on them (date, amount, description, balance) and the file's name. Flowz keeps the transactions, not the file itself.</li>
+          {FEATURES.bankMatch && <li><b>Bank statements you upload for Bank Match:</b> the transactions on them (date, amount, description, balance) and the file's name. Flowz keeps the transactions, not the file itself.</li>}
           <li><b>Notifications:</b> if you turn on reminders, a token from your phone's browser so we can send them.</li>
           <li><b>Usage counts:</b> how many AI questions and readings you used each day, so daily limits work.</li>
           <li><b>Error reports:</b> if something breaks in the app, a technical report (which screen, what failed, your browser and an anonymous account id). It never includes what you wrote, amounts or names.</li>
@@ -66,7 +67,7 @@ export default function Privacy() {
 
       <Section title="How your information is used">
         <ul>
-          <li>To show your notebook, totals, debt book, budgets, inventory, statements and Bank Match.</li>
+          <li>To show your notebook, totals, debt book, budgets, inventory and statements{FEATURES.bankMatch ? " and Bank Match" : ""}.</li>
           <li>To send you sign-up, password and reminder messages.</li>
           <li>For AI features (the monthly summary, Ask Flowz, reading unclear lines and reading PDF or photo statements): only the text or file needed for that request is sent to our AI provider.</li>
           <li>To keep Flowz working and safe, for example fixing errors and stopping abuse.</li>
@@ -91,7 +92,7 @@ export default function Privacy() {
         <p>
           We keep your information while you have a Flowz account. When you delete your account, your account and records are removed
           from our database straight away. Copies in our providers' backups are removed when those backups expire, usually within a few days.
-          You can also delete a single uploaded bank statement at any time in Bank Match.
+          {FEATURES.bankMatch && " You can also delete a single uploaded bank statement at any time in Bank Match."}
         </p>
       </Section>
 

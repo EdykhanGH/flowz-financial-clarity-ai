@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { listAllEntries, listBankRules, listBankStatements, listBankTxns, type BankStatement } from "@/lib/api";
 import { buildMatchReport, type BankRule, type BankTxn } from "@/lib/bankMatch";
+import { FEATURES } from "@/lib/features";
 import { fromISODate, todayISO } from "@/lib/dates";
 import { CURRENCY_SYMBOL, formatMoney, type Entry } from "@/lib/money";
 import { parseLine, type Currency } from "@/lib/parse";
@@ -86,6 +87,7 @@ export default function Statements() {
   // Bank Match: how much of the bank statement for this period is in the notebook.
   const [bank, setBank] = useState<{ txns: BankTxn[]; rules: BankRule[]; statements: BankStatement[] } | null>(null);
   useEffect(() => {
+    if (!FEATURES.bankMatch) return;
     const until = end > today ? today : end;
     Promise.all([listBankTxns(start, until), listBankRules(), listBankStatements()])
       .then(([txns, rules, statements]) => setBank({ txns, rules, statements }))

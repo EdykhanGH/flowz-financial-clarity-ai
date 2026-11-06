@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Landmark, RefreshCw, Sparkles } from "lucide-react";
 import clsx from "clsx";
+import { FEATURES } from "@/lib/features";
 import { useUser } from "@/hooks/useAuth";
 import { generateSummary, getSummary, listBudgets, listDebts, listEntries, type Summary } from "@/lib/api";
 import { monthKey, monthRange, prettyMonth, shiftMonth, shortDay, todayISO } from "@/lib/dates";
@@ -118,14 +119,16 @@ export default function MonthPage() {
             <ChevronRight className="h-5 w-5 text-muted" />
           </Link>
 
-          <Link to="/bank" className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-dark"><Landmark className="h-5 w-5" /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-extrabold">Bank Match</span>
-              <span className="block text-sm text-muted">Check your notebook against your bank statement</span>
-            </span>
-            <ChevronRight className="h-5 w-5 text-muted" />
-          </Link>
+          {FEATURES.bankMatch && (
+            <Link to="/bank" className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-dark"><Landmark className="h-5 w-5" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-extrabold">Bank Match</span>
+                <span className="block text-sm text-muted">Check your notebook against your bank statement</span>
+              </span>
+              <ChevronRight className="h-5 w-5 text-muted" />
+            </Link>
+          )}
 
           {/* Smart summary */}
           <section className="card overflow-hidden">

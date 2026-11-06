@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, FileSpreadsheet, HandCoins, Lock, Mic, Package, PenLine, Sparkles, Wallet } from "lucide-react";
+import { BarChart3, Clock, FileSpreadsheet, HandCoins, Lock, Mic, Package, PenLine, Sparkles, Wallet } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "@/components/ui";
 import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
@@ -94,6 +94,11 @@ function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[520px] bg-gradient-to-b from-brand-soft/70 to-transparent" />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
         <div>
+          <p className="mb-5 inline-flex flex-wrap items-center gap-x-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-bold text-muted shadow-card">
+            <span className="text-ink">🇳🇬 Made in Nigeria</span>
+            <span aria-hidden>·</span>
+            <span className="select-all">hello@flowz.ng</span>
+          </p>
           <h1 className="text-4xl font-extrabold leading-[1.08] [text-wrap:balance] sm:text-6xl">
             Write it down.
             <br />
@@ -106,6 +111,9 @@ function Hero() {
             <Link to="/signup" className="btn-primary px-7 py-4 text-lg">Start free</Link>
             <button onClick={() => go("try")} className="btn-ghost border-2 border-line px-7 py-4 text-lg">Try it here</button>
           </div>
+          <p className="mt-4 flex items-center gap-2 text-sm font-bold text-muted">
+            <Clock className="h-4 w-4 text-brand" /> Takes 1 minute: email, name, start writing.
+          </p>
         </div>
         <Phone />
       </div>

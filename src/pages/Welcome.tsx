@@ -1,24 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import {
-  BarChart3,
-  BookOpen,
-  Check,
-  ChevronDown,
-  FileSpreadsheet,
-  HandCoins,
-  Landmark,
-  Lock,
-  MessageCircleQuestion,
-  Mic,
-  Package,
-  PenLine,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  Target,
-  Trash2,
-} from "lucide-react";
+import { FileSpreadsheet, HandCoins, Mic, Package, Sparkles, Wallet } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "@/components/ui";
 import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
@@ -35,13 +17,8 @@ export default function Welcome() {
       <Nav />
       <main>
         <Hero />
-        <Problems />
-        <HowItWorks />
+        <Solves />
         <TryIt />
-        <Features />
-        <Story />
-        <Trust />
-        <Faq />
         <FinalCta />
       </main>
       <Footer />
@@ -59,19 +36,6 @@ function Section({ id, children, className }: { id?: string; children: ReactNode
   );
 }
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-sm font-extrabold uppercase tracking-wider text-brand">{children}</p>;
-}
-
-function Heading({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="max-w-2xl">
-      <h2 className="mt-2 text-3xl font-extrabold leading-tight [text-wrap:balance] sm:text-4xl">{children}</h2>
-      {sub && <p className="mt-3 text-lg text-muted">{sub}</p>}
-    </div>
-  );
-}
-
 // ---------- top bar ----------
 
 function Nav() {
@@ -79,12 +43,6 @@ function Nav() {
     <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/90 px-5 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4">
         <Logo />
-        <nav className="hidden items-center gap-7 text-sm font-bold text-muted md:flex" aria-label="Sections">
-          <button onClick={() => go("how")} className="hover:text-ink">How it works</button>
-          <button onClick={() => go("try")} className="hover:text-ink">Try it</button>
-          <button onClick={() => go("features")} className="hover:text-ink">Features</button>
-          <button onClick={() => go("faq")} className="hover:text-ink">Questions</button>
-        </nav>
         <div className="flex items-center gap-2">
           <Link to="/signin" className="rounded-2xl px-3 py-2 text-sm font-bold hover:bg-line/40">Sign in</Link>
           <Link to="/signup" className="btn-primary px-4 py-2 text-sm">Start free</Link>
@@ -134,27 +92,18 @@ function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[520px] bg-gradient-to-b from-brand-soft/70 to-transparent" />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-brand-dark shadow-card">
-            <span aria-hidden>🇳🇬</span> Your interactive accounts notebook
-          </span>
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] [text-wrap:balance] sm:text-6xl">
+          <h1 className="text-4xl font-extrabold leading-[1.08] [text-wrap:balance] sm:text-6xl">
             Write it down.
             <br />
             <span className="text-brand">Flowz does the maths.</span>
           </h1>
-          <p className="mt-5 max-w-xl text-lg text-muted sm:text-xl">
-            Write or say what you sold, bought, spent and gave — in English or Pidgin, just like your paper notebook. Flowz adds it up,
-            remembers who owes you, counts your stock and turns it into real account statements.
+          <p className="mt-5 max-w-lg text-lg text-muted sm:text-xl">
+            Your daily notebook, in English or Pidgin, turned into profit, debts and statements. Automatically.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link to="/signup" className="btn-primary px-7 py-4 text-lg">Start my notebook — it's free</Link>
-            <button onClick={() => go("try")} className="btn-ghost border-2 border-line px-7 py-4 text-lg">Try it here first</button>
+            <Link to="/signup" className="btn-primary px-7 py-4 text-lg">Start free</Link>
+            <button onClick={() => go("try")} className="btn-ghost border-2 border-line px-7 py-4 text-lg">Try it here</button>
           </div>
-          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold text-muted">
-            {["No accounting knowledge needed", "Naira and dollars", "Works on any phone"].map((t) => (
-              <li key={t} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-brand" /> {t}</li>
-            ))}
-          </ul>
         </div>
         <Phone />
       </div>
@@ -204,63 +153,37 @@ function Phone() {
   );
 }
 
-// ---------- problems ----------
+// ---------- problems and what Flowz does about them ----------
 
-function Problems() {
-  const items = [
-    { quote: "Business is moving… but where is the money?", body: "Sales, restock, transport and family needs all come from one pocket. By month end the money is gone and nobody can say where." },
-    { quote: "Who still owes me for that rice?", body: "Credit is normal in trade, but memory isn't a ledger. Small debts are forgotten and quietly become losses." },
-    { quote: "The bank asked for records. I only have a notebook.", body: "Lenders want proof of income. Pages of handwriting don't show profit, so good businesses miss out on loans." },
-  ];
+const SOLVES = [
+  { icon: Wallet, problem: "Money disappears", fix: "See what came in, what went out and what you kept. Every day." },
+  { icon: HandCoins, problem: "Debts get forgotten", fix: "Write “Joy took rice on credit”. Flowz tracks what she still owes." },
+  { icon: Package, problem: "Stock runs out unnoticed", fix: "Sell and buy as usual. Flowz counts your stock and warns when it's low." },
+  { icon: FileSpreadsheet, problem: "No records for a loan", fix: "One tap turns your notebook into a Profit & Loss and Balance Sheet." },
+];
+
+function Solves() {
   return (
-    <Section>
-      <Eyebrow>Sound familiar?</Eyebrow>
-      <Heading sub="Millions of traders keep a paper notebook every day. It records the day — but it can't do the maths, chase debts or prove your income.">
-        The notebook works hard. It just can’t add up.
-      </Heading>
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
-        {items.map((i) => (
-          <figure key={i.quote} className="rounded-3xl border border-line bg-white p-6">
-            <blockquote className="font-hand text-[28px] font-bold leading-tight">“{i.quote}”</blockquote>
-            <figcaption className="mt-3 text-muted">{i.body}</figcaption>
-          </figure>
+    <Section className="bg-white">
+      <h2 className="text-3xl font-extrabold sm:text-4xl">Your notebook can't add up. Flowz can.</h2>
+      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        {SOLVES.map((s) => (
+          <div key={s.problem} className="flex gap-4 rounded-3xl border border-line bg-paper p-6">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-dark"><s.icon className="h-6 w-6" /></span>
+            <div>
+              <p className="font-hand text-2xl font-bold text-coral line-through decoration-2">{s.problem}</p>
+              <p className="mt-1 text-lg font-bold">{s.fix}</p>
+            </div>
+          </div>
         ))}
       </div>
     </Section>
   );
 }
 
-// ---------- how it works ----------
-
-function HowItWorks() {
-  const steps = [
-    { icon: PenLine, title: "Write or speak your day", body: "“Sold 3 bags of rice 45k”, “Transport 1,500”, “Emeka dey owe me 4k”. No forms, no categories to pick — just one thing per line." },
-    { icon: Sparkles, title: "Flowz reads every line", body: "Each line is tagged as a sale, purchase, expense, gift or debt, added up in naira or dollars, and linked to your debt book and stock." },
-    { icon: BarChart3, title: "See where your money goes", body: "Today's totals, who owes you, a plain monthly summary with a tip, and Profit & Loss and Balance Sheet statements you can download." },
-  ];
-  return (
-    <Section id="how" className="bg-white">
-      <Eyebrow>How it works</Eyebrow>
-      <Heading>Three steps. The first one is the notebook you already keep.</Heading>
-      <ol className="mt-12 grid gap-8 md:grid-cols-3">
-        {steps.map((s, i) => (
-          <li key={s.title} className="relative">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand text-white"><s.icon className="h-6 w-6" /></span>
-              <span className="font-hand text-4xl font-bold text-line">{i + 1}</span>
-            </div>
-            <h3 className="mt-5 text-xl font-extrabold">{s.title}</h3>
-            <p className="mt-2 text-muted">{s.body}</p>
-          </li>
-        ))}
-      </ol>
-    </Section>
-  );
-}
-
 // ---------- try it ----------
 
-const TRY_EXAMPLES = ["Sold 2 crates of eggs 9,600", "Emeka dey owe me 4k", "Money enter 15k", "Gave mum 10k", "Fuel for gen 6,000", "Paid apprentice 15k"];
+const TRY_EXAMPLES = ["Emeka dey owe me 4k", "Money enter 15k", "Fuel for gen 6,000"];
 
 function TryIt() {
   const [text, setText] = useState("Sold 3 bags of rice 45k");
@@ -272,10 +195,8 @@ function TryIt() {
     <Section id="try">
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
-          <Eyebrow>Try it now</Eyebrow>
-          <Heading sub="Type a line the way you'd write it in your notebook — English, Pidgin, “5k”, typos and all. This runs right here on your screen; nothing is sent anywhere.">
-            See how Flowz reads your words
-          </Heading>
+          <h2 className="text-3xl font-extrabold sm:text-4xl">Type a line. Watch Flowz read it.</h2>
+          <p className="mt-3 text-lg text-muted">English, Pidgin, “5k”. It just understands.</p>
           <div className="mt-6 flex flex-wrap gap-2">
             {TRY_EXAMPLES.map((ex) => (
               <button key={ex} onClick={() => setText(ex)} className="rounded-full border-2 border-line bg-white px-3 py-1.5 text-sm font-bold text-muted hover:border-brand hover:text-brand-dark">
@@ -317,121 +238,6 @@ function TryIt() {
               <p className="text-muted">{text.trim() ? "No money in this line yet — Flowz keeps it as a note. Add an amount like “5k” or “₦5,000”." : "Type something to see it read."}</p>
             )}
           </div>
-          <Link to="/signup" className="btn-primary mt-5 w-full">Start my notebook — it's free</Link>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-// ---------- features ----------
-
-function Features() {
-  const items = [
-    { icon: BookOpen, title: "An open page every day", body: "Write freely, one thing per line. Totals update as you type, and your page saves on the phone even when the network is bad." },
-    { icon: Mic, title: "Speak instead of typing", body: "Tap the microphone and say it. Every pause becomes a new line, read the same way." },
-    { icon: HandCoins, title: "A debt book that keeps itself", body: "“Joy bought 50k rice on credit”, then “Joy paid 30k” — Flowz knows Joy still owes ₦20,000." },
-    { icon: Package, title: "Inventory and stock", body: "Add your goods with unit and carton prices. “Sold 3 indomie” works out the money and counts what's left." },
-    { icon: Target, title: "Budgets and reminders", body: "Set limits for food, transport or fuel, and get a gentle evening reminder on days you haven't written." },
-    { icon: MessageCircleQuestion, title: "Ask Flowz", body: "“How much did I spend on transport this month?” Get exact answers from your own records, plus a plain monthly summary." },
-    { icon: FileSpreadsheet, title: "Real account statements", body: "Profit & Loss and Balance Sheet for any period, with an honest check of how complete they are. Download as PDF or Excel." },
-    { icon: Landmark, title: "Bank Match", body: "Upload your bank statement. Flowz shows money in your bank that's missing from your notebook — cash stays fine." },
-  ];
-  return (
-    <Section id="features" className="bg-white">
-      <Eyebrow>Everything in one notebook</Eyebrow>
-      <Heading sub="Built for traders, shop owners, artisans and anyone who wants to know where their money goes.">
-        From the first line of the day to a statement you can show the bank
-      </Heading>
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((f) => (
-          <div key={f.title} className="rounded-3xl border border-line bg-paper p-6">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand-dark"><f.icon className="h-5 w-5" /></span>
-            <h3 className="mt-4 text-lg font-extrabold">{f.title}</h3>
-            <p className="mt-1.5 text-[15px] text-muted">{f.body}</p>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-// ---------- founder story ----------
-
-function Story() {
-  return (
-    <Section>
-      <div className="grid items-center gap-10 rounded-[2rem] bg-ink p-8 text-white sm:p-12 lg:grid-cols-[auto_1fr]">
-        <div className="grid h-24 w-24 place-items-center rounded-full bg-brand font-hand text-5xl font-bold">E</div>
-        <figure>
-          <blockquote className="text-xl leading-relaxed sm:text-2xl">
-            “At university I sold raffia shoes to survive. Business was booming, yet my money kept disappearing and I couldn't trace where it
-            went — even though I'm an accountant. The problem wasn't knowledge; it was that bookkeeping didn't fit a busy day. So I built
-            Flowz to keep the notebook habit and do the accountant's work in the background.”
-          </blockquote>
-          <figcaption className="mt-5 font-bold text-white/70">Edikan Udofia · Founder, Flowz</figcaption>
-        </figure>
-      </div>
-    </Section>
-  );
-}
-
-// ---------- trust ----------
-
-function Trust() {
-  const items = [
-    { icon: Lock, title: "Only you see your records", body: "Each account can only ever read its own notebook — enforced in the database itself." },
-    { icon: ShieldCheck, title: "We can't touch your bank", body: "Flowz never connects to your account or moves money. It only reads statements you choose to upload." },
-    { icon: Sparkles, title: "No ads, no selling data", body: "Your business information isn't for sale. Ever." },
-    { icon: Trash2, title: "Leave any time", body: "Download your statements, or delete your account and all its data from Settings." },
-  ];
-  return (
-    <Section className="bg-brand-soft/50">
-      <Eyebrow>Your money, your business</Eyebrow>
-      <Heading sub={<>Your rights under Nigeria's Data Protection Act are explained in our <Link to="/privacy" className="font-bold text-brand-dark underline">privacy policy</Link>.</>}>
-        Private by design
-      </Heading>
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((t) => (
-          <div key={t.title} className="rounded-3xl bg-white p-6">
-            <t.icon className="h-6 w-6 text-brand-dark" />
-            <h3 className="mt-3 font-extrabold">{t.title}</h3>
-            <p className="mt-1 text-[15px] text-muted">{t.body}</p>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-// ---------- FAQ ----------
-
-function Faq() {
-  const qs = [
-    { q: "Is Flowz free?", a: "Yes, Flowz is free to start. If we ever add paid extras, we'll tell you clearly before anything changes." },
-    { q: "Do I need to know accounting?", a: "No. Write the way you already do. Flowz does the sorting and the maths, and explains your month in plain words." },
-    { q: "Can I write in Pidgin?", a: "Yes. Flowz understands everyday Nigerian English and Pidgin — “money enter 15k”, “Emeka dey owe me 4k” — plus short forms like “5k” and common typos." },
-    { q: "What if my network is bad?", a: "Your page saves on your phone as you write and syncs when you're back online. Only AI features, like Ask Flowz, need a connection." },
-    { q: "Does it work for personal money too?", a: "Yes. Choose “Me & my home” and Flowz uses everyday words like money in, spending and what you kept — with budgets for your household." },
-    { q: "How do I get it on my phone?", a: "Open www.flowz.ng on your phone and tap “Add to Home screen” — it works like an app. A Google Play version is coming soon." },
-  ];
-  return (
-    <Section id="faq" className="bg-white">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
-        <div>
-          <Eyebrow>Questions</Eyebrow>
-          <Heading sub={<>Something else? Email <b className="select-all text-ink">hello@flowz.ng</b>.</>}>Good to know</Heading>
-        </div>
-        <div className="divide-y divide-line rounded-3xl border border-line">
-          {qs.map(({ q, a }) => (
-            <details key={q} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-extrabold">
-                {q}
-                <ChevronDown className="h-5 w-5 shrink-0 text-muted transition group-open:rotate-180" />
-              </summary>
-              <p className="mt-3 text-muted">{a}</p>
-            </details>
-          ))}
         </div>
       </div>
     </Section>
@@ -444,13 +250,9 @@ function FinalCta() {
   return (
     <Section>
       <div className="relative overflow-hidden rounded-[2rem] bg-brand px-8 py-14 text-center text-white sm:px-16">
-        <p className="font-hand text-3xl font-bold text-white/80">Tonight, instead of adding it up by hand…</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-extrabold leading-tight [text-wrap:balance] sm:text-5xl">Write it down. Let Flowz do the maths.</h2>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/signup" className="btn bg-white px-7 py-4 text-lg text-brand-dark hover:bg-paper">Start my notebook — it's free</Link>
-          <Link to="/signin" className="btn border-2 border-white/40 px-7 py-4 text-lg text-white hover:bg-white/10">I already have an account</Link>
-        </div>
-        <p className="mt-6 flex items-center justify-center gap-2 text-sm font-bold text-white/80"><Smartphone className="h-4 w-4" /> Works in your phone's browser — no download needed</p>
+        <h2 className="mx-auto max-w-2xl text-3xl font-extrabold leading-tight [text-wrap:balance] sm:text-5xl">Know where your money goes.</h2>
+        <p className="mt-3 text-lg text-white/85">Free to start. Works on any phone.</p>
+        <Link to="/signup" className="btn mt-8 bg-white px-8 py-4 text-lg text-brand-dark hover:bg-paper">Start free</Link>
       </div>
     </Section>
   );

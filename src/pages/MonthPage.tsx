@@ -130,10 +130,10 @@ export default function MonthPage() {
             </Link>
           )}
 
-          {/* Smart summary */}
+          {/* Adidy's summary */}
           <section className="card overflow-hidden">
             <div className="flex items-center justify-between bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-white">
-              <span className="flex items-center gap-2 font-extrabold"><Sparkles className="h-5 w-5" /> Smart summary</span>
+              <span className="flex items-center gap-2 font-extrabold"><Sparkles className="h-5 w-5" /> Adidy's summary</span>
               {summary && (
                 <button onClick={write} disabled={writing} className="flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-bold hover:bg-white/25 disabled:opacity-60">
                   <RefreshCw className={clsx("h-3.5 w-3.5", writing && "animate-spin")} /> Refresh
@@ -158,7 +158,7 @@ export default function MonthPage() {
                     </p>
                   )}
                   {import.meta.env.MODE === "demo" && (
-                    <p className="mt-3 text-xs font-bold text-muted">Demo: this summary is written on your device from your numbers. The live app has AI write it.</p>
+                    <p className="mt-3 text-xs font-bold text-muted">Demo: this summary is written on your device from your numbers. In the live app, Adidy writes it.</p>
                   )}
                   {stale && !writing && (
                     <p className="mt-3 text-xs font-bold text-muted">You've written more since this summary. Tap Refresh to update it.</p>

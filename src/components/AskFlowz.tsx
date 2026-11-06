@@ -79,13 +79,13 @@ export default function AskFlowz() {
   return (
     <section className="card overflow-hidden">
       <div className="flex items-center gap-2 border-b border-line px-5 py-3 font-extrabold">
-        <MessageCircleQuestion className="h-5 w-5 text-brand" /> Ask Flowz
+        <MessageCircleQuestion className="h-5 w-5 text-brand" /> Ask Adidy
       </div>
 
       <div className="space-y-3 p-4">
         {messages.length === 0 && (
           <>
-            <p className="text-sm text-muted">Ask anything about your money, in English or Pidgin. Answers come from what you wrote in your notebook.</p>
+            <p className="text-sm text-muted">Hi, I'm Adidy. Ask me anything about your money, in English or Pidgin. My answers come from what you wrote in your notebook.</p>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button key={s} onClick={() => ask(s)} className="rounded-full border-2 border-line bg-white px-3 py-1.5 text-left text-sm font-bold hover:border-brand">
@@ -133,14 +133,14 @@ export default function AskFlowz() {
           value={question}
           maxLength={500}
           onChange={(e) => setQuestion(e.target.value)}
-          aria-label="Ask a question about your money"
+          aria-label="Ask Adidy a question about your money"
         />
         <button className="btn-primary shrink-0 px-4" disabled={busy || !question.trim()} aria-label="Ask">
           <SendHorizontal className="h-5 w-5" />
         </button>
       </form>
       {import.meta.env.MODE === "demo" && (
-        <p className="px-5 pb-3 text-xs font-bold text-muted">Demo: answers simple questions with rules. The live app uses AI and understands almost any question.</p>
+        <p className="px-5 pb-3 text-xs font-bold text-muted">Demo: answers simple questions with rules. In the live app, Adidy understands almost any question.</p>
       )}
     </section>
   );

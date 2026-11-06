@@ -1,4 +1,4 @@
-// "Ask Flowz": answers questions about the user's own notebook.
+// "Ask Adidy" (Flowz's AI helper): answers questions about the user's own notebook.
 // Claude never adds numbers up itself. It calls the tools below, which do the maths in code
 // on the user's own rows, and then explains the result in plain words.
 //
@@ -239,7 +239,7 @@ const TOOLS = [
 ];
 
 function systemPrompt(s: { name: string; mode: string; currency: string; today: string; earliest: string | null }) {
-  return `You are Flowz, a friendly helper inside a simple money notebook used by everyday people and small
+  return `You are Adidy, the friendly helper inside Flowz, a simple money notebook used by everyday people and small
 business owners, mostly in Nigeria. The user writes lines like "Sold 3 bags of rice 45,000" and Flowz
 tags each one. Answer the user's questions about their own notebook.
 
@@ -265,6 +265,7 @@ How to answer:
   No jargon. No markdown headings, tables or bold.
 - If the user writes in Pidgin, you may answer in simple Pidgin.
 - If the data can't answer the question, say so simply and suggest what they could write in Flowz.
+- If asked who you are, say you are Adidy, Flowz's helper.
 - Only talk about their money and Flowz. Politely decline anything else.`;
 }
 
@@ -275,7 +276,7 @@ if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(
   if (req.method !== "POST") return reply(405, { error: "Method not allowed" });
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return reply(500, { error: "Ask Flowz isn't set up yet (missing AI key)." });
+  if (!apiKey) return reply(500, { error: "Adidy isn't set up yet (missing AI key)." });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -307,7 +308,7 @@ if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(
   const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: usage } = await admin.from("ai_usage").select("questions").eq("user_id", userId).eq("day", today).maybeSingle();
   if ((usage?.questions ?? 0) >= MAX_QUESTIONS_PER_DAY) {
-    return reply(429, { error: "You've asked a lot of questions today. Ask Flowz will be ready again tomorrow." });
+    return reply(429, { error: "You've asked a lot of questions today. Adidy will be ready again tomorrow." });
   }
   await admin.from("ai_usage").upsert({ user_id: userId, day: today, questions: (usage?.questions ?? 0) + 1 });
 
@@ -388,7 +389,7 @@ if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(
     }
   } catch (err) {
     console.error("ask failed", err);
-    return reply(502, { error: "Ask Flowz couldn't answer right now. Please try again in a moment." });
+    return reply(502, { error: "Adidy couldn't answer right now. Please try again in a moment." });
   }
   return reply(200, { answer: "Sorry, I couldn't work that out. Try asking in a different way, like “How much did I spend on transport this month?”" });
 });

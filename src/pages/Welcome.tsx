@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { FileSpreadsheet, HandCoins, Mic, Package, Sparkles, Wallet } from "lucide-react";
+import { BarChart3, FileSpreadsheet, HandCoins, Lock, Mic, Package, PenLine, Sparkles, Wallet } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "@/components/ui";
 import { CATEGORY_BY_ID, KINDS, kindLabel } from "@/lib/kinds";
@@ -17,7 +17,9 @@ export default function Welcome() {
       <Nav />
       <main>
         <Hero />
+        <Familiar />
         <Solves />
+        <HowItWorks />
         <TryIt />
         <FinalCta />
       </main>
@@ -153,6 +155,29 @@ function Phone() {
   );
 }
 
+// ---------- sound familiar? ----------
+
+function Familiar() {
+  const quotes = [
+    { said: "Business is moving… but where is the money?", cost: "Sales, restock and personal needs mix, and profit quietly disappears." },
+    { said: "Who still owes me for that rice?", cost: "Credit sales are forgotten, and small debts become losses." },
+    { said: "The bank wants records. I only have a notebook.", cost: "No proof of income means no loan, even for a good business." },
+  ];
+  return (
+    <Section>
+      <p className="text-sm font-extrabold uppercase tracking-wider text-coral">Sound familiar?</p>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {quotes.map((q) => (
+          <figure key={q.said} className="rounded-3xl border border-line bg-white p-6">
+            <blockquote className="font-hand text-[28px] font-bold leading-tight">“{q.said}”</blockquote>
+            <figcaption className="mt-3 text-muted">{q.cost}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 // ---------- problems and what Flowz does about them ----------
 
 const SOLVES = [
@@ -181,6 +206,33 @@ function Solves() {
   );
 }
 
+// ---------- how it works ----------
+
+function HowItWorks() {
+  const steps = [
+    { icon: PenLine, title: "Write or speak your day", body: "“Sold 3 bags of rice 45k”. One thing per line, no forms." },
+    { icon: Sparkles, title: "Flowz reads every line", body: "Sales, spending, debts and stock are sorted and added up for you." },
+    { icon: BarChart3, title: "See your money clearly", body: "Daily totals, who owes you, and statements you can show the bank." },
+  ];
+  return (
+    <Section>
+      <h2 className="text-3xl font-extrabold sm:text-4xl">How it works</h2>
+      <ol className="mt-10 grid gap-8 md:grid-cols-3">
+        {steps.map((s, i) => (
+          <li key={s.title}>
+            <div className="flex items-center gap-3">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand text-white"><s.icon className="h-6 w-6" /></span>
+              <span className="font-hand text-4xl font-bold text-line">{i + 1}</span>
+            </div>
+            <h3 className="mt-4 text-xl font-extrabold">{s.title}</h3>
+            <p className="mt-1.5 text-muted">{s.body}</p>
+          </li>
+        ))}
+      </ol>
+    </Section>
+  );
+}
+
 // ---------- try it ----------
 
 const TRY_EXAMPLES = ["Emeka dey owe me 4k", "Money enter 15k", "Fuel for gen 6,000"];
@@ -192,7 +244,7 @@ function TryIt() {
   const category = read.category ? CATEGORY_BY_ID[read.category] : null;
   const money = read.amount != null && read.currency ? formatMoney(read.amount, read.currency) : null;
   return (
-    <Section id="try">
+    <Section id="try" className="bg-white">
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
           <h2 className="text-3xl font-extrabold sm:text-4xl">Type a line. Watch Flowz read it.</h2>
@@ -253,6 +305,9 @@ function FinalCta() {
         <h2 className="mx-auto max-w-2xl text-3xl font-extrabold leading-tight [text-wrap:balance] sm:text-5xl">Know where your money goes.</h2>
         <p className="mt-3 text-lg text-white/85">Free to start. Works on any phone.</p>
         <Link to="/signup" className="btn mt-8 bg-white px-8 py-4 text-lg text-brand-dark hover:bg-paper">Start free</Link>
+        <p className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-white/85">
+          <Lock className="h-4 w-4" /> Only you can see your records. We never sell your data.
+        </p>
       </div>
     </Section>
   );

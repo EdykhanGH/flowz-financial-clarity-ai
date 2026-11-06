@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
           ? [
               { find: /^@\/lib\/supabase$/, replacement: path.join(src, "demo/supabase.ts") },
               { find: /^@\/lib\/api$/, replacement: path.join(src, "demo/api.ts") },
+              { find: /^@\/lib\/monitoring$/, replacement: path.join(src, "demo/monitoring.ts") },
             ]
           : []),
         // Lets Vitest load edge-function files, whose "npm:" imports only exist in Deno.

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { getSettings, type Settings } from "@/lib/api";
+import { setMonitoringUser } from "@/lib/monitoring";
 
 interface AuthState {
   session: Session | null;
@@ -49,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => data.subscription.unsubscribe();
   }, [loadSettings]);
+
+  // Error reports carry only the account's anonymous id.
+  const userId = session?.user.id ?? null;
+  useEffect(() => setMonitoringUser(userId), [userId]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

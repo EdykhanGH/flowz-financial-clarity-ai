@@ -52,6 +52,7 @@ export default function Privacy() {
           <li><b>Bank statements you upload for Bank Match:</b> the transactions on them (date, amount, description, balance) and the file's name. Flowz keeps the transactions, not the file itself.</li>
           <li><b>Notifications:</b> if you turn on reminders, a token from your phone's browser so we can send them.</li>
           <li><b>Usage counts:</b> how many AI questions and readings you used each day, so daily limits work.</li>
+          <li><b>Error reports:</b> if something breaks in the app, a technical report (which screen, what failed, your browser and an anonymous account id). It never includes what you wrote, amounts or names.</li>
         </ul>
       </Section>
 
@@ -79,6 +80,7 @@ export default function Privacy() {
           <li><b>Vercel:</b> serves the Flowz app to your phone or computer.</li>
           <li><b>Anthropic (Claude):</b> the AI behind summaries, Ask Flowz and statement reading. Under Anthropic's commercial terms, data sent through its API isn't used to train its models.</li>
           <li><b>Resend:</b> sends sign-up and password emails.</li>
+          <li><b>Sentry:</b> receives error reports so we can fix problems (stored in the European Union).</li>
           <li><b>Zoho:</b> our support inbox, if you email us.</li>
           <li><b>Your phone's browser company</b> (for example Google for Chrome, Apple for Safari): delivers reminder notifications and, if you use the microphone, turns your speech into text. Flowz receives only the text, not the recording.</li>
         </ul>

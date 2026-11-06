@@ -12,6 +12,7 @@
     "build:demo": "node scripts/build-demo.mjs"
   },
   "dependencies": {
+    "@sentry/react": "11.8.0",
     "@supabase/supabase-js": "^2.118.0",
     "clsx": "^2.1.1",
     "jspdf": "^2.5.2",

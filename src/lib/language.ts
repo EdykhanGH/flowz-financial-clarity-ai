@@ -138,7 +138,7 @@ const PHRASES: [RegExp, string | ((...args: string[]) => string)][] = [
   [/\bi\s+(?:borrow|borrowed)\s+(?:money\s+)?from\b/g, "i borrowed from"],
   [/\b(?:buy|bought|took|take|collect|collected|carry|carried)\s+(?:goods\s+|market\s+)?(?:on|for|with)\s+(?:credit|trust|loan)\b/g, "bought on credit"],
   // "I borrow Emeka 5k" (Pidgin: I lent Emeka)
-  [/\bi\s+(?:borrow|borrowed)\s+(?!from\b|money from\b)/g, "i lent "],
+  [/\bi\s+(?:borrow|borrowed)\s+(?!.*\bfrom\b)/g, "i lent "],
   [/\b(?:lend|lended|loaned|loan(?=\s+(?!from\b)[a-z]+\s+\d))\b/g, "lent"],
 
   // --- paying back a debt ---

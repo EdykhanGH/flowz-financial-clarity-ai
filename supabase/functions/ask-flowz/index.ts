@@ -46,6 +46,11 @@ const FLOW: Record<string, "in" | "out" | "debt" | "none"> = {
   i_owe: "debt",
   repaid_to_me: "in",
   i_repaid: "out",
+  refund: "out",
+  saving: "out",
+  savings_back: "in",
+  owner_in: "in",
+  owner_out: "out",
   note: "none",
 };
 
@@ -190,8 +195,8 @@ export function getDebts(rows: Row[]) {
 const FILTER_PROPS = {
   start_date: { type: "string", description: "First day to include, YYYY-MM-DD. Defaults to the 1st of this month." },
   end_date: { type: "string", description: "Last day to include, YYYY-MM-DD. Defaults to today." },
-  kind: { type: "string", enum: ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "note"] },
-  flow: { type: "string", enum: ["in", "out"], description: "in = sales/income + gifts received; out = purchases + expenses + gifts given." },
+  kind: { type: "string", enum: ["sale", "gift_in", "purchase", "expense", "gift_out", "owed_to_me", "repaid_to_me", "i_owe", "i_repaid", "refund", "saving", "savings_back", "owner_in", "owner_out", "note"] },
+  flow: { type: "string", enum: ["in", "out"], description: "in = all money that came in; out = all money that went out (including refunds, savings put away and owner's drawings)." },
   category: {
     type: "string",
     enum: ["stock", "food", "transport", "fuel", "rent", "bills", "airtime", "wages", "health", "school", "family", "giving", "events", "savings", "repairs", "personal", "other"],
@@ -244,7 +249,11 @@ main currency ${s.currency}. Today is ${s.today}. Their notebook data starts ${s
 Line types: sale (money in from selling/earning), gift_in (gift received), purchase (stock/goods bought),
 expense (everyday spending), gift_out (gift given), owed_to_me / i_owe (new debts, not counted as money in or out),
 repaid_to_me (someone paid back what they owed: money in), i_repaid (the user paid back a debt: money out),
-note (no money). A person's balance is what they owed minus what they paid back; use get_debts for it.
+refund (money given back to a customer: money out, lowers sales), saving (put into ajo/esusu/savings: money out
+but still theirs), savings_back (ajo/savings collected: money in, not income), owner_in (owner's own money put
+into the business: money in, not income), owner_out (taken for the owner's own use: money out, not a business
+cost), note (no money). When asked about profit or income, leave out saving, savings_back, owner_in and owner_out,
+and subtract refunds from sales. A person's balance is what they owed minus what they paid back; use get_debts for it.
 
 How to answer:
 - Get every number from the tools. Never add, subtract or estimate figures yourself; if you need a

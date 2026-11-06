@@ -10,6 +10,11 @@ export type Kind =
   | "i_owe" // you owe someone
   | "repaid_to_me" // someone paid back money they owed you (money in, lowers their balance)
   | "i_repaid" // you paid back money you owed (money out, lowers your balance)
+  | "refund" // money given back to a customer (money out, lowers sales)
+  | "saving" // money put into ajo, esusu or savings (money out, but still yours)
+  | "savings_back" // ajo or savings collected back (money in, but not income)
+  | "owner_in" // the owner's own money put into the business (money in, not income)
+  | "owner_out" // money taken out of the business for the owner's own use (money out, not a business cost)
   | "note"; // just a note, no money
 
 export type Mode = "personal" | "business";
@@ -78,6 +83,36 @@ export const KINDS: Record<Kind, KindInfo> = {
     flow: "out",
     chip: "bg-sky-soft text-sky",
   },
+  refund: {
+    label: { business: "Refund", personal: "Refund" },
+    emoji: "🔁",
+    flow: "out",
+    chip: "bg-coral-soft text-coral",
+  },
+  saving: {
+    label: { business: "Saved", personal: "Saved" },
+    emoji: "🐷",
+    flow: "out",
+    chip: "bg-plum-soft text-plum",
+  },
+  savings_back: {
+    label: { business: "Savings back", personal: "Savings back" },
+    emoji: "🐷",
+    flow: "in",
+    chip: "bg-plum-soft text-plum",
+  },
+  owner_in: {
+    label: { business: "Own money in", personal: "Own money in" },
+    emoji: "🙋",
+    flow: "in",
+    chip: "bg-sky-soft text-sky",
+  },
+  owner_out: {
+    label: { business: "Taken for self", personal: "Taken for self" },
+    emoji: "👛",
+    flow: "out",
+    chip: "bg-sky-soft text-sky",
+  },
   note: {
     label: { business: "Note", personal: "Note" },
     emoji: "📝",
@@ -96,8 +131,19 @@ export const KIND_ORDER: Kind[] = [
   "repaid_to_me",
   "i_owe",
   "i_repaid",
+  "refund",
+  "saving",
+  "savings_back",
+  "owner_in",
+  "owner_out",
   "note",
 ];
+
+/** Money that moves but is not profit or loss: the owner's own money and savings. */
+export const NOT_PROFIT_KINDS: Kind[] = ["saving", "savings_back", "owner_in", "owner_out"];
+
+/** Money out that counts as spending (for top spending and budgets). Refunds, savings and owner's drawings don't. */
+export const isSpending = (kind: Kind) => KINDS[kind].flow === "out" && kind !== "refund" && !NOT_PROFIT_KINDS.includes(kind);
 
 export function kindLabel(kind: Kind, mode: Mode) {
   return KINDS[kind].label[mode];

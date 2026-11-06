@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useUser } from "@/hooks/useAuth";
 import { deleteBudget, listBudgets, listEntries, saveBudget } from "@/lib/api";
 import { monthKey, monthRange, prettyMonth, todayISO } from "@/lib/dates";
-import { CATEGORIES, CATEGORY_BY_ID, KINDS } from "@/lib/kinds";
+import { CATEGORIES, CATEGORY_BY_ID, isSpending } from "@/lib/kinds";
 import { CURRENCIES, CURRENCY_SYMBOL, formatMoney, type Budget, type Entry } from "@/lib/money";
 import { parseLine, type Currency } from "@/lib/parse";
 import { EmptyState, ErrorNote, ProgressBar, Sheet, Spinner } from "@/components/ui";
@@ -38,7 +38,7 @@ export default function Budgets() {
   const spent = useMemo(() => {
     const map: Record<string, number> = {};
     for (const e of entries) {
-      if (e.amount == null || !e.currency || KINDS[e.kind].flow !== "out") continue;
+      if (e.amount == null || !e.currency || !isSpending(e.kind)) continue;
       const key = `${e.category ?? "other"}:${e.currency}`;
       map[key] = (map[key] ?? 0) + e.amount;
     }

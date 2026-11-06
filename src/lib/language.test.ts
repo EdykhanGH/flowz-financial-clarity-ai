@@ -48,7 +48,7 @@ const cases: [string, Expect][] = [
   ["data sub 1,500", { amount: 1500, kind: "expense", category: "airtime" }],
   ["settled mechanic 15k", { amount: 15000, kind: "expense", category: "repairs" }],
   ["transfer to supplier 50k", { amount: 50000, kind: "expense" }],
-  ["ajo contribution 10k", { amount: 10000, kind: "expense", category: "savings" }],
+  ["ajo contribution 10k", { amount: 10000, kind: "saving", category: null }],
   ["aso ebi 25k", { amount: 25000, kind: "expense", category: "events" }],
   ["electricty bill 4500", { amount: 4500, kind: "expense", category: "bills" }],
 

@@ -4,7 +4,7 @@
 // Basis: cash. Money counts when it is written as received or paid. Selling on credit becomes
 // "owed to me" (shown on the balance sheet) and counts as money in when it is paid back.
 
-import { CATEGORY_BY_ID, type Kind, type Mode } from "./kinds";
+import { CATEGORY_BY_ID, KINDS, type Kind, type Mode } from "./kinds";
 import { buildDebtBook, type Entry } from "./money";
 import type { Currency } from "./parse";
 
@@ -44,6 +44,7 @@ export interface BalanceSheet {
   receivables: Line[];
   totalReceivables: number;
   stock: number | null;
+  savings: number; // ajo, esusu and savings put in and not yet collected
   otherAssets: number | null;
   totalAssets: number;
   payables: Line[];
@@ -89,6 +90,7 @@ export function buildProfitAndLoss(
   const total = (...kinds: Kind[]) => round(of(...kinds).reduce((s, e) => s + (e.amount ?? 0), 0));
 
   const sales = total("sale");
+  const refunds = total("refund");
   const collections = total("repaid_to_me");
   const purchases = total("purchase");
   const openingStock = opts.openingStock ?? null;
@@ -103,10 +105,12 @@ export function buildProfitAndLoss(
   const income: Line[] = business
     ? [
         { label: "Sales", amount: sales },
+        ...(refunds ? [{ label: "Less: refunds to customers", amount: -refunds }] : []),
         ...(collections ? [{ label: "Money collected from people who owed you", amount: collections, note: "Sales made on credit, now paid" }] : []),
       ]
     : [
         { label: "Income (salary, sales, earnings)", amount: sales },
+        ...(refunds ? [{ label: "Less: money refunded", amount: -refunds }] : []),
         ...(collections ? [{ label: "Money paid back to you", amount: collections }] : []),
         ...(total("gift_in") ? [{ label: "Gifts received", amount: total("gift_in") }] : []),
       ];
@@ -133,6 +137,10 @@ export function buildProfitAndLoss(
   }
   add("New credit given / money lent (shown on the balance sheet)", total("owed_to_me"));
   add("New money you owe (shown on the balance sheet)", total("i_owe"));
+  add(business ? "Your own money put into the business" : "Your own money added", total("owner_in"));
+  add(business ? "Money you took out for yourself" : "Money taken for yourself", total("owner_out"));
+  add("Saved (ajo, esusu, savings)", total("saving"));
+  add("Savings collected back", total("savings_back"));
 
   return {
     currency,
@@ -161,14 +169,19 @@ export function buildBalanceSheet(
   const { asOf, currency } = opts;
   const upTo = all.filter((e) => e.entry_date <= asOf && money(e, currency));
   let flow = 0;
+  let saved = 0;
   for (const e of upTo) {
-    if (["sale", "gift_in", "repaid_to_me"].includes(e.kind)) flow += e.amount!;
-    if (["purchase", "expense", "gift_out", "i_repaid"].includes(e.kind)) flow -= e.amount!;
+    if (KINDS[e.kind].flow === "in") flow += e.amount!;
+    if (KINDS[e.kind].flow === "out") flow -= e.amount!;
+    if (e.kind === "saving") saved += e.amount!;
+    if (e.kind === "savings_back") saved -= e.amount!;
     // Money lent out leaves your hand; money borrowed comes into it.
     if (e.kind === "i_owe" && /\b(borrow|loan|lent me|borrowed)\b/i.test(e.text)) flow += e.amount!;
     if (e.kind === "owed_to_me" && /\b(lent|lend|borrow|loan)\b/i.test(e.text)) flow -= e.amount!;
   }
   const cash = round((opts.openingCash ?? 0) + flow);
+  // Collecting more than was written as saved means the savings started before the notebook.
+  const savings = round(Math.max(0, saved));
 
   const book = buildDebtBook(upTo);
   const receivables = book.owedToMe.filter((p) => p.balance > 0).map((p) => ({ label: p.name, amount: p.balance }));
@@ -178,7 +191,7 @@ export function buildBalanceSheet(
   const stock = opts.stock ?? null;
   const otherAssets = opts.otherAssets ?? null;
   const otherLiabilities = opts.otherLiabilities ?? null;
-  const totalAssets = round(cash + totalReceivables + (stock ?? 0) + (otherAssets ?? 0));
+  const totalAssets = round(cash + totalReceivables + (stock ?? 0) + savings + (otherAssets ?? 0));
   const totalLiabilities = round(totalPayables + (otherLiabilities ?? 0));
 
   return {
@@ -189,6 +202,7 @@ export function buildBalanceSheet(
     receivables,
     totalReceivables,
     stock,
+    savings,
     otherAssets,
     totalAssets,
     payables,

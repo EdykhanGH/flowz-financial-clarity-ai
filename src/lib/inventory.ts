@@ -123,8 +123,9 @@ export function findStock(text: string, items: InventoryItem[]): (StockReading &
 
 /** Stock goes down when goods leave (sold, on credit, given) and up when they come in (bought). */
 export function stockDirection(kind: Kind): -1 | 0 | 1 {
-  if (kind === "sale" || kind === "owed_to_me" || kind === "gift_out") return -1;
-  if (kind === "purchase" || kind === "i_owe") return 1;
+  if (kind === "sale" || kind === "owed_to_me" || kind === "gift_out" || kind === "owner_out") return -1;
+  // A customer returning goods puts them back on the shelf.
+  if (kind === "purchase" || kind === "i_owe" || kind === "refund") return 1;
   return 0;
 }
 

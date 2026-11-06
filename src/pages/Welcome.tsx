@@ -94,11 +94,6 @@ function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[520px] bg-gradient-to-b from-brand-soft/70 to-transparent" />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <p className="mb-5 inline-flex flex-wrap items-center gap-x-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-bold text-muted shadow-card">
-            <span className="text-ink">🇳🇬 Made in Nigeria</span>
-            <span aria-hidden>·</span>
-            <span className="select-all">hello@flowz.ng</span>
-          </p>
           <h1 className="text-4xl font-extrabold leading-[1.08] [text-wrap:balance] sm:text-6xl">
             Write it down.
             <br />

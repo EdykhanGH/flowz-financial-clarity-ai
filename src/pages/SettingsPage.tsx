@@ -53,7 +53,7 @@ export default function SettingsPage() {
       <form onSubmit={submit} className="card space-y-5 p-5">
         <div>
           <label className="label" htmlFor="name">Your name</label>
-          <input id="name" required className="field" value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="name" required maxLength={80} className="field" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         <div>
@@ -70,7 +70,7 @@ export default function SettingsPage() {
         {mode === "business" && (
           <div>
             <label className="label" htmlFor="biz">Business name</label>
-            <input id="biz" className="field" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+            <input id="biz" maxLength={120} className="field" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
           </div>
         )}
 
@@ -120,8 +120,12 @@ function PasswordCard() {
   const [highlight, setHighlight] = useState(false);
 
   // Arriving from a "reset password" email lands here.
+  // The sign-in details in the link replace anything after "#", so the link carries "?reset=1" instead.
   useEffect(() => {
-    if (window.location.hash.includes("password")) setHighlight(true);
+    if (new URLSearchParams(window.location.search).has("reset") || window.location.hash.includes("password")) {
+      setHighlight(true);
+      document.getElementById("password")?.scrollIntoView({ block: "center" });
+    }
   }, []);
 
   async function submit(e: FormEvent) {
@@ -141,7 +145,7 @@ function PasswordCard() {
   return (
     <form id="password" onSubmit={submit} className={clsx("card space-y-3 p-5", highlight && "ring-2 ring-brand")}>
       <label className="label" htmlFor="new-password">{highlight ? "Choose a new password" : "Change password"}</label>
-      <PasswordInput id="new-password" minLength={6} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" />
+      <PasswordInput id="new-password" minLength={8} maxLength={72} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
       {error && <ErrorNote>{error}</ErrorNote>}
       {message && <p className="text-sm font-bold text-brand">{message}</p>}
       <button className="btn-soft w-full" disabled={busy}>{busy ? <Spinner /> : "Update password"}</button>

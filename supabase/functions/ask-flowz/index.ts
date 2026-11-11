@@ -153,7 +153,7 @@ export function findLines(rows: Row[], input: Filters & { sort?: string; limit?:
     matching_lines: picked.length,
     lines: sorted.slice(0, limit).map((r) => ({
       date: r.entry_date,
-      text: r.text,
+      text: r.text.slice(0, 300),
       kind: r.kind,
       category: r.category,
       amount: r.amount,
@@ -269,6 +269,27 @@ How to answer:
 - Only talk about their money and Flowz. Politely decline anything else.`;
 }
 
+/** The phone's date is only trusted when it is within a day of the server's (time zones); otherwise the server's is used. */
+function safeToday(claimed: unknown): string {
+  const near = [-1, 0, 1].map((d) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10));
+  return typeof claimed === "string" && near.includes(claimed) ? claimed : near[1];
+}
+
+/**
+ * Counts this use against the person's daily limit. The database does it in one step on its own
+ * date, so the limit can't be dodged by sending another date or many requests at once.
+ * Returns false when over the limit, null when the count couldn't be made.
+ */
+// deno-lint-ignore no-explicit-any
+async function useAi(admin: any, userId: string, field: "questions" | "lines" | "statement_pages" | "summaries", amount: number, limit: number): Promise<boolean | null> {
+  const { data, error } = await admin.rpc("flowz_use_ai", { p_user: userId, p_field: field, p_amount: amount, p_daily_limit: limit });
+  if (error) {
+    console.error("usage count failed", error);
+    return null;
+  }
+  return data === true;
+}
+
 // ---------- the request ----------
 
 if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(async (req) => {
@@ -287,12 +308,12 @@ if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(
   const userId = userData.user.id;
 
   let question = "";
-  let today = new Date().toISOString().slice(0, 10);
+  let today = safeToday(null);
   let history: { role: "user" | "assistant"; text: string }[] = [];
   try {
     const body = JSON.parse(await req.text());
     question = String(body.question ?? "").trim().slice(0, 500);
-    if (typeof body.today === "string" && DATE.test(body.today)) today = body.today;
+    today = safeToday(body.today);
     if (Array.isArray(body.history)) {
       history = body.history
         .filter((m: { role?: string; text?: unknown }) => (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
@@ -306,11 +327,9 @@ if (typeof Deno !== "undefined" && typeof Deno.serve === "function") Deno.serve(
 
   // Daily limit so one account can't run up the AI bill.
   const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: usage } = await admin.from("ai_usage").select("questions").eq("user_id", userId).eq("day", today).maybeSingle();
-  if ((usage?.questions ?? 0) >= MAX_QUESTIONS_PER_DAY) {
-    return reply(429, { error: "You've asked a lot of questions today. Adidy will be ready again tomorrow." });
-  }
-  await admin.from("ai_usage").upsert({ user_id: userId, day: today, questions: (usage?.questions ?? 0) + 1 });
+  const allowed = await useAi(admin, userId, "questions", 1, MAX_QUESTIONS_PER_DAY);
+  if (allowed === null) return reply(503, { error: "Flowz is busy right now. Please try again in a moment." });
+  if (!allowed) return reply(429, { error: "You've asked a lot of questions today. Adidy will be ready again tomorrow." });
 
   // The user's own rows (row-level security applies through their login).
   const since = new Date(Date.now() - HISTORY_DAYS * 86_400_000).toISOString().slice(0, 10);

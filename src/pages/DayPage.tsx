@@ -58,8 +58,11 @@ function blankLine(date: string): Line {
   };
 }
 
+const MAX_LINE_LENGTH = 500;
+
 /** Re-read a line after its text changed. Choices the user made by hand are kept. */
-function withText(line: Line, text: string, defaultCurrency: Currency, ctx: DebtContext | undefined, items: InventoryItem[]): Line {
+function withText(line: Line, rawText: string, defaultCurrency: Currency, ctx: DebtContext | undefined, items: InventoryItem[]): Line {
+  const text = rawText.slice(0, MAX_LINE_LENGTH); // typed, pasted or spoken: the database keeps up to 500 characters
   const p = readWithStock(text, items, defaultCurrency, ctx);
   const stock = { item_id: p.item_id, item_qty: p.item_qty };
   if (line.kind_locked) {
@@ -537,6 +540,7 @@ function DayEditor({ date }: { date: string }) {
                     else inputs.current.delete(line.id);
                   }}
                   value={line.text}
+                  maxLength={MAX_LINE_LENGTH}
                   onChange={(e) => setText(line.id, e.target.value)}
                   onKeyDown={(e) => onKeyDown(e, i)}
                   onPaste={(e) => onPaste(e, i)}

@@ -45,7 +45,7 @@ export default function Setup() {
       <form onSubmit={submit} className="mt-8 space-y-7">
         <div>
           <label className="label" htmlFor="name">What should we call you?</label>
-          <input id="name" required className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ada" autoComplete="given-name" />
+          <input id="name" required maxLength={80} className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ada" autoComplete="given-name" />
         </div>
 
         <fieldset>
@@ -76,7 +76,7 @@ export default function Setup() {
         {mode === "business" && (
           <div>
             <label className="label" htmlFor="biz">Business name (optional)</label>
-            <input id="biz" className="field" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Ada's Provisions" />
+            <input id="biz" maxLength={120} className="field" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Ada's Provisions" />
           </div>
         )}
 

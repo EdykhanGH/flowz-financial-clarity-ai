@@ -72,9 +72,34 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
+/** The phone's date is only trusted when it is within a day of the server's (time zones); otherwise the server's is used. */
+function safeToday(claimed: unknown): string {
+  const near = [-1, 0, 1].map((d) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10));
+  return typeof claimed === "string" && near.includes(claimed) ? claimed : near[1];
+}
+
+/**
+ * Counts this use against the person's daily limit. The database does it in one step on its own
+ * date, so the limit can't be dodged by sending another date or many requests at once.
+ * Returns false when over the limit, null when the count couldn't be made.
+ */
+// deno-lint-ignore no-explicit-any
+async function useAi(admin: any, userId: string, field: "questions" | "lines" | "statement_pages" | "summaries", amount: number, limit: number): Promise<boolean | null> {
+  const { data, error } = await admin.rpc("flowz_use_ai", { p_user: userId, p_field: field, p_amount: amount, p_daily_limit: limit });
+  if (error) {
+    console.error("usage count failed", error);
+    return null;
+  }
+  return data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply(405, { error: "Method not allowed" });
+
+  // Bank Match is paused. Until it is switched back on (secret BANK_MATCH_ENABLED=true),
+  // nobody can use this function to run up the AI bill.
+  if (Deno.env.get("BANK_MATCH_ENABLED") !== "true") return reply(403, { error: "Bank Match isn't available right now." });
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return reply(500, { error: "Statement reading isn't set up yet." });
@@ -90,13 +115,11 @@ Deno.serve(async (req) => {
   let data = "";
   let mediaType = "";
   let pages = 1;
-  let today = new Date().toISOString().slice(0, 10);
   try {
     const body = JSON.parse(await req.text());
     data = typeof body.data === "string" ? body.data : "";
     mediaType = typeof body.media_type === "string" ? body.media_type : "";
     pages = Math.max(1, Math.min(MAX_PAGES_PER_CALL, Number(body.pages) || 1));
-    if (typeof body.today === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) today = body.today;
   } catch {
     return reply(400, { error: "Bad request." });
   }
@@ -105,16 +128,9 @@ Deno.serve(async (req) => {
 
   // Daily limit so one account can't run up the AI bill.
   const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: usage } = await admin.from("ai_usage").select("questions, lines, statement_pages").eq("user_id", userId).eq("day", today).maybeSingle();
-  const used = usage?.statement_pages ?? 0;
-  if (used + pages > MAX_PAGES_PER_DAY) return reply(429, { error: "You've uploaded a lot of statement pages today. Please try again tomorrow." });
-  await admin.from("ai_usage").upsert({
-    user_id: userId,
-    day: today,
-    questions: usage?.questions ?? 0,
-    lines: usage?.lines ?? 0,
-    statement_pages: used + pages,
-  });
+  const allowed = await useAi(admin, userId, "statement_pages", pages, MAX_PAGES_PER_DAY);
+  if (allowed === null) return reply(503, { error: "Flowz is busy right now. Please try again in a moment." });
+  if (!allowed) return reply(429, { error: "You've uploaded a lot of statement pages today. Please try again tomorrow." });
 
   const source = { type: "base64", media_type: mediaType, data };
   const block = mediaType === "application/pdf" ? { type: "document", source } : { type: "image", source };

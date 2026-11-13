@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
 
 export const CONTACT_EMAIL = "hello@flowz.ng";
-const UPDATED = "4 November 2026";
+const UPDATED = "11 November 2026";
 
 /** A plain page for people who may not be signed in: privacy policy, account deletion. */
 export function PublicPage({ title, children }: { title: string; children: ReactNode }) {
@@ -60,7 +60,7 @@ export default function Privacy() {
       <Section title="What Flowz does not do">
         <ul>
           <li>We don't sell your data, and we don't show you ads.</li>
-          <li>Flowz can't see your bank account or move money. It only reads the statements you choose to upload.</li>
+          <li>Flowz can't see your bank account or move money.{FEATURES.bankMatch ? " It only reads the statements you choose to upload." : ""}</li>
           <li>We don't share your records with lenders or anyone else. If we ever offer that, it will only happen when you ask for it.</li>
         </ul>
       </Section>
@@ -69,7 +69,7 @@ export default function Privacy() {
         <ul>
           <li>To show your notebook, totals, debt book, budgets, inventory and statements{FEATURES.bankMatch ? " and Bank Match" : ""}.</li>
           <li>To send you sign-up, password and reminder messages.</li>
-          <li>For Adidy, Flowz's AI helper (the monthly summary, Ask Adidy, reading unclear lines and reading PDF or photo statements): only the text or file needed for that request is sent to our AI provider.</li>
+          <li>For Adidy, Flowz's AI helper (the monthly summary, Ask Adidy{FEATURES.bankMatch ? ", reading unclear lines and reading PDF or photo statements" : " and reading unclear lines"}): only the text or file needed for that request is sent to our AI provider.</li>
           <li>To keep Flowz working and safe, for example fixing errors and stopping abuse.</li>
         </ul>
       </Section>
@@ -79,7 +79,7 @@ export default function Privacy() {
         <ul>
           <li><b>Supabase:</b> stores your account and records, and runs Flowz's server functions.</li>
           <li><b>Vercel:</b> serves the Flowz app to your phone or computer.</li>
-          <li><b>Anthropic (Claude):</b> the AI behind Adidy (summaries, questions and statement reading). Under Anthropic's commercial terms, data sent through its API isn't used to train its models.</li>
+          <li><b>Anthropic (Claude):</b> the AI behind Adidy (summaries, questions and reading unclear lines). Under Anthropic's commercial terms, data sent through its API isn't used to train its models.</li>
           <li><b>Resend:</b> sends sign-up and password emails.</li>
           <li><b>Sentry:</b> receives error reports so we can fix problems (stored in the European Union).</li>
           <li><b>Zoho:</b> our support inbox, if you email us.</li>
@@ -98,7 +98,7 @@ export default function Privacy() {
 
       <Section title="Keeping it safe">
         <ul>
-          <li>Everything travels over encrypted connections (HTTPS).</li>
+          <li>Everything travels over encrypted connections (HTTPS), and your records are stored encrypted.</li>
           <li>Each person can only ever see their own records; this is enforced in the database itself.</li>
           <li>Keys for our AI and email services are kept on our servers, never in the app.</li>
         </ul>

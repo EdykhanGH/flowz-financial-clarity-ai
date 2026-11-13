@@ -12,6 +12,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const MODEL = "claude-opus-5-5";
 const MAX_PER_MONTH = 15; // regenerations allowed per user per month
 const MIN_SECONDS_BETWEEN = 30;
+const MAX_PER_DAY = 10; // across all months, so asking for many different months can't run up the bill
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,27 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
+/** The phone's date is only trusted when it is within a day of the server's (time zones); otherwise the server's is used. */
+function safeToday(claimed: unknown): string {
+  const near = [-1, 0, 1].map((d) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10));
+  return typeof claimed === "string" && near.includes(claimed) ? claimed : near[1];
+}
+
+/**
+ * Counts this use against the person's daily limit. The database does it in one step on its own
+ * date, so the limit can't be dodged by sending another date or many requests at once.
+ * Returns false when over the limit, null when the count couldn't be made.
+ */
+// deno-lint-ignore no-explicit-any
+async function useAi(admin: any, userId: string, field: "questions" | "lines" | "statement_pages" | "summaries", amount: number, limit: number): Promise<boolean | null> {
+  const { data, error } = await admin.rpc("flowz_use_ai", { p_user: userId, p_field: field, p_amount: amount, p_daily_limit: limit });
+  if (error) {
+    console.error("usage count failed", error);
+    return null;
+  }
+  return data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply(405, { error: "Method not allowed" });
@@ -89,7 +111,8 @@ Deno.serve(async (req) => {
     return reply(400, { error: "Bad request." });
   }
   const month = typeof stats?.month === "string" && /^\d{4}-\d{2}$/.test(stats.month) ? stats.month : null;
-  if (!month) return reply(400, { error: "Bad request." });
+  // Only real months: from 2000 up to the current month.
+  if (!month || month < "2000-01" || month > new Date(Date.now() + 86_400_000).toISOString().slice(0, 7)) return reply(400, { error: "Bad request." });
   const monthDate = `${month}-01`;
 
   // Simple limits so one account can't run up the AI bill.
@@ -107,6 +130,10 @@ Deno.serve(async (req) => {
       return reply(429, { error: "You've refreshed this month's summary many times. It will update again next month." });
     }
   }
+
+  const allowed = await useAi(admin, userId, "summaries", 1, MAX_PER_DAY);
+  if (allowed === null) return reply(503, { error: "Flowz is busy right now. Please try again in a moment." });
+  if (!allowed) return reply(429, { error: "You've written many summaries today. Please try again tomorrow." });
 
   // Ask Claude.
   const client = new Anthropic({ apiKey });

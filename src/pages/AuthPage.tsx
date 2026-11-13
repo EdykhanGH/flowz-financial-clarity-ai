@@ -75,7 +75,7 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
     setBusy(true);
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/settings#password`,
+      redirectTo: `${window.location.origin}/settings?reset=1`,
     });
     setBusy(false);
     if (error) setError(friendly(error.message));
@@ -134,10 +134,11 @@ export default function AuthPage({ mode }: { mode: "signin" | "signup" }) {
               id="password"
               autoComplete={isSignup ? "new-password" : "current-password"}
               required
-              minLength={6}
+              minLength={isSignup ? 8 : undefined}
+              maxLength={72}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isSignup ? "At least 6 characters" : "Your password"}
+              placeholder={isSignup ? "At least 8 characters" : "Your password"}
             />
           </div>
           {error && <ErrorNote>{error}</ErrorNote>}

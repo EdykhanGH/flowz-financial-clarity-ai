@@ -68,6 +68,7 @@ export default function KindSheet({
               <label className="label" htmlFor="line-person">Who?</label>
               <input
                 id="line-person"
+                maxLength={80}
                 className="field"
                 placeholder="e.g. Joy"
                 value={line.person ?? ""}

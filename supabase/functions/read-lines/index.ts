@@ -89,6 +89,27 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
+/** The phone's date is only trusted when it is within a day of the server's (time zones); otherwise the server's is used. */
+function safeToday(claimed: unknown): string {
+  const near = [-1, 0, 1].map((d) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10));
+  return typeof claimed === "string" && near.includes(claimed) ? claimed : near[1];
+}
+
+/**
+ * Counts this use against the person's daily limit. The database does it in one step on its own
+ * date, so the limit can't be dodged by sending another date or many requests at once.
+ * Returns false when over the limit, null when the count couldn't be made.
+ */
+// deno-lint-ignore no-explicit-any
+async function useAi(admin: any, userId: string, field: "questions" | "lines" | "statement_pages" | "summaries", amount: number, limit: number): Promise<boolean | null> {
+  const { data, error } = await admin.rpc("flowz_use_ai", { p_user: userId, p_field: field, p_amount: amount, p_daily_limit: limit });
+  if (error) {
+    console.error("usage count failed", error);
+    return null;
+  }
+  return data === true;
+}
+
 interface InLine {
   id: string;
   text: string;
@@ -110,7 +131,6 @@ Deno.serve(async (req) => {
   const userId = userData.user.id;
 
   let lines: InLine[] = [];
-  let today = new Date().toISOString().slice(0, 10);
   let book: unknown = {};
   try {
     const body = JSON.parse(await req.text());
@@ -118,7 +138,6 @@ Deno.serve(async (req) => {
       .filter((l: InLine) => typeof l?.id === "string" && typeof l?.text === "string" && l.text.trim())
       .slice(0, MAX_LINES_PER_CALL)
       .map((l: InLine) => ({ id: l.id.slice(0, 64), text: l.text.slice(0, 300) }));
-    if (typeof body.today === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) today = body.today;
     // The debt book is only used as context for reading; it's kept small.
     book = JSON.parse(JSON.stringify(body.book ?? {}).slice(0, 6000));
   } catch {
@@ -128,10 +147,9 @@ Deno.serve(async (req) => {
 
   // Daily limit so one account can't run up the AI bill.
   const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: usage } = await admin.from("ai_usage").select("questions, lines").eq("user_id", userId).eq("day", today).maybeSingle();
-  const used = usage?.lines ?? 0;
-  if (used + lines.length > MAX_LINES_PER_DAY) return reply(429, { error: "Daily AI reading limit reached." });
-  await admin.from("ai_usage").upsert({ user_id: userId, day: today, questions: usage?.questions ?? 0, lines: used + lines.length });
+  const allowed = await useAi(admin, userId, "lines", lines.length, MAX_LINES_PER_DAY);
+  if (allowed === null) return reply(503, { error: "Flowz is busy right now. Please try again in a moment." });
+  if (!allowed) return reply(429, { error: "Daily AI reading limit reached." });
 
   const { data: settings } = await userClient.from("user_settings").select("mode, default_currency").maybeSingle();
 
@@ -162,7 +180,11 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(text ?? "{}");
     const ids = new Set(lines.map((l) => l.id));
     // deno-lint-ignore no-explicit-any
-    const out = (parsed.lines ?? []).filter((l: any) => ids.has(l.id) && KINDS.includes(l.kind));
+    const out = (parsed.lines ?? [])
+      // deno-lint-ignore no-explicit-any
+      .filter((l: any) => ids.has(l.id) && KINDS.includes(l.kind))
+      // deno-lint-ignore no-explicit-any
+      .map((l: any) => ({ ...l, person: typeof l.person === "string" ? l.person.slice(0, 80) : null }));
     return reply(200, { lines: out });
   } catch (err) {
     console.error("read-lines failed", err);
